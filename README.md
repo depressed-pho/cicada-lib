@@ -25,7 +25,7 @@ Minecraft Bedrock addon creators better. Modules include:
 ```shell
 % npm init
 ...
-% npm -i -D github:depressed-pho/cicada-lib
+% npm -i -S github:depressed-pho/cicada-lib
 ```
 
 FIXME: documentation forthcoming
