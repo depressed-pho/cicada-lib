@@ -33,13 +33,15 @@
   "homepage": "https://github.com/depressed-pho/cicada-lib#readme",
   "devDependencies": {
     "@protobuf-ts/runtime": "^2.8.2",
-    "@types/minecraft__server": "github:depressed-pho/types-minecraft__server",
-    "@types/minecraft__server-ui": "github:depressed-pho/types-minecraft__server-ui",
     "gulp": "^4.0.2",
     "gulp-cli": "^2.3.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "merge2": "^1.4.1",
     "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@types/minecraft__server": "github:depressed-pho/types-minecraft__server",
+    "@types/minecraft__server-ui": "github:depressed-pho/types-minecraft__server-ui"
   },
   "peerDependencies": {
     "@protobuf-ts/runtime": "^2.8.2"
