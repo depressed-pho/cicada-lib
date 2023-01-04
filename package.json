@@ -1,0 +1,47 @@
+{
+  "name": "cicada-lib",
+  "version": "1.0.0",
+  "description": "Library that improves Minecraft Bedrock Scripting API",
+  "type": "module",
+  "files": [
+    "dist/**"
+  ],
+  "exports": {
+    "./*.js": "./dist/*.js"
+  },
+  "scripts": {
+    "prepare": "gulp",
+    "build": "gulp",
+    "clean": "gulp clean",
+    "watch": "gulp watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/depressed-pho/cicada-lib.git"
+  },
+  "keywords": [
+    "Minecraft",
+    "Bedrock",
+    "Scripting",
+    "Addon"
+  ],
+  "author": "PHO",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/depressed-pho/cicada-lib/issues"
+  },
+  "homepage": "https://github.com/depressed-pho/cicada-lib#readme",
+  "devDependencies": {
+    "@protobuf-ts/runtime": "^2.8.2",
+    "@types/minecraft__server": "github:depressed-pho/types-minecraft__server",
+    "@types/minecraft__server-ui": "github:depressed-pho/types-minecraft__server-ui",
+    "gulp": "^4.0.2",
+    "gulp-cli": "^2.3.0",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "merge2": "^1.4.1",
+    "typescript": "^4.7.4"
+  },
+  "peerDependencies": {
+    "@protobuf-ts/runtime": "^2.8.2"
+  }
+}
