@@ -1,6 +1,9 @@
 import { SystemEvents } from "./system/events.js";
 import * as MC from "@minecraft/server";
 
+export { BeforeWatchdogTerminateEvent,
+         WatchdogTerminateReason } from "@minecraft/server";
+
 export class System {
     readonly #system: MC.System;
 
