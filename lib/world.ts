@@ -1,8 +1,13 @@
 import { EventEmitter, EventName } from "./event-emitter.js"
+import { map } from "./iterable.js";
+import { Block, BlockPermutation, BlockBreakEvent, BlockPlaceEvent } from "./block.js";
+import { Dimension } from "./dimension.js";
 import { Entity, ItemUseEvent } from "./entity.js";
 import { ItemStack } from "./item-stack.js";
 import { Player, PlayerSpawnEvent } from "./player.js"
 import * as MC from "@minecraft/server";
+
+export { EntityQueryOptions } from "@minecraft/server";
 
 interface Event {
     name: EventName,
@@ -26,6 +31,13 @@ export class World extends EventEmitter {
         this.#pendingEvents  = [];
 
         this.#glueEvents();
+    }
+
+    public getPlayers(opts?: MC.EntityQueryOptions): Iterable<Player> {
+        // Create an iterable object that progressively constructs Player.
+        return map(this.#world.getPlayers(opts), raw => {
+            return new Player(raw);
+        });
     }
 
     #glueEvents(): void {
@@ -93,6 +105,25 @@ export class World extends EventEmitter {
             else {
                 this.#pendingEvents.push({name: "playerLeave", event: ev});
             }
+        });
+
+        this.#world.events.blockBreak.subscribe(rawEv => {
+            const ev: BlockBreakEvent = {
+                block:                  new Block(rawEv.block),
+                brokenBlockPermutation: new BlockPermutation(rawEv.brokenBlockPermutation),
+                dimension:              new Dimension(rawEv.dimension),
+                player:                 new Player(rawEv.player)
+            };
+            this.emit("blockBreak", ev);
+        });
+
+        this.#world.events.blockPlace.subscribe(rawEv => {
+            const ev: BlockPlaceEvent = {
+                block:     new Block(rawEv.block),
+                dimension: new Dimension(rawEv.dimension),
+                player:    new Player(rawEv.player)
+            };
+            this.emit("blockPlace", ev);
         });
 
         this.#world.events.itemUse.subscribe(rawEv => {

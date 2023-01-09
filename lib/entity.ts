@@ -1,4 +1,7 @@
+import { Dimension } from "./dimension.js";
+import { EntityTags } from "./entity/tags.js";
 import { ItemStack } from "./item-stack.js";
+import { Location } from "./location.js";
 import * as MC from "@minecraft/server";
 
 export class Entity {
@@ -10,12 +13,35 @@ export class Entity {
         this.#entity = rawEntity;
     }
 
+    public get dimension(): Dimension {
+        return new Dimension(this.#entity.dimension);
+    }
+
     public get id(): string {
         return this.#entity.id;
     }
 
+    public get isSneaking(): boolean {
+        return this.#entity.isSneaking;
+    }
+
+    public get location(): Location {
+        return new Location(this.#entity.location);
+    }
+
     public get typeId(): string {
         return this.#entity.typeId;
+    }
+
+    /** Returns the set of tags for this entity. The set isn't a
+     * snapshot. You can add or remove tags through the standard Set
+     * API. */
+    public get tags(): Set<string> {
+        return new EntityTags(this.#entity);
+    }
+
+    public kill(): void {
+        this.#entity.kill();
     }
 
     public getDynamicProperty(identifier: string): boolean|number|string|undefined;
@@ -29,7 +55,7 @@ export class Entity {
         const prop = this.#entity.getDynamicProperty(identifier);
 
         if (ty == null) {
-            // No constraints is requested on the type of the property.
+            // No constraints are requested on the type of the property.
             return prop;
         }
         else {
@@ -60,6 +86,51 @@ export class Entity {
 
     public removeDynamicProperty(identifier: string): void {
         this.#entity.removeDynamicProperty(identifier);
+    }
+
+    public triggerEvent(eventName: string): void {
+        this.#entity.triggerEvent(eventName);
+    }
+}
+
+export interface EntityQueryOptions {
+    closest?: number;
+    excludeFamilies?: string[];
+    excludeGameModes?: MC.GameMode[];
+    excludeNames?: string[];
+    excludeTags?: string[];
+    excludeTypes?: string[];
+    families?: string[];
+    farthest?: number;
+    gameMode?: MC.GameMode;
+    location?: Location;
+    maxDistance?: number;
+    maxHorizontalRotation?: number;
+    maxLevel?: number;
+    maxVerticalRotation?: number;
+    minDistance?: number;
+    minHorizontalRotation?: number;
+    minLevel?: number;
+    minVerticalRotation?: number;
+    name?: string;
+    scoreOptions?: MC.EntityQueryScoreOptions[];
+    tags?: string[];
+    type?: string;
+    volume?: MC.BlockAreaSize;
+}
+
+/** Package private: user code should not use this. */
+export function entityQueryOptionsToRaw<T extends EntityQueryOptions|undefined>(opts: T): T extends EntityQueryOptions ? MC.EntityQueryOptions : undefined {
+    if (opts) {
+        // @ts-ignore
+        return {
+            ...opts,
+            ...(opts.location ? {location: opts.location.raw} : {})
+        };
+    }
+    else {
+        // @ts-ignore
+        return;
     }
 }
 

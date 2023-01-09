@@ -7,8 +7,10 @@ export class ItemStack {
     /** This overload is public only because of a language limitation. User
      * code must never call it directly. */
     public constructor(rawItemStack: MC.ItemStack);
+
     /** Construct an item stack. */
     public constructor(itemType: MC.ItemType|string, amount?: number, data?: number);
+
     public constructor(arg0: MC.ItemStack|MC.ItemType|string, ...rest: any[]) {
         if (arg0 instanceof MC.ItemStack) {
             this.#itemStack = arg0;

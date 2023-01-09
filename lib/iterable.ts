@@ -1,3 +1,9 @@
+export function* map<T, U>(xs: Iterable<T>, f: (x: T) => U): Iterable<U> {
+    for (const x of xs) {
+        yield f(x);
+    }
+}
+
 export function* concat<T>(xs: Iterable<T>, ys: Iterable<T>): Iterable<T> {
     yield* xs;
     yield* ys;
