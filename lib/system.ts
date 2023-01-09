@@ -1,25 +1,23 @@
-import { EventEmitter } from "./event-emitter.js"
-import { BeforeWatchdogTerminateEvent } from "./watchdog.js";
+import { SystemEvents } from "./system/events.js";
 import * as MC from "@minecraft/server";
 
-export class System extends EventEmitter {
+export class System {
     readonly #system: MC.System;
+
+    /** System event signals */
+    public readonly events: SystemEvents;
 
     /** The constructor is public only because of a language
      * limitation. User code must never call it directly. */
     public constructor(rawSystem: MC.System) {
-        super();
-
         this.#system = rawSystem;
 
-        this.#glueEvents();
+        this.events  = new SystemEvents(rawSystem);
     }
 
-    #glueEvents(): void {
-        this.#system.events.beforeWatchdogTerminate.subscribe(rawEv => {
-            const ev = new BeforeWatchdogTerminateEvent(rawEv);
-            this.emit("beforeWatchdogTerminate", ev);
-        });
+    /// Package private
+    public get raw(): MC.System {
+        return this.#system;
     }
 }
 

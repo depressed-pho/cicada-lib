@@ -1,34 +1,28 @@
-import { EventEmitter, EventName } from "./event-emitter.js"
+import { WorldEvents } from "./world/events.js";
 import { map } from "./iterable.js";
-import { Block, BlockPermutation, BlockBreakEvent, BlockPlaceEvent } from "./block.js";
-import { Dimension } from "./dimension.js";
-import { Entity, ItemUseEvent } from "./entity.js";
-import { ItemStack } from "./item-stack.js";
 import { Player, PlayerSpawnEvent } from "./player.js"
 import * as MC from "@minecraft/server";
 
 export { EntityQueryOptions } from "@minecraft/server";
 
-interface Event {
-    name: EventName,
-    event: any
-}
-
-export class World extends EventEmitter {
+export class World {
     readonly #world: MC.World;
     #isReady: boolean;
     #readinessProbe: number|null; // runScheduleId
-    #pendingEvents: Event[];
+    #pendingEvents: (() => void)[];
+
+    /** World event signals */
+    public readonly events: WorldEvents;
 
     /** The constructor is public only because of a language
      * limitation. User code must never call it directly. */
     public constructor(rawWorld: MC.World) {
-        super();
-
         this.#world          = rawWorld;
         this.#isReady        = false;
         this.#readinessProbe = null;
         this.#pendingEvents  = [];
+
+        this.events          = new WorldEvents(rawWorld);
 
         this.#glueEvents();
     }
@@ -54,10 +48,10 @@ export class World extends EventEmitter {
                 // ready yet, which isn't even documented!!
                 if (it) {
                     this.#isReady = true;
-                    this.emit("ready");
+                    this.events.ready.signal({});
 
                     for (const ev of this.#pendingEvents) {
-                        this.emit(ev.name, ev.event);
+                        ev();
                     }
                     this.#pendingEvents = [];
 
@@ -76,10 +70,12 @@ export class World extends EventEmitter {
                     player:       new Player(rawEv.player)
                 };
                 if (this.#isReady) {
-                    this.emit("playerSpawn", ev);
+                    this.events.playerSpawn.signal(ev);
                 }
                 else {
-                    this.#pendingEvents.push({name: "playerSpawn", event: ev});
+                    this.#pendingEvents.push(() => {
+                        this.events.playerSpawn.signal(ev);
+                    });
                 }
             });
         }
@@ -90,50 +86,25 @@ export class World extends EventEmitter {
                     player:       new Player(rawEv.player)
                 };
                 if (this.#isReady) {
-                    this.emit("playerSpawn", ev);
+                    this.events.playerSpawn.signal(ev);
                 }
                 else {
-                    this.#pendingEvents.push({name: "playerSpawn", event: ev});
+                    this.#pendingEvents.push(() => {
+                        this.events.playerSpawn.signal(ev);
+                    });
                 }
             });
         }
 
         this.#world.events.playerLeave.subscribe(ev => {
             if (this.#isReady) {
-                this.emit("playerLeave", ev);
+                this.events.playerLeave.signal(ev);
             }
             else {
-                this.#pendingEvents.push({name: "playerLeave", event: ev});
+                this.#pendingEvents.push(() => {
+                    this.events.playerLeave.signal(ev);
+                });
             }
-        });
-
-        this.#world.events.blockBreak.subscribe(rawEv => {
-            const ev: BlockBreakEvent = {
-                block:                  new Block(rawEv.block),
-                brokenBlockPermutation: new BlockPermutation(rawEv.brokenBlockPermutation),
-                dimension:              new Dimension(rawEv.dimension),
-                player:                 new Player(rawEv.player)
-            };
-            this.emit("blockBreak", ev);
-        });
-
-        this.#world.events.blockPlace.subscribe(rawEv => {
-            const ev: BlockPlaceEvent = {
-                block:     new Block(rawEv.block),
-                dimension: new Dimension(rawEv.dimension),
-                player:    new Player(rawEv.player)
-            };
-            this.emit("blockPlace", ev);
-        });
-
-        this.#world.events.itemUse.subscribe(rawEv => {
-            const ev: ItemUseEvent = {
-                item:   new ItemStack(rawEv.item),
-                source: rawEv.source instanceof MC.Player
-                    ? new Player(rawEv.source)
-                    : new Entity(rawEv.source)
-            };
-            this.emit("itemUse", ev);
         });
     }
 }
