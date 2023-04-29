@@ -18,7 +18,7 @@ export class Player extends Entity {
     }
 
     /** Package private: user code should not use this. */
-    public get raw(): MC.Player {
+    public override get raw(): MC.Player {
         return this.#player;
     }
 

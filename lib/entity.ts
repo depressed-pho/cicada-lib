@@ -1,8 +1,12 @@
+import { Block } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { EntityTags } from "./entity/tags.js";
 import { ItemStack } from "./item-stack.js";
 import { Location } from "./location.js";
+import { BlockRaycastOptions, EntityDamageCause } from "@minecraft/server";
 import * as MC from "@minecraft/server";
+
+export { BlockRaycastOptions, EntityDamageCause };
 
 export class Entity {
     readonly #entity: MC.Entity;
@@ -11,6 +15,11 @@ export class Entity {
      * limitation. User code must never call it directly. */
     public constructor(rawEntity: MC.Entity) {
         this.#entity = rawEntity;
+    }
+
+    /** Package private: user code should not use this. */
+    public get raw(): MC.Entity {
+        return this.#entity;
     }
 
     public get dimension(): Dimension {
@@ -42,6 +51,10 @@ export class Entity {
 
     public kill(): void {
         this.#entity.kill();
+    }
+
+    public getBlockFromViewDirection(options?: BlockRaycastOptions): Block {
+        return new Block(this.#entity.getBlockFromViewDirection(options));
     }
 
     public getDynamicProperty(identifier: string): boolean|number|string|undefined;
@@ -91,6 +104,28 @@ export class Entity {
     public triggerEvent(eventName: string): void {
         this.#entity.triggerEvent(eventName);
     }
+}
+
+export interface EntityDieEvent {
+    readonly damageCause: EntityDamageCause;
+    readonly deadEntity: Entity;
+}
+
+export interface EntityEventOptions {
+    entities?: Entity[];
+    entityTypes?: string[];
+}
+
+/** Package private: user code should not use this. */
+export function entityEventOptionsToRaw(opts: EntityEventOptions): MC.EntityEventOptions {
+    let ret: MC.EntityEventOptions = {};
+    if (opts.entities) {
+        ret.entities = opts.entities.map(e => e.raw);
+    }
+    if (opts.entityTypes) {
+        ret.entityTypes = opts.entityTypes;
+    }
+    return ret;
 }
 
 export interface ItemUseEvent {

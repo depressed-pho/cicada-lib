@@ -27,6 +27,11 @@ export class World {
         this.#glueEvents();
     }
 
+    /** Package private: user code should not use this. */
+    get raw(): MC.World {
+        return this.#world;
+    }
+
     public getPlayers(opts?: MC.EntityQueryOptions): Iterable<Player> {
         // Create an iterable object that progressively constructs Player.
         return map(this.#world.getPlayers(opts), raw => {
@@ -62,39 +67,20 @@ export class World {
         };
         this.#readinessProbe = MC.system.runInterval(onTick, 1);
 
-        // FIXME: Remove this glue code when the game supports PlayerSpawnEvent.
-        if (this.#world.events.playerSpawn) {
-            this.#world.events.playerSpawn.subscribe(rawEv => {
-                const ev: PlayerSpawnEvent = {
-                    initialSpawn: rawEv.initialSpawn,
-                    player:       new Player(rawEv.player)
-                };
-                if (this.#isReady) {
+        this.#world.events.playerSpawn.subscribe(rawEv => {
+            const ev: PlayerSpawnEvent = {
+                initialSpawn: rawEv.initialSpawn,
+                player:       new Player(rawEv.player)
+            };
+            if (this.#isReady) {
+                this.events.playerSpawn.signal(ev);
+            }
+            else {
+                this.#pendingEvents.push(() => {
                     this.events.playerSpawn.signal(ev);
-                }
-                else {
-                    this.#pendingEvents.push(() => {
-                        this.events.playerSpawn.signal(ev);
-                    });
-                }
-            });
-        }
-        else {
-            this.#world.events.playerJoin.subscribe((rawEv: any) => {
-                const ev: PlayerSpawnEvent = {
-                    initialSpawn: true,
-                    player:       new Player(rawEv.player)
-                };
-                if (this.#isReady) {
-                    this.events.playerSpawn.signal(ev);
-                }
-                else {
-                    this.#pendingEvents.push(() => {
-                        this.events.playerSpawn.signal(ev);
-                    });
-                }
-            });
-        }
+                });
+            }
+        });
 
         this.#world.events.playerLeave.subscribe(ev => {
             if (this.#isReady) {
