@@ -29,7 +29,7 @@ export function dynamicPropertyId(type: "player"|"world"): string {
         throw new Error("No namespaces have been declared for the addon.");
     }
     else {
-        return `${addonNamespace}:${type}-prefences`;
+        return `${addonNamespace}:${type}-preferences`;
     }
 }
 
