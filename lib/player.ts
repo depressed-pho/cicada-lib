@@ -37,8 +37,8 @@ export class Player extends Entity {
 
     /** A Console API that sends messages to the chat screen of this
      * player. The message will also be sent to the content log. This is
-     * mainly for error reporting and debugging. Use {@link tell} for
-     * regular messages. */
+     * mainly for error reporting and debugging. Use {@link sendMessage}
+     * for regular messages. */
     public get console(): Console {
         return new PlayerConsole(this.#player);
     }
@@ -59,8 +59,8 @@ export class Player extends Entity {
             Preferences.encode(ty, prefs));
     }
 
-    public tell(msg: MC.RawMessage|string): void {
-        this.#player.tell(msg);
+    public sendMessage(msg: (MC.RawMessage|string)[]|MC.RawMessage|string): void {
+        this.#player.sendMessage(msg);
     }
 }
 

@@ -1,5 +1,8 @@
-import { IEventSignal } from "@minecraft/server";
-export { IEventSignal } from "@minecraft/server";
+/** Package private */
+export interface IEventSignal<T> {
+    subscribe(cb: (ev: T) => void): (ev: T) => void;
+    unsubscribe(cb: (ev: T) => void): void;
+}
 
 /** Package private */
 export class CustomEventSignal<T> implements IEventSignal<T> {

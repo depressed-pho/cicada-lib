@@ -36,10 +36,10 @@ export class WorldEvents {
         });
         this.itemUse = new GluedEventSignal(rawEvents.itemUse, (rawEv: MC.ItemUseEvent) => {
             return {
-                item:   new ItemStack(rawEv.item),
-                source: rawEv.source instanceof MC.Player
-                      ? new Player(rawEv.source)
-                      : new Entity(rawEv.source)
+                itemStack: new ItemStack(rawEv.itemStack),
+                source:    rawEv.source instanceof MC.Player
+                    ? new Player(rawEv.source)
+                    : new Entity(rawEv.source)
             };
         });
         this.ready       = new CustomEventSignal();

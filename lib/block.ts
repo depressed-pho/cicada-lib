@@ -1,5 +1,5 @@
 import { Dimension } from "./dimension.js";
-import { BlockLocation } from "./location.js";
+import { Location } from "./location.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
 import * as MC from "@minecraft/server";
@@ -17,16 +17,12 @@ export class Block {
         return new Dimension(this.#block.dimension);
     }
 
-    public get typeId(): string {
-        return this.#block.typeId;
-    }
-
     public get isWaterlogged(): boolean {
         return this.#block.isWaterlogged;
     }
 
-    public get location(): BlockLocation {
-        return new BlockLocation(this.#block.location);
+    public get location(): Location {
+        return new Location(this.#block.location);
     }
 
     public get permutation(): BlockPermutation {
@@ -35,6 +31,10 @@ export class Block {
 
     public get type(): BlockType {
         return new BlockType(this.#block.type);
+    }
+
+    public get typeId(): string {
+        return this.#block.typeId;
     }
 
     public get x(): number {
@@ -92,11 +92,6 @@ export class BlockType {
 
     public get id(): string {
         return this.#type.id;
-    }
-
-    public createDefaultBlockPermutation(): BlockPermutation {
-        return new BlockPermutation(
-            this.#type.createDefaultBlockPermutation());
     }
 
     public static getAllBlockTypes(): Iterable<BlockType> {

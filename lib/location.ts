@@ -1,15 +1,12 @@
-import { map } from "./iterable.js";
 import * as MC from "@minecraft/server";
 
-export class Location {
-    readonly #location: MC.Location;
+export class Location implements MC.Vector3 {
+    x: number;
+    y: number;
+    z: number;
 
-    /** This overload is public only because of a language limitation. User
-     * code must never call it directly. */
-    public constructor(rawLocation: MC.Location);
-
-    /** Construct a Location object from a BlockLocation. */
-    public constructor(blockLocation: BlockLocation);
+    /** Construct a Location object from a Vector3. */
+    public constructor(vec3: MC.Vector3);
 
     /** Construct an object describing decimal locations of things like
      * entities. */
@@ -18,46 +15,18 @@ export class Location {
     public constructor(...args: any[]) {
         switch (args.length) {
             case 1:
-                if (args[0] instanceof BlockLocation) {
-                    const bl = args[0];
-                    this.#location = new MC.Location(bl.x, bl.y, bl.z);
-                }
-                else {
-                    this.#location = args[0];
-                }
+                this.x = args[0].x;
+                this.y = args[0].y;
+                this.z = args[0].z;
                 break;
             case 3:
-                this.#location = new MC.Location(args[0], args[1], args[2]);
+                this.x = args[0];
+                this.y = args[1];
+                this.z = args[2];
                 break;
             default:
                 throw new Error("internal error");
         }
-    }
-
-    /** Package private: user code should not use this. */
-    public get raw(): MC.Location {
-        return this.#location;
-    }
-
-    public get x(): number {
-        return this.#location.x;
-    }
-    public set x(pos: number) {
-        this.#location.x = pos;
-    }
-
-    public get y(): number {
-        return this.#location.y;
-    }
-    public set y(pos: number) {
-        this.#location.y = pos;
-    }
-
-    public get z(): number {
-        return this.#location.z;
-    }
-    public set z(pos: number) {
-        this.#location.z = pos;
     }
 
     public clone(): Location {
@@ -65,11 +34,20 @@ export class Location {
     }
 
     public equals(other: Location): boolean {
-        return this.#location.equals(other.raw)
+        return this.x == other.x &&
+               this.y == other.y &&
+               this.z == other.z;
+    }
+
+    public distance(other: Location): number {
+        return Math.sqrt(
+                 Math.pow(this.x - other.x, 2) +
+                 Math.pow(this.y - other.y, 2) +
+                 Math.pow(this.z - other.z, 2));
     }
 
     public isNear(other: Location, epsilon: number): boolean {
-        return this.#location.isNear(other.raw, epsilon);
+        return this.distance(other) <= epsilon;
     }
 
     public offset(x: number, y: number, z: number): Location {
@@ -78,83 +56,6 @@ export class Location {
         clone.y += y;
         clone.z += z;
         return clone;
-    }
-
-    public toString(): string {
-        return `${this.x}, ${this.y}, ${this.z}`;
-    }
-}
-
-export class BlockLocation {
-    readonly #location: MC.BlockLocation;
-
-    /** This overload is public only because of a language limitation. User
-     * code must never call it directly. */
-    public constructor(rawLocation: MC.BlockLocation);
-
-    /** Construct an object describing integral locations of blocks. */
-    public constructor(x: number, y: number, z: number);
-
-    public constructor(...args: any[]) {
-        switch (args.length) {
-            case 1:
-                this.#location = args[0];
-                break;
-            case 3:
-                this.#location = new MC.BlockLocation(args[0], args[1], args[2]);
-                break;
-            default:
-                throw new Error("internal error");
-        }
-    }
-
-    /** Package private: user code should not use this. */
-    public get raw(): MC.BlockLocation {
-        return this.#location;
-    }
-
-    public get x(): number {
-        return this.#location.x;
-    }
-    public set x(pos: number) {
-        this.#location.x = pos;
-    }
-
-    public get y(): number {
-        return this.#location.y;
-    }
-    public set y(pos: number) {
-        this.#location.y = pos;
-    }
-
-    public get z(): number {
-        return this.#location.z;
-    }
-    public set z(pos: number) {
-        this.#location.z = pos;
-    }
-
-    public clone(): BlockLocation {
-        return new BlockLocation(this.x, this.y, this.z);
-    }
-
-    public above(): BlockLocation {
-        return new BlockLocation(this.#location.above());
-    }
-
-    public blocksBetween(other: BlockLocation): Iterable<BlockLocation> {
-        // Create an iterable object that progressively constructs BlockLocation.
-        return map(this.#location.blocksBetween(other.raw), raw => {
-            return new BlockLocation(raw);
-        });
-    }
-
-    public equals(other: BlockLocation): boolean {
-        return this.#location.equals(other.raw);
-    }
-
-    public offset(x: number, y: number, z: number): BlockLocation {
-        return new BlockLocation(this.#location.offset(x, y, z));
     }
 
     public toString(): string {

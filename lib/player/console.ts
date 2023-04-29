@@ -20,7 +20,7 @@ export class PlayerConsole extends ConsoleBase {
                 this.format(...args)
             ].join("");
 
-            this.#player.tell(msg);
+            this.#player.sendMessage(msg);
         }
 
         // Also send it to the standard console.

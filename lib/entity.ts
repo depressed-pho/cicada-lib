@@ -93,48 +93,7 @@ export class Entity {
     }
 }
 
-export interface EntityQueryOptions {
-    closest?: number;
-    excludeFamilies?: string[];
-    excludeGameModes?: MC.GameMode[];
-    excludeNames?: string[];
-    excludeTags?: string[];
-    excludeTypes?: string[];
-    families?: string[];
-    farthest?: number;
-    gameMode?: MC.GameMode;
-    location?: Location;
-    maxDistance?: number;
-    maxHorizontalRotation?: number;
-    maxLevel?: number;
-    maxVerticalRotation?: number;
-    minDistance?: number;
-    minHorizontalRotation?: number;
-    minLevel?: number;
-    minVerticalRotation?: number;
-    name?: string;
-    scoreOptions?: MC.EntityQueryScoreOptions[];
-    tags?: string[];
-    type?: string;
-    volume?: MC.BlockAreaSize;
-}
-
-/** Package private: user code should not use this. */
-export function entityQueryOptionsToRaw<T extends EntityQueryOptions|undefined>(opts: T): T extends EntityQueryOptions ? MC.EntityQueryOptions : undefined {
-    if (opts) {
-        // @ts-ignore
-        return {
-            ...opts,
-            ...(opts.location ? {location: opts.location.raw} : {})
-        };
-    }
-    else {
-        // @ts-ignore
-        return;
-    }
-}
-
 export interface ItemUseEvent {
-    readonly item: ItemStack;
+    readonly itemStack: ItemStack;
     readonly source: Entity;
 }
