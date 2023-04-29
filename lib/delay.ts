@@ -19,7 +19,7 @@ interface Timeout {
 }
 const timeoutMap = new Map<TimeoutID, Timeout>();
 let nextTimeoutID = 0;
-let runScheduleId: number|null = null;
+let runId: number|null = null;
 
 function mkHandler(arg0: string|Function, ...args: any[]): (() => unknown) {
     return typeof arg0 === "string"
@@ -46,15 +46,15 @@ function onWorldTick() {
 }
 
 function listenOnTicks(): void {
-    if (runScheduleId == null) {
-        runScheduleId = MC.system.runSchedule(onWorldTick, 1);
+    if (runId == null) {
+        runId = MC.system.runInterval(onWorldTick, 1);
     }
 }
 
 function unlistenOnTicks(): void {
-    if (runScheduleId != null) {
-        MC.system.clearRunSchedule(runScheduleId);
-        runScheduleId = null;
+    if (runId != null) {
+        MC.system.clearRun(runId);
+        runId = null;
     }
 }
 

@@ -8,7 +8,7 @@ export { EntityQueryOptions } from "@minecraft/server";
 export class World {
     readonly #world: MC.World;
     #isReady: boolean;
-    #readinessProbe: number|null; // runScheduleId
+    #readinessProbe: number|null;
     #pendingEvents: (() => void)[];
 
     /** World event signals */
@@ -55,12 +55,12 @@ export class World {
                     }
                     this.#pendingEvents = [];
 
-                    MC.system.clearRunSchedule(this.#readinessProbe!);
+                    MC.system.clearRun(this.#readinessProbe!);
                     this.#readinessProbe = null;
                 }
             }
         };
-        this.#readinessProbe = MC.system.runSchedule(onTick, 1);
+        this.#readinessProbe = MC.system.runInterval(onTick, 1);
 
         // FIXME: Remove this glue code when the game supports PlayerSpawnEvent.
         if (this.#world.events.playerSpawn) {
