@@ -8,8 +8,8 @@
   * `World.prototype.events`
   * `System.prototype.events`
 * Functions provided by `lib/delay.ts` now catch unhandled exceptions and
-  print it to `console`, if callbacks are actually async functions and they
-  throw.
+  print it to `console` if callbacks throw. This works even if they are
+  async functions.
 * Removed `lib/event-emitter.ts`.
 * Renamed `lib/enchantment.ts` to `lib/item/enchantment.ts`.
 * Renamed `lib/item-stack.ts` to `lib/item/stack.ts`.

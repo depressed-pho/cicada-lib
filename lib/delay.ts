@@ -32,9 +32,15 @@ function onWorldTick() {
     for (const [tid, t] of timeoutMap) {
         if (t.startedAt + t.delay < now) {
             /* The handler might actually be an async function and it may
-             * have been rejected. Catch the exception if it's the case. */
-            const ret = t.handler();
-            Promise.resolve(ret).catch(e => console.error(e));
+             * have been rejected. Catch the exception if it's the case. It
+             * might also be a regular function and throws. */
+            try {
+                const ret = t.handler();
+                Promise.resolve(ret).catch(e => console.error(e));
+            }
+            catch (e) {
+                console.error(e);
+            }
 
             if (t.repeat) {
                 t.startedAt = now;
