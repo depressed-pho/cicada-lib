@@ -12,6 +12,11 @@ export class Dimension {
         this.#dimension = rawDimension;
     }
 
+    /// Package private
+    public get raw(): MC.Dimension {
+        return this.#dimension;
+    }
+
     public get id(): string {
         return this.#dimension.id;
     }

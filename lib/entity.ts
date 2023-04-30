@@ -3,7 +3,7 @@ import { Dimension } from "./dimension.js";
 import { EntityTags } from "./entity/tags.js";
 import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
-import { BlockRaycastOptions, EntityDamageCause } from "@minecraft/server";
+import { BlockRaycastOptions, EntityDamageCause, Vector2, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { BlockRaycastOptions, EntityDamageCause };
@@ -101,9 +101,64 @@ export class Entity {
         this.#entity.removeDynamicProperty(identifier);
     }
 
+    public teleport(location: Vector3, opts?: TeleportOptions): void {
+        // FIXME: Remove this shim code when @minecraft/server is updated.
+        if (opts && opts.checkForBlocks) {
+            throw new Error("TeleportOptions.checkForBlocks is not supported by this API");
+        }
+        if (opts && opts.facingLocation) {
+            if (opts.rotation) {
+                throw new Error("TeleportOptions.facingLocation and .rotation cannot be used at the same time with this API");
+            }
+            this.#entity.teleportFacing(
+                location,
+                opts.dimension?.raw || this.#entity.dimension,
+                opts.facingLocation,
+                opts.keepVelocity);
+        }
+        else {
+            this.#entity.teleport(
+                location,
+                opts?.dimension?.raw || this.#entity.dimension,
+                opts?.rotation?.x    || this.#entity.getRotation().x,
+                opts?.rotation?.y    || this.#entity.getRotation().y,
+                opts?.keepVelocity);
+        }
+        /*
+        // New API
+        let rawOpts: MC.TeleportOptions = {};
+        if (opts) {
+            if (opts.checkForBlocks) {
+                rawOpts.checkForBlocks = opts.checkForBlocks;
+            }
+            if (opts.dimension) {
+                rawOpts.dimension = opts.dimension.raw;
+            }
+            if (opts.facingLocation) {
+                rawOpts.facingLocation = opts.facingLocation;
+            }
+            if (opts.keepVelocity) {
+                rawOpts.keepVelocity = opts.keepVelocity;
+            }
+            if (opts.rotation) {
+                rawOpts.rotation = opts.rotation;
+            }
+        }
+        this.#entity.teleport(location, rawOpts);
+        */
+    }
+
     public triggerEvent(eventName: string): void {
         this.#entity.triggerEvent(eventName);
     }
+}
+
+export interface TeleportOptions {
+    checkForBlocks?: boolean;
+    dimension?:      Dimension;
+    facingLocation?: Vector3;
+    keepVelocity?:   boolean;
+    rotation?:       Vector2;
 }
 
 export interface EntityDieEvent {
