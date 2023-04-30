@@ -34,7 +34,7 @@ export class Piston extends Faced(Block) {
         return this.#piston.isRetracting;
     }
 
-    public get attachedBlocks(): Iterable<Block> {
+    public get attachedBlocks(): IterableIterator<Block> {
         return map(this.#piston.getAttachedBlocks(), (pos: MC.Vector3) => {
             return this.dimension.getBlock(pos)!;
         });

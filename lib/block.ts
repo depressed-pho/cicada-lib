@@ -171,7 +171,7 @@ export class BlockType {
         return this.#type.id;
     }
 
-    public static getAllBlockTypes(): Iterable<BlockType> {
+    public static getAllBlockTypes(): IterableIterator<BlockType> {
         // Create an iterable object that progressively constructs
         // BlockType.
         return map(MC.MinecraftBlockTypes.getAllBlockTypes(), raw => {

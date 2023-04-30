@@ -21,7 +21,7 @@ export class Dimension {
         return raw ? new Block(raw) : undefined;
     }
 
-    public getEntities(opts?: MC.EntityQueryOptions): Iterable<Entity> {
+    public getEntities(opts?: MC.EntityQueryOptions): IterableIterator<Entity> {
         return map(this.#dimension.getEntities(opts), raw => {
             return new Entity(raw);
         });

@@ -32,7 +32,7 @@ export class World {
         return this.#world;
     }
 
-    public getPlayers(opts?: MC.EntityQueryOptions): Iterable<Player> {
+    public getPlayers(opts?: MC.EntityQueryOptions): IterableIterator<Player> {
         // Create an iterable object that progressively constructs Player.
         return map(this.#world.getPlayers(opts), raw => {
             return new Player(raw);
