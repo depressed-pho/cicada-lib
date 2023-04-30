@@ -3,6 +3,7 @@
 ## 2.0.0 -- not released yet
 
 * New properties:
+  * `Block.prototype.offset`
   * `Entity.prototype.getBlockFromViewDirection`
   * `Player.prototype.console`
   * `World.prototype.events`

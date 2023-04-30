@@ -2,6 +2,7 @@ import { Dimension } from "./dimension.js";
 import { Location } from "./location.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
+import { Direction } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export class Block {
@@ -57,6 +58,22 @@ export class Block {
 
     public get z(): number {
         return this.#block.z;
+    }
+
+    /// Get another block at a given offset towards a given direction.
+    public offset(dir: Direction, delta = 1): Block|undefined {
+        const loc = this.location;
+        switch (dir) {
+            case Direction.down:  loc.y -= delta; break;
+            case Direction.east:  loc.x += delta; break;
+            case Direction.north: loc.z -= delta; break;
+            case Direction.south: loc.z += delta; break;
+            case Direction.up:    loc.y += delta; break;
+            case Direction.west:  loc.x -= delta; break;
+            default:
+                throw new TypeError(`Invalid direction: ${dir}`);
+        }
+        return this.dimension.getBlock(loc);
     }
 
     /** Package private */
