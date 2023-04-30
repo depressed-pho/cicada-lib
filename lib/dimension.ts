@@ -1,3 +1,4 @@
+import { Block } from "./block.js";
 import { Entity } from "./entity.js";
 import { map } from "./iterable.js";
 import * as MC from "@minecraft/server";
@@ -13,6 +14,11 @@ export class Dimension {
 
     public get id(): string {
         return this.#dimension.id;
+    }
+
+    public getBlock(location: MC.Vector3): Block|undefined {
+        const raw = this.#dimension.getBlock(location);
+        return raw ? new Block(raw) : undefined;
     }
 
     public getEntities(opts?: MC.EntityQueryOptions): Iterable<Entity> {

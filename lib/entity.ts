@@ -1,7 +1,7 @@
 import { Block } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { EntityTags } from "./entity/tags.js";
-import { ItemStack } from "./item-stack.js";
+import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
 import { BlockRaycastOptions, EntityDamageCause } from "@minecraft/server";
 import * as MC from "@minecraft/server";

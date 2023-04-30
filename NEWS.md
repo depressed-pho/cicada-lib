@@ -7,7 +7,10 @@
   * `Player.prototype.console`
   * `World.prototype.events`
   * `System.prototype.events`
-* Removed `lib/event-emitter.ts`
+* Removed `lib/event-emitter.ts`.
+* Renamed `lib/enchantment.ts` to `lib/item/enchantment.ts`.
+* Renamed `lib/item-stack.ts` to `lib/item/stack.ts`.
+* Added `lib/block/minecraft/piston.ts`.
 * `World` and `System` are no longer subclasses of `EventEmitter`. We
   figured that adopting the `EventEmitter` API caused a performance issue
   because we had to subscribe to every event the API supports.

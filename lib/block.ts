@@ -7,10 +7,20 @@ import * as MC from "@minecraft/server";
 export class Block {
     readonly #block: MC.Block;
 
-    /** The constructor is public only because of a language
-     * limitation. User code must never call it directly. */
-    public constructor(rawBlock: MC.Block) {
-        this.#block = rawBlock;
+    /** Clone an existing instance. */
+    public constructor(block: Block);
+
+    /** The signature is public only because of a language limitation. User
+     * code must never use it directly. */
+    public constructor(rawBlock: MC.Block);
+
+    public constructor(arg: Block|MC.Block) {
+        if (arg instanceof Block) {
+            this.#block = arg.#block;
+        }
+        else {
+            this.#block = arg;
+        }
     }
 
     public get dimension(): Dimension {
@@ -48,6 +58,17 @@ export class Block {
     public get z(): number {
         return this.#block.z;
     }
+
+    /** Package private */
+    public getComponentOrThrow<T>(componentId: string): T {
+        const c = this.#block.getComponent(componentId);
+        if (c) {
+            return c as T;
+        }
+        else {
+            throw new TypeError(`The block does not have a component \`${componentId}'`);;
+        }
+    }
 }
 
 export class BlockPermutation {
@@ -65,6 +86,62 @@ export class BlockPermutation {
 
     public get type(): BlockType {
         return new BlockType(this.#perm.type);
+    }
+
+    public get states(): BlockStates {
+        return new BlockStates(this.#perm.getAllProperties());
+    }
+}
+
+export type BlockStateValue = boolean|number|string;
+
+/** A read-only Map type that represents block permutation states. */
+export class BlockStates implements Iterable<[string, BlockStateValue]> {
+    readonly #states: Record<string, BlockStateValue>;
+
+    public constructor(states: Record<string, BlockStateValue>) {
+        this.#states = states;
+    }
+
+    public get size(): number {
+        return Object.keys(this.#states).length;
+    }
+
+    public [Symbol.iterator](): IterableIterator<[string, BlockStateValue]> {
+        return this.entries();
+    }
+
+    public *entries(): IterableIterator<[string, BlockStateValue]> {
+        for (const key in this.#states) {
+            yield [key, this.#states[key]!];
+        }
+    }
+
+    public forEach(f: (value: BlockStateValue, key: string, map: BlockStates) => void, thisArg?: any): void {
+        const boundF = f.bind(thisArg);
+        for (const [key, value] of this) {
+            boundF(value, key, this);
+        }
+    }
+
+    public get(key: string): BlockStateValue|undefined {
+        return this.#states[key];
+    }
+
+    public has(key: string): boolean {
+        return key in this.#states;
+    }
+
+    public *keys(): IterableIterator<string> {
+        for (const key in this.#states) {
+            yield key;
+        }
+    }
+
+    public *values(): IterableIterator<BlockStateValue> {
+        for (const key in this.#states) {
+            yield this.#states[key]!;
+        }
     }
 }
 

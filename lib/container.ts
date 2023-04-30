@@ -1,4 +1,4 @@
-import { ItemStack } from "./item-stack.js";
+import { ItemStack } from "./item/stack.js";
 import * as MC from "@minecraft/server";
 
 export class Container implements Iterable<ItemStack> {

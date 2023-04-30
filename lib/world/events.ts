@@ -1,22 +1,24 @@
 import { IEventSignal, CustomEventSignal, GluedEventSignalWithoutOptions,
          GluedEventSignalWithOptions } from "../event.js";
 import { Block, BlockPermutation, BlockBreakEvent, BlockPlaceEvent } from "../block.js";
+import { Piston, PistonActivateEvent } from "../block/minecraft/piston.js";
 import { Dimension } from "../dimension.js";
 import { Entity, ItemUseEvent, EntityDieEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
-import { ItemStack } from "../item-stack.js";
+import { ItemStack } from "../item/stack.js";
 import { Player, PlayerSpawnEvent } from "../player.js"
 import * as MC from "@minecraft/server";
 
 export class WorldEvents {
-    public readonly blockBreak:  IEventSignal<BlockBreakEvent>;
-    public readonly blockPlace:  IEventSignal<BlockPlaceEvent>;
-    public readonly entityDie:   IEventSignal<EntityDieEvent, EntityEventOptions>;
-    public readonly itemUse:     IEventSignal<ItemUseEvent>;
+    public readonly blockBreak:     IEventSignal<BlockBreakEvent>;
+    public readonly blockPlace:     IEventSignal<BlockPlaceEvent>;
+    public readonly entityDie:      IEventSignal<EntityDieEvent, EntityEventOptions>;
+    public readonly itemUse:        IEventSignal<ItemUseEvent>;
+    public readonly pistonActivate: IEventSignal<PistonActivateEvent>;
     /** An event that is fired when the world is fully loaded. */
-    public readonly ready:       CustomEventSignal<ReadyEvent>;
-    public readonly playerSpawn: CustomEventSignal<PlayerSpawnEvent>;
-    public readonly playerLeave: CustomEventSignal<MC.PlayerLeaveEvent>;
+    public readonly ready:          CustomEventSignal<ReadyEvent>;
+    public readonly playerSpawn:    CustomEventSignal<PlayerSpawnEvent>;
+    public readonly playerLeave:    CustomEventSignal<MC.PlayerLeaveEvent>;
 
     /// Package private
     public constructor(rawWorld: MC.World) {
@@ -58,6 +60,14 @@ export class WorldEvents {
                     source:    rawEv.source.typeId === "minecraft:player"
                         ? new Player(rawEv.source as MC.Player)
                         : new Entity(rawEv.source)
+                };
+            });
+        this.pistonActivate = new GluedEventSignalWithoutOptions(
+            rawEvents.pistonActivate,
+            (rawEv: MC.PistonActivateEvent) => {
+                return {
+                    isExpanding: rawEv.isExpanding,
+                    piston:      new Piston(rawEv.piston.block)
                 };
             });
         this.ready       = new CustomEventSignal();
