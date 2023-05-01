@@ -10,13 +10,15 @@ const PRIME32_5 = 0x165667B1;
 /** An implementation of 32-bit xxHash:
  * https://github.com/Cyan4973/xxHash/blob/release/doc/xxhash_spec.md */
 export class XXH32 {
-    readonly #acc: Uint32Array; // 5 elements long.
+    readonly #seed: number;
+    readonly #acc: Uint32Array; // 4 elements long.
     readonly #buf: Uint8Array;  // 16 octets long.
     #bufLen: number;
     #total: number;
 
     public constructor(seed = 0) {
-        this.#acc    = new Uint32Array(5);
+        this.#seed   = seed;
+        this.#acc    = new Uint32Array(4);
         this.#buf    = new Uint8Array(16);
         this.#bufLen = 0;
         this.#total  = 0;
@@ -25,9 +27,9 @@ export class XXH32 {
         this.#acc[1] = seed + PRIME32_2;
         this.#acc[2] = seed;
         this.#acc[3] = seed - PRIME32_1;
-        this.#acc[4] = seed + PRIME32_5;
     }
 
+    /// Feed the next chunk of octets for digestion.
     public update(octets: ArrayBufferView|ArrayBufferLike): void {
         this.#updateImpl(toUint8Array(octets));
     }
@@ -72,10 +74,11 @@ export class XXH32 {
         }
     }
 
+    /// Produce the final digest.
     public final(): number {
         let acc: number;
         if (this.#total < 16) {
-            acc = this.#acc[4]!;
+            acc = this.#seed + PRIME32_5;
         }
         else {
             acc =
@@ -113,8 +116,8 @@ export class XXH32 {
 }
 
 /// One-shot XXH32.
-export function xxHash32(octets: ArrayBufferView|ArrayBufferLike): number {
-    const h = new XXH32();
+export function xxHash32(octets: ArrayBufferView|ArrayBufferLike, seed = 0): number {
+    const h = new XXH32(seed);
     h.update(octets);
     return h.final();
 }
