@@ -38,18 +38,19 @@ See [NEWS](NEWS.md).
 
 Do you know [cicadas](https://en.wikipedia.org/wiki/Cicada) spend their
 lives as nymphs underground for like 10 years, and once they emerge they
-die only after a few weeks or so. The experimental [scripting
+die only after a few weeks or so? The experimental [scripting
 engine](https://bedrock.dev/docs/1.12.0.0/1.12.0.2/Scripting#Scripting%20System)
 was just like that. When it was introduced back in 2018 it looked really
 promising, but its development slowed down and finally ceased to exist. We
 hope the new scripting API won't die soon. We hope it will evolve to the
 extent that we can develop decent mods for Minecraft Bedrock just like we
-can do it for Java Edition. We want to build insanely complicated factories
+can do for Java Edition. We want to build insanely complicated factories
 like we do on JE with GregTech. We want to manage our storages and
-autocraft our items like we do on JE with Applied Energistics 2 or Refined
+autocraft our items like we do on JE with Applied Energistics 2, or Refined
 Storage. We want to extend our vanilla gameplay with magical flowers like
-we do on JE with Botania. We want to refine our ores with liquids and gases
-like we do on JE with Mekanism. The name "cicada" is like memento mori.
+we do on JE with Botania. We want to refine our ores with acidic liquids
+and toxic gases like we do on JE with Mekanism. The name "cicada" is like
+memento mori.
 
 ## Author
 

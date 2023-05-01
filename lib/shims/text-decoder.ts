@@ -1,6 +1,7 @@
 /** The Bedrock API lacks TextEncoder:
  * https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder
  */
+import { toUint8Array } from "../typed-array.js";
 import { installGlobal } from "./_util.js";
 
 const VALID_ENCODING_LABELS = new Set(["unicode-1-1-utf-8", "utf-8", "utf8"]);
@@ -39,17 +40,8 @@ class TextDecoderShim {
         this.#chunkPos   = 0;
     }
 
-    decode(octets?: BufferSource, opts?: TextDecodeShimOptions): string {
-        if (octets === undefined || octets instanceof Uint8Array) {
-            return this.#decode(octets, opts);
-        }
-        else if (octets instanceof ArrayBuffer) {
-            return this.#decode(new Uint8Array(octets), opts);
-        }
-        else {
-            // It's either a non-Uint8 TypedArray or a DataView.
-            return this.#decode(new Uint8Array(octets.buffer), opts);
-        }
+    decode(octets?: ArrayBufferView|ArrayBufferLike, opts?: TextDecodeShimOptions): string {
+        return this.#decode(octets ? toUint8Array(octets) : undefined, opts);
     }
 
     #decode(octets?: Uint8Array, opts?: TextDecodeShimOptions): string {

@@ -1,3 +1,5 @@
+import { toUint8Array } from "./typed-array.js";
+
 const POW_85 = new Uint32Array([
     85*85*85*85,
     85*85*85,
@@ -114,17 +116,8 @@ function a85DecodeWord(buf: Uint8Array, bufPos: number, word: number, wordLen: n
  * (https://en.wikipedia.org/wiki/Ascii85). The function does not insert
  * newlines.
  */
-export function a85Encode(octets: BufferSource): string {
-    if (octets instanceof Uint8Array) {
-        return a85EncodeImpl(octets);
-    }
-    else if (octets instanceof ArrayBuffer) {
-        return a85EncodeImpl(new Uint8Array(octets));
-    }
-    else {
-        // It's either a non-Uint8 TypedArray or a DataView.
-        return a85EncodeImpl(new Uint8Array(octets.buffer));
-    }
+export function a85Encode(octets: ArrayBufferView|ArrayBufferLike): string {
+    return a85EncodeImpl(toUint8Array(octets));
 }
 
 function a85EncodeImpl(octets: Uint8Array): string {
