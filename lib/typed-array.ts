@@ -3,11 +3,27 @@ export function toUint8Array(octets: ArrayBufferView|ArrayBufferLike): Uint8Arra
         return octets;
     }
     else if (ArrayBuffer.isView(octets)) {
-        // It's an ArrayBufferView which isn't a Uint8Array.
-        return new Uint8Array(octets.buffer);
+        // It's an ArrayBufferView which isn't a Uint8Array. Consider the
+        // case where its underlying buffer is larger than the view.
+        return new Uint8Array(octets.buffer, octets.byteOffset, octets.byteLength);
     }
     else {
         // It's an ArrayBufferLike.
         return new Uint8Array(octets);
+    }
+}
+
+export function toDataView(octets: ArrayBufferView|ArrayBufferLike): DataView {
+    if (octets instanceof DataView) {
+        return octets;
+    }
+    else if (ArrayBuffer.isView(octets)) {
+        // It's an ArrayBufferView which isn't a DataView. Consider the
+        // case where its underlying buffer is larger than the view.
+        return new DataView(octets.buffer, octets.byteOffset, octets.byteLength);
+    }
+    else {
+        // It's an ArrayBufferLike.
+        return new DataView(octets);
     }
 }

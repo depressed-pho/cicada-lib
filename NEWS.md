@@ -15,6 +15,7 @@
 * Renamed `lib/enchantment.ts` to `lib/item/enchantment.ts`.
 * Renamed `lib/item-stack.ts` to `lib/item/stack.ts`.
 * Added `lib/block/minecraft/piston.ts`.
+* Added `lib/lz4.ts`. Only compressor is currently implemented.
 * `World` and `System` are no longer subclasses of `EventEmitter`. We
   figured that adopting the `EventEmitter` API caused a performance issue
   because we had to subscribe to every event the API supports.

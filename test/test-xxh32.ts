@@ -4,7 +4,7 @@ import { XXH32, xxHash32 } from "../lib/xxh32.js";
 
 describe("class XXH32", () => {
     it("can digest several chunks in order", () => {
-        var x = new XXH32();
+        const x = new XXH32();
         x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
         x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
         x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
@@ -12,7 +12,7 @@ describe("class XXH32", () => {
         expect(x.final()).to.equal(0xE64CB665);
     });
     it("can digest large chunks at once", () => {
-        var x = new XXH32();
+        const x = new XXH32();
         x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65,
                                   0x61, 0x62, 0x63, 0x64, 0x65,
                                   0x61, 0x62, 0x63, 0x64, 0x65,
