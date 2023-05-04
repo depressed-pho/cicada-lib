@@ -1,23 +1,24 @@
 import "mocha";
 import { expect } from "chai";
-import { XXH32, xxHash32 } from "../lib/xxh32.js";
+import { XXH32, xxHash32 } from "../lib/xxHash32.js";
+
+function strToOctets(str: string): Uint8Array {
+    return Uint8Array.from(
+        Array.from(str).map(char => char.charCodeAt(0)));
+}
 
 describe("class XXH32", () => {
     it("can digest several chunks in order", () => {
-        const x = new XXH32();
-        x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
-        x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
-        x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
-        x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65]));
-        expect(x.final()).to.equal(0xE64CB665);
+        let x = new XXH32();
+        x.update(strToOctets("abcdefghijklmnopqrst_"));
+        x.update(strToOctets("bcdefghijklmnop"));
+        x.update(strToOctets("*****"));
+        expect(x.final()).to.equal(0xCCB6773A);
     });
     it("can digest large chunks at once", () => {
         const x = new XXH32();
-        x.update(Uint8Array.from([0x61, 0x62, 0x63, 0x64, 0x65,
-                                  0x61, 0x62, 0x63, 0x64, 0x65,
-                                  0x61, 0x62, 0x63, 0x64, 0x65,
-                                  0x61, 0x62, 0x63, 0x64, 0x65]));
-        expect(x.final()).to.equal(0xE64CB665);
+        x.update(strToOctets("abcdefghijklmnopqrst_bcdefghijklmnop*****"));
+        expect(x.final()).to.equal(0xCCB6773A);
     });
 });
 

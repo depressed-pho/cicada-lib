@@ -1,12 +1,13 @@
-import { LZ4MaximumBlockSize, LZ4Dictionary } from "./options.js";
-import { xxHash32 } from "../xxh32.js";
+import { InputStream } from "../stream.js";
+import { LZ4MaximumBlockSize } from "./options.js";
+import { xxHash32 } from "../xxHash32.js";
 
 export interface LZ4FrameDescriptor {
     independentBlocks: boolean;
     blockChecksums:    boolean;
     contentSize:       number|undefined;
     contentChecksum:   boolean;
-    dictionary:        LZ4Dictionary|undefined;
+    dictionaryID:      number|undefined;
     maximumBlockSize:  LZ4MaximumBlockSize;
 }
 
@@ -14,24 +15,35 @@ export const MAX_FRAME_DESCRIPTOR_LENGTH = 15;
 
 function toMaxBlockSizeDesc(sz: LZ4MaximumBlockSize) {
     switch (sz) {
-        case       64 * 1024: return 4;
-        case      256 * 1024: return 5;
-        case     1024 * 1024: return 6;
-        case 4 * 1024 * 1024: return 7;
+        case LZ4MaximumBlockSize.MAX_64_KIB:  return 4;
+        case LZ4MaximumBlockSize.MAX_256_KIB: return 5;
+        case LZ4MaximumBlockSize.MAX_1_MIB:   return 6;
+        case LZ4MaximumBlockSize.MAX_4_MIB:   return 7;
         default:
             throw new RangeError(`Unknown max block size: ${sz}`);
     }
 }
 
-/// Write a frame descriptor at a given offset. Returns new offset.
+function fromMaxBlockSizeDesc(sz: number) {
+    switch (sz) {
+        case 4: return LZ4MaximumBlockSize.MAX_64_KIB;
+        case 5: return LZ4MaximumBlockSize.MAX_256_KIB;
+        case 6: return LZ4MaximumBlockSize.MAX_1_MIB;
+        case 7: return LZ4MaximumBlockSize.MAX_4_MIB;
+        default:
+            throw new RangeError(`Unknown max block size: ${sz}`);
+    }
+}
+
+/// Write a frame descriptor at a given offset. Returns a new offset.
 export function writeFrameDescriptor(buf: ArrayBuffer, offset: number, desc: LZ4FrameDescriptor): number {
-    const len =
+    const length =
         1 + // FLG
         1 + // BD
-        (desc.contentSize === undefined ? 0 : 8) +
-        (desc.dictionary  === undefined ? 0 : 4) +
+        (desc.contentSize  === undefined ? 0 : 8) +
+        (desc.dictionaryID === undefined ? 0 : 4) +
         1;  // HC
-    if (buf.byteLength < offset + len) {
+    if (buf.byteLength < offset + length) {
         throw new RangeError("Output buffer is too small to put a frame descriptor");
     }
     const frameStart = offset;
@@ -40,12 +52,12 @@ export function writeFrameDescriptor(buf: ArrayBuffer, offset: number, desc: LZ4
     // FLG
     view.setUint8(
         offset,
-        ( (1                                        << 6) | // version
-          ((desc.independentBlocks         ? 1 : 0) << 5) |
-          ((desc.blockChecksums            ? 1 : 0) << 4) |
-          ((desc.contentSize !== undefined ? 1 : 0) << 3) |
-          ((desc.contentChecksum           ? 1 : 0) << 2) |
-          ((desc.dictionary  !== undefined ? 1 : 0)     ) ));
+        ( (1                                         << 6) | // version
+          ((desc.independentBlocks          ? 1 : 0) << 5) |
+          ((desc.blockChecksums             ? 1 : 0) << 4) |
+          ((desc.contentSize  !== undefined ? 1 : 0) << 3) |
+          ((desc.contentChecksum            ? 1 : 0) << 2) |
+          ((desc.dictionaryID !== undefined ? 1 : 0)     ) ));
     offset++;
 
     // BD
@@ -64,15 +76,69 @@ export function writeFrameDescriptor(buf: ArrayBuffer, offset: number, desc: LZ4
         }
     }
 
-    if (desc.dictionary !== undefined) {
-        view.setUint32(offset, desc.dictionary.id & 0xFFFFFFFF, true);
+    if (desc.dictionaryID !== undefined) {
+        view.setUint32(offset, desc.dictionaryID & 0xFFFFFFFF, true);
         offset += 4;
     }
 
     // HC
-    const digest = xxHash32(new Uint8Array(buf, frameStart, len - 1));
+    const digest = xxHash32(new Uint8Array(buf, frameStart, length - 1));
     view.setUint8(offset, (digest >> 8) & 0xFF);
     offset++;
 
     return offset;
+}
+
+/// Read a frame descriptor from a stream. When it finishes it returns a
+/// new offset and the frame descriptor, otherwise it yields to wait for
+/// more data.
+export function* readFrameDescriptor<OutputT, InputT>(input: InputStream<OutputT, InputT>): Generator<OutputT, LZ4FrameDescriptor, InputT> {
+    // The length of the frame descriptor can only be determined after
+    // reading the FLG byte.
+    const flg     = yield* input.peekUint8();
+    const version = (flg & (0b11 << 6)) >>> 6;
+    if (version != 1) {
+        throw new RangeError(`Unknown frame descriptor version: ${version}`);
+    }
+
+    const desc: Partial<LZ4FrameDescriptor> = {
+        independentBlocks: (flg & (1 << 5)) != 0,
+        blockChecksums:    (flg & (1 << 4)) != 0,
+        contentChecksum:   (flg & (1 << 2)) != 0
+    };
+    const length =
+        1 + // FLG
+        1 + // BD
+        (desc.contentSize  === undefined ? 0 : 8) +
+        (desc.dictionaryID === undefined ? 0 : 4) +
+        1;  // HC
+    const buf = yield* input.read(length);
+
+    let offset = 1; // because we've already read the FLG.
+    const bd = buf.getUint8(offset); offset++;
+    desc.maximumBlockSize = fromMaxBlockSizeDesc((bd & (0b111 << 4)) >>> 4);
+
+    if ((flg & (1 << 3)) != 0) {
+        const sizeLo = buf.getUint32(offset, true); offset += 4;
+        const sizeHi = buf.getUint32(offset, true); offset += 4;
+
+        if (sizeHi > 0) {
+            // This requires BigInt, but QuickJS doesn't support it.
+            throw new RangeError("64-bit contentSize is currently not supported");
+        }
+        desc.contentSize = sizeLo;
+    }
+
+    if ((flg & (1 << 0)) != 0) {
+        desc.dictionaryID = buf.getUint32(offset, true); offset += 4;
+    }
+
+    // HC
+    const expectedSum = buf.getUint8(offset);
+    const actualSum   = (xxHash32(buf.unsafeSubarray(0, -1)) >> 8) & 0xFF;
+    if (expectedSum != actualSum) {
+        throw new RangeError(`Header checksum mismatches: expected ${expectedSum.toString(16)}, got ${actualSum.toString(16)}`);
+    }
+
+    return desc as LZ4FrameDescriptor;
 }

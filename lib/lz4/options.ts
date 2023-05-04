@@ -54,3 +54,10 @@ export interface LZ4CompressionOptions {
      * results. Defaults to 6. */
     skipTrigger?: number;
 }
+
+export interface LZ4DecompressionOptions {
+    /** Callback function to resolve a dictionary for a given dictionary
+     * ID. Returning `undefined` means that no corresponding dictionary is
+     * available. */
+    resolveDictionary?: (id: number) => ArrayBufferView|ArrayBufferLike|undefined;
+}

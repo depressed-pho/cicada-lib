@@ -1,4 +1,4 @@
-import { toUint8Array } from "./typed-array.js";
+import { Buffer } from "./stream.js";
 import { umul32, urotl32 } from "./imath.js";
 
 const PRIME32_1 = 0x9E3779B1;
@@ -30,11 +30,18 @@ export class XXH32 {
     }
 
     /// Feed the next chunk of octets for digestion.
-    public update(octets: ArrayBufferView|ArrayBufferLike): void {
-        this.#updateImpl(toUint8Array(octets));
+    public update(octets: Buffer|Uint8Array): void {
+        if (octets instanceof Buffer) {
+            for (const chunk of octets.unsafeChunks()) {
+                this.#update(chunk);
+            }
+        }
+        else {
+            this.#update(octets);
+        }
     }
 
-    #updateImpl(octets: Uint8Array): void {
+    #update(octets: Uint8Array): void {
         let offset = 0;
         if (this.#bufLen > 0 && this.#bufLen + octets.byteLength >= 16) {
             // We have a pending input, and concatenating it with the
@@ -63,7 +70,7 @@ export class XXH32 {
     }
 
     #consumeStripe(stripe: Uint8Array, offset: number): void {
-        const view = new DataView(stripe.buffer, offset, 16);
+        const view = new DataView(stripe.buffer, stripe.byteOffset + offset, 16);
 
         for (let lane_i = 0, lane_off = 0; lane_i < 4; lane_i++, lane_off += 4) {
             const lane = view.getUint32(lane_off, true);
@@ -116,7 +123,7 @@ export class XXH32 {
 }
 
 /// One-shot XXH32.
-export function xxHash32(octets: ArrayBufferView|ArrayBufferLike, seed = 0): number {
+export function xxHash32(octets: Uint8Array|Buffer, seed = 0): number {
     const h = new XXH32(seed);
     h.update(octets);
     return h.final();

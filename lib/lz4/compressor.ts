@@ -1,7 +1,7 @@
 import { toUint8Array, toDataView } from "../typed-array.js";
-import { XXH32, xxHash32 } from "../xxh32.js";
+import { XXH32, xxHash32 } from "../xxHash32.js";
 import { LZ4MaximumBlockSize, LZ4CompressionOptions } from "./options.js";
-import { MAX_FRAME_DESCRIPTOR_LENGTH, writeFrameDescriptor } from "./frame.js";
+import { MAX_FRAME_DESCRIPTOR_LENGTH, LZ4FrameDescriptor, writeFrameDescriptor } from "./frame.js";
 
 export class LZ4Compressor {
     readonly #opts: Required<LZ4CompressionOptions>;
@@ -41,6 +41,17 @@ export class LZ4Compressor {
         if (this.#opts.dictionary) {
             this.#populateDict(toUint8Array(this.#opts.dictionary.data));
         }
+    }
+
+    get #frameDescriptor(): LZ4FrameDescriptor {
+        return {
+            independentBlocks: this.#opts.independentBlocks,
+            blockChecksums:    this.#opts.blockChecksums,
+            contentSize:       this.#opts.contentSize,
+            contentChecksum:   this.#opts.contentChecksum,
+            dictionaryID:      this.#opts.dictionary?.id,
+            maximumBlockSize:  this.#opts.maximumBlockSize
+        };
     }
 
     #populateDict(input: Uint8Array): void {
@@ -113,7 +124,7 @@ export class LZ4Compressor {
         return (h & this.#hashSize) >>> 0;
     }
 
-    public update(input: ArrayBufferView|ArrayBufferLike): Uint8Array {
+    public update(input: Uint8Array): Uint8Array {
         this.#throwIfFinalised();
         return this.#updateImpl(toDataView(input));
     }
@@ -133,7 +144,7 @@ export class LZ4Compressor {
         // be using LZMA, weren't we?
 
         if (this.#contentHasher) {
-            this.#contentHasher.update(input);
+            this.#contentHasher.update(toUint8Array(input));
         }
 
         // Allocate memory for output by calculating the theoretical worst
@@ -149,7 +160,7 @@ export class LZ4Compressor {
         if (!this.#hasProducedHeader) {
             output.setUint32(outPos, 0x184D2204, true); // magic
             outPos += 4;
-            outPos = writeFrameDescriptor(outBuf, outPos, this.#opts);
+            outPos = writeFrameDescriptor(outBuf, outPos, this.#frameDescriptor);
             this.#hasProducedHeader = true;
         }
 
@@ -164,8 +175,9 @@ export class LZ4Compressor {
 
             // Try and see if the block actually compresses. If it doesn't,
             // then write it as an uncompressed block.
-            const newPos    = this.#compressBlock(output, outPos + 4, input, inPos, inEnd);
-            const compSize  = newPos - (outPos + 4);
+            const compPos   = outPos + 4;
+            const newPos    = this.#compressBlock(output, compPos, input, inPos, inEnd);
+            const compSize  = newPos - compPos;
 
             if (compSize >= blockSize) {
                 // Damn, it made no sense to compress it. Overwrite our
@@ -186,8 +198,8 @@ export class LZ4Compressor {
             }
 
             if (this.#opts.blockChecksums) {
-                const blockSrc = toUint8Array(input).subarray(inPos, inEnd);
-                output.setUint32(outPos, xxHash32(blockSrc), true);
+                const block = new Uint8Array(outBuf, compPos, outPos - compPos);
+                output.setUint32(outPos, xxHash32(block), true);
                 outPos += 4;
             }
 
@@ -427,7 +439,7 @@ export class LZ4Compressor {
         if (!this.#hasProducedHeader) {
             out.setUint32(outPos, 0x184D2204, true); // magic
             outPos += 4;
-            outPos = writeFrameDescriptor(outBuf, outPos, this.#opts);
+            outPos = writeFrameDescriptor(outBuf, outPos, this.#frameDescriptor);
             this.#hasProducedHeader = true;
         }
 
