@@ -1,4 +1,4 @@
-import { InputStream } from "../stream.js";
+import { Buffer, InputStream, OutputStream } from "../stream.js";
 import { LZ4MaximumBlockSize } from "./options.js";
 import { xxHash32 } from "../xxHash32.js";
 
@@ -11,7 +11,7 @@ export interface LZ4FrameDescriptor {
     maximumBlockSize:  LZ4MaximumBlockSize;
 }
 
-export const MAX_FRAME_DESCRIPTOR_LENGTH = 15;
+const MAX_FRAME_DESCRIPTOR_LENGTH = 15;
 
 function toMaxBlockSizeDesc(sz: LZ4MaximumBlockSize) {
     switch (sz) {
@@ -36,39 +36,29 @@ function fromMaxBlockSizeDesc(sz: number) {
 }
 
 /// Write a frame descriptor at a given offset. Returns a new offset.
-export function writeFrameDescriptor(buf: ArrayBuffer, offset: number, desc: LZ4FrameDescriptor): number {
-    const length =
-        1 + // FLG
-        1 + // BD
-        (desc.contentSize  === undefined ? 0 : 8) +
-        (desc.dictionaryID === undefined ? 0 : 4) +
-        1;  // HC
-    if (buf.byteLength < offset + length) {
-        throw new RangeError("Output buffer is too small to put a frame descriptor");
-    }
-    const frameStart = offset;
-    const view       = new DataView(buf);
+export function *writeFrameDescriptor<OutputT, InputT>(
+    output: OutputStream<OutputT, InputT>,
+    desc: LZ4FrameDescriptor): Generator<OutputT, void, InputT> {
+
+    const buf = new Buffer();
+    buf.reserve(MAX_FRAME_DESCRIPTOR_LENGTH - 1 /* HC */);
 
     // FLG
-    view.setUint8(
-        offset,
-        ( (1                                         << 6) | // version
-          ((desc.independentBlocks          ? 1 : 0) << 5) |
-          ((desc.blockChecksums             ? 1 : 0) << 4) |
-          ((desc.contentSize  !== undefined ? 1 : 0) << 3) |
-          ((desc.contentChecksum            ? 1 : 0) << 2) |
-          ((desc.dictionaryID !== undefined ? 1 : 0)     ) ));
-    offset++;
+    buf.appendUint8(
+        (1                                         << 6) | // version
+        ((desc.independentBlocks          ? 1 : 0) << 5) |
+        ((desc.blockChecksums             ? 1 : 0) << 4) |
+        ((desc.contentSize  !== undefined ? 1 : 0) << 3) |
+        ((desc.contentChecksum            ? 1 : 0) << 2) |
+        ((desc.dictionaryID !== undefined ? 1 : 0)     ) );
 
     // BD
-    view.setUint8(offset, (toMaxBlockSizeDesc(desc.maximumBlockSize) & 0b111) << 4);
-    offset++;
+    buf.appendUint8((toMaxBlockSizeDesc(desc.maximumBlockSize) & 0b111) << 4);
 
     if (desc.contentSize !== undefined) {
         if (desc.contentSize <= 0xFFFFFFFF) {
-            view.setUint32(offset  , desc.contentSize, true);
-            view.setUint32(offset+4, 0               , true);
-            offset += 8;
+            buf.appendUint32(desc.contentSize, true);
+            buf.appendUint32(0               , true);
         }
         else {
             // This requires BigInt, but QuickJS doesn't support it.
@@ -77,22 +67,21 @@ export function writeFrameDescriptor(buf: ArrayBuffer, offset: number, desc: LZ4
     }
 
     if (desc.dictionaryID !== undefined) {
-        view.setUint32(offset, desc.dictionaryID & 0xFFFFFFFF, true);
-        offset += 4;
+        buf.appendUint32(desc.dictionaryID, true);
     }
 
     // HC
-    const digest = xxHash32(new Uint8Array(buf, frameStart, length - 1));
-    view.setUint8(offset, (digest >> 8) & 0xFF);
-    offset++;
-
-    return offset;
+    const digest = xxHash32(buf);
+    yield* output.unsafeWrite(buf);
+    yield* output.writeUint8((digest >> 8) & 0xFF);
 }
 
 /// Read a frame descriptor from a stream. When it finishes it returns a
 /// new offset and the frame descriptor, otherwise it yields to wait for
 /// more data.
-export function* readFrameDescriptor<OutputT, InputT>(input: InputStream<OutputT, InputT>): Generator<OutputT, LZ4FrameDescriptor, InputT> {
+export function* readFrameDescriptor<OutputT, InputT>(
+    input: InputStream<OutputT, InputT>): Generator<OutputT, LZ4FrameDescriptor, InputT> {
+
     // The length of the frame descriptor can only be determined after
     // reading the FLG byte.
     const flg     = yield* input.peekUint8();

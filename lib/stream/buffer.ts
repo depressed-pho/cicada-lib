@@ -1,5 +1,8 @@
 import { Chunk } from "./buffer/chunk.js";
 
+const MIN_GROWTH    = 1024;
+const GROWTH_FACTOR = 0.5;
+
 /** `Buffer` is a mutable, resizable sequence of octets. This is not a
  * Node.js Buffer. */
 export class Buffer {
@@ -23,29 +26,26 @@ export class Buffer {
         return this.#length;
     }
 
-    /** Allocate some extra space in the buffer if it doesn't already have
-     * one. If `length` is omitted it will reserve some unspecified number
-     * of octets which is at least one.
+    /** Allocate some extra space of at least `length` octets in the buffer
+     * if it doesn't already have one.
      */
-    public reserve(length?: number): void {
+    public reserve(length: number): void {
         this.#reserve(length);
     }
 
-    #reserve(length?: number, exact = true): number {
-        const minLength = Math.max(1024, Math.trunc(this.length / 2));
-        length ??= minLength;
-        if (!exact) {
-            length = Math.max(minLength, length);
-        }
+    #growth(length: number): number {
+        return Math.max(length, MIN_GROWTH, Math.trunc(this.length * GROWTH_FACTOR));
+    }
 
+    #reserve(length: number): number {
         if (this.#chunks.length == 0) {
             // We don't even have any chunks yet.
-            this.#chunks.push(Chunk.allocate(length));
+            this.#chunks.push(Chunk.allocate(this.#growth(length)));
             return 0;
         }
 
         // Find the last non-empty chunk.
-        let i = this.#chunks.length;
+        let i = this.#chunks.length - 1;
         for (; i >= 0; i--) {
             if (this.#chunks[i]!.length > 0) {
                 break;
@@ -60,6 +60,7 @@ export class Buffer {
 
         if (lastChunk.unused >= length) {
             // The last non-empty chunk already has the requested space.
+            return i;
         }
         else if (lastChunk.unused > 0) {
             // The last non-empty chunk partially has space. See if
@@ -72,16 +73,18 @@ export class Buffer {
             // If we still don't have the requested space, create a new
             // chunk.
             if (length > 0) {
-                this.#chunks.push(Chunk.allocate(length));
+                this.#chunks.push(Chunk.allocate(this.#growth(length)));
+                return this.#chunks.length - 1;
+            }
+            else {
+                return i;
             }
         }
         else {
             // The last non-empty chunk has no space at all.
-            this.#chunks.push(Chunk.allocate(length));
+            this.#chunks.push(Chunk.allocate(this.#growth(length)));
+            return this.#chunks.length - 1;
         }
-
-        // This is the last non-empty chunk.
-        return i;
     }
 
     /** Create a contiguous Uint8Array out of buffer. Generally not
@@ -122,8 +125,9 @@ export class Buffer {
      */
     public unsafeAppend(octets: Buffer|Uint8Array): void {
         if (octets instanceof Buffer) {
-            this.#chunks.push(...octets.#chunks);
-            this.#length += octets.#length;
+            for (const chunk of octets.unsafeChunks()) {
+                this.unsafeAppend(chunk);
+            }
             return;
         }
 
@@ -135,7 +139,7 @@ export class Buffer {
         }
 
         // Find the last non-empty chunk.
-        let i = this.#chunks.length;
+        let i = this.#chunks.length - 1;
         for (; i >= 0; i--) {
             if (this.#chunks[i]!.length > 0) {
                 break;
@@ -178,6 +182,7 @@ export class Buffer {
             // The last non-empty chunk has no space at all.
             this.#chunks.push(Chunk.wrap(octets));
         }
+        this.#length += octets.byteLength;
     }
 
     /** Take the first `length` octets of the buffer. The returned buffer
@@ -191,7 +196,9 @@ export class Buffer {
             // Everything must go.
             ret.#chunks = this.#chunks;
             ret.#length = this.#length;
-            this.clear();
+
+            this.#chunks = [];
+            this.#length = 0;
         }
         else {
             while (ret.#length < length && this.#chunks.length > 0) {
@@ -282,58 +289,6 @@ export class Buffer {
         return ret;
     }
 
-    public appendUint8(n: number): void {
-        // This chunk is guaranteed to have a space of at least one octet.
-        const i     = this.#reserve();
-        const chunk = this.#chunks[i]!;
-        chunk.dView.setUint8(chunk.length, n);
-        chunk.length++;
-    }
-
-    public appendUint16(n: number, littleEndian = false): void {
-        const i     = this.#reserve(2, false);
-        const chunk = this.#chunks[i]!;
-        if (chunk.unused >= 2) {
-            // Sweet. We can put it in a contiguous buffer.
-            chunk.dView.setUint16(chunk.length, n, littleEndian);
-        }
-        else {
-            // Damn, we must do a partial write.
-            if (littleEndian) {
-                this.appendUint8( n        & 0xFF);
-                this.appendUint8((n >>> 8) & 0xFF);
-            }
-            else {
-                this.appendUint8((n >>> 8) & 0xFF);
-                this.appendUint8( n        & 0xFF);
-            }
-        }
-    }
-
-    public appendUint32(n: number, littleEndian = false): void {
-        const i     = this.#reserve(4, false);
-        const chunk = this.#chunks[i]!;
-        if (chunk.unused >= 2) {
-            // Sweet. We can put it in a contiguous buffer.
-            chunk.dView.setUint16(chunk.length, n, littleEndian);
-        }
-        else {
-            // Damn, we must do a partial write.
-            if (littleEndian) {
-                this.appendUint8( n         & 0xFF);
-                this.appendUint8((n >>>  8) & 0xFF);
-                this.appendUint8((n >>> 16) & 0xFF);
-                this.appendUint8((n >>> 24) & 0xFF);
-            }
-            else {
-                this.appendUint8((n >>> 24) & 0xFF);
-                this.appendUint8((n >>> 16) & 0xFF);
-                this.appendUint8((n >>>  8) & 0xFF);
-                this.appendUint8( n         & 0xFF);
-            }
-        }
-    }
-
     public getUint8(offset: number): number {
         for (const chunk of this.#chunks) {
             if (chunk.length >= offset + 1) {
@@ -343,14 +298,34 @@ export class Buffer {
                 offset -= chunk.length;
             }
         }
-        throw new RangeError("Offset out of range");
+        throw new RangeError(`Offset out of range: offset ${offset}, length ${this.#length}`);
+    }
+
+    public setUint8(offset: number, n: number): void {
+        for (const chunk of this.#chunks) {
+            if (chunk.length >= offset + 1) {
+                chunk.u8View[offset] = n;
+                return;
+            }
+            else {
+                offset -= chunk.length;
+            }
+        }
+        throw new RangeError(`Offset out of range: offset ${offset}, length ${this.#length}`);
+    }
+
+    public appendUint8(n: number): void {
+        const i     = this.#reserve(1);
+        const chunk = this.#chunks[i]!;
+        chunk.dView.setUint8(chunk.length, n);
+        chunk.length++;
+        this.#length++;
     }
 
     public getUint16(offset: number, littleEndian = false): number {
         for (const chunk of this.#chunks) {
             if (chunk.length >= offset + 2) {
-                // The best case scenario: we can read a word from a
-                // contiguous buffer.
+                // Sweet. We can read it from a contiguous buffer.
                 return chunk.dView.getUint16(offset, littleEndian);
             }
             else if (chunk.length <= offset) {
@@ -371,14 +346,62 @@ export class Buffer {
                 }
             }
         }
-        throw new RangeError("Offset out of range");
+        throw new RangeError(`Offset out of range: offset ${offset}, length ${this.#length}`);
+    }
+
+    public setUint16(offset: number, n: number, littleEndian = false): void {
+        for (const chunk of this.#chunks) {
+            if (chunk.length >= offset + 2) {
+                // Sweet. We can write it to a contiguous buffer.
+                chunk.dView.setUint16(offset, n, littleEndian);
+                return;
+            }
+            else if (chunk.length <= offset) {
+                // We can skip this entire chunk.
+                offset -= chunk.length;
+            }
+            else {
+                // Damn, we must do a partial write.
+                if (littleEndian) {
+                    this.setUint8(offset  ,  n        & 0xFF);
+                    this.setUint8(offset+1, (n >>> 8) & 0xFF);
+                }
+                else {
+                    this.setUint8(offset  , (n >>> 8) & 0xFF);
+                    this.setUint8(offset+1,  n        & 0xFF);
+                }
+                return;
+            }
+        }
+        throw new RangeError(`Offset out of range: offset ${offset}, length ${this.#length}`);
+    }
+
+    public appendUint16(n: number, littleEndian = false): void {
+        const i     = this.#reserve(2);
+        const chunk = this.#chunks[i]!;
+        if (chunk.unused >= 2) {
+            // Sweet. We can write it to a contiguous buffer.
+            chunk.dView.setUint16(chunk.length, n, littleEndian);
+            chunk.length += 2;
+            this.#length += 2;
+        }
+        else {
+            // Damn, we must do a partial write.
+            if (littleEndian) {
+                this.appendUint8( n        & 0xFF);
+                this.appendUint8((n >>> 8) & 0xFF);
+            }
+            else {
+                this.appendUint8((n >>> 8) & 0xFF);
+                this.appendUint8( n        & 0xFF);
+            }
+        }
     }
 
     public getUint32(offset: number, littleEndian = false): number {
         for (const chunk of this.#chunks) {
             if (chunk.length >= offset + 4) {
-                // The best case scenario: we can read a word from a
-                // contiguous buffer.
+                // Sweet. We can read it from a contiguous buffer.
                 return chunk.dView.getUint32(offset, littleEndian);
             }
             else if (chunk.length <= offset) {
@@ -403,6 +426,55 @@ export class Buffer {
                 }
             }
         }
-        throw new RangeError("Offset out of range");
+        throw new RangeError(`Offset out of range: offset ${offset}, length ${this.#length}`);
+    }
+
+    public setUint32(offset: number, n: number, littleEndian = false): void {
+        for (const chunk of this.#chunks) {
+            if (chunk.length >= offset + 4) {
+                // Sweet. We can write it to a contiguous buffer.
+                chunk.dView.setUint32(offset, n, littleEndian);
+                return;
+            }
+            else if (chunk.length <= offset) {
+                // We can skip this entire chunk.
+                offset -= chunk.length;
+            }
+            else {
+                // Damn, we must do a partial read.
+                if (littleEndian) {
+                    this.setUint16(offset  ,  n         & 0xFFFF);
+                    this.setUint16(offset+2, (n >>> 16) & 0xFFFF);
+                }
+                else {
+                    this.setUint16(offset  , (n >>> 16) & 0xFFFF);
+                    this.setUint16(offset+2,  n         & 0xFFFF);
+                }
+                return;
+            }
+        }
+        throw new RangeError(`Offset out of range: offset ${offset}, length ${this.#length}`);
+    }
+
+    public appendUint32(n: number, littleEndian = false): void {
+        const i     = this.#reserve(4);
+        const chunk = this.#chunks[i]!;
+        if (chunk.unused >= 4) {
+            // Sweet. We can write it in a contiguous buffer.
+            chunk.dView.setUint32(chunk.length, n, littleEndian);
+            chunk.length += 4;
+            this.#length += 4;
+        }
+        else {
+            // Damn, we must do a partial write.
+            if (littleEndian) {
+                this.appendUint16( n         & 0xFFFF);
+                this.appendUint16((n >>> 16) & 0xFFFF);
+            }
+            else {
+                this.appendUint16((n >>> 16) & 0xFFFF);
+                this.appendUint16( n         & 0xFFFF);
+            }
+        }
     }
 }

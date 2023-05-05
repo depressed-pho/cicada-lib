@@ -14,7 +14,7 @@ export class Chunk {
     }
 
     public static wrap(octets: Uint8Array): Chunk {
-        return new Chunk(octets.buffer, octets.byteOffset);
+        return new Chunk(octets.buffer, octets.byteOffset, octets.byteLength, octets.byteLength);
     }
 
     protected constructor(buffer: ArrayBufferLike,
@@ -35,7 +35,10 @@ export class Chunk {
 
     public set length(len: number) {
         if (len >= 0 && len <= this.#capacity) {
-            this.#length = len;
+            if (this.#length != len) {
+                this.#length = len;
+                this.#invalidateViews();
+            }
         }
         else {
             throw new RangeError(`New length ${len} is out of range`);
@@ -101,7 +104,7 @@ export class Chunk {
     }
 
     public append(octets: Uint8Array): void {
-        this.u8View.set(octets);
+        this.u8View.set(octets, this.#length);
         this.#length += octets.byteLength;
         this.#invalidateViews();
     }

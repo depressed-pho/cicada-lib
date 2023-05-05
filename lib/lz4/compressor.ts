@@ -1,21 +1,76 @@
-import { toUint8Array, toDataView } from "../typed-array.js";
 import { XXH32, xxHash32 } from "../xxHash32.js";
+import { OutputStream, InputStream, Buffer,
+         BufferOutputStream, BufferInputStream } from "../stream.js";
 import { LZ4MaximumBlockSize, LZ4CompressionOptions } from "./options.js";
-import { MAX_FRAME_DESCRIPTOR_LENGTH, LZ4FrameDescriptor, writeFrameDescriptor } from "./frame.js";
+import { writeFrameDescriptor } from "./frame.js";
 
-export class LZ4Compressor {
+export function compress(input: Uint8Array, opts?: LZ4CompressionOptions): Uint8Array;
+
+export function compress<OutputT, InputT>(
+    output: OutputStream<OutputT, InputT>,
+    input: InputStream<OutputT, InputT>,
+    opts?: LZ4CompressionOptions): Generator<OutputT, void, InputT>;
+
+export function compress(...args: any[]) {
+    switch (args.length) {
+        case 1:
+            return compressOneShot(args[0]);
+        case 2:
+            if (args[0] instanceof Uint8Array) {
+                return compressOneShot(args[0], args[1]);
+            }
+            else {
+                return compressStream(args[0], args[1]);
+            }
+        case 3:
+            return compressStream(args[0], args[1], args[2]);
+        default:
+            throw new Error("Wrong number of arguments");
+    }
+}
+
+function compressOneShot(input: Uint8Array, opts?: LZ4CompressionOptions): Uint8Array {
+    const os  = new BufferOutputStream();
+    const is  = new BufferInputStream(new Buffer(input));
+    const gen = new LZ4Compressor(os, is, opts).run();
+
+    if (!gen.next().done) {
+        throw new Error("Internal error: the generator yielded when it shouldn't");
+    }
+
+    return os.data.toUint8Array();
+}
+
+function compressStream<OutputT, InputT>(
+    output: OutputStream<OutputT, InputT>,
+    input: InputStream<OutputT, InputT>,
+    opts?: LZ4CompressionOptions): Generator<OutputT, void, InputT> {
+
+    output.onYield((data) => input.gotData(data));
+    input.onYield(() => output.takeData());
+
+    return new LZ4Compressor(output, input, opts).run();
+}
+
+interface Block {
+    rawBlock:  Buffer,
+    compBlock: Buffer
+}
+
+class LZ4Compressor<OutputT, InputT> {
+    readonly #output: OutputStream<OutputT, InputT>;
+    readonly #input: InputStream<OutputT, InputT>;
     readonly #opts: Required<LZ4CompressionOptions>;
-    readonly #contentHasher: XXH32|null;
     readonly #hashSize: number;
-    readonly #blockHashTable: Uint32Array;
     readonly #dictHashTable: Uint16Array;
-    readonly #dictionary: Uint8Array;
-    #dictSize: number;
-    #hasProducedHeader: boolean;
-    #hasFinalised: boolean;
+    readonly #dictionary: Buffer;
 
-    public constructor(opts?: LZ4CompressionOptions) {
-        this.#opts = {
+    public constructor(output: OutputStream<OutputT, InputT>,
+                       input: InputStream<OutputT, InputT>,
+                       opts?: LZ4CompressionOptions) {
+        this.#output = output;
+        this.#input  = input;
+        this.#opts   = {
             independentBlocks: opts?.independentBlocks ?? false,
             blockChecksums:    opts?.blockChecksums    ?? false,
             contentSize:       opts?.contentSize,
@@ -28,64 +83,40 @@ export class LZ4Compressor {
         if (this.#opts.hashBits < 0 || this.#opts.hashBits > 32) {
             throw new RangeError(`hashBits must be in [0, 32]: ${this.#opts.hashBits}`);
         }
-
-        this.#contentHasher     = this.#opts.contentChecksum ? new XXH32() : null;
-        this.#hashSize          = 2 ** this.#opts.hashBits - 1 >>> 0;
-        this.#blockHashTable    = new Uint32Array(this.#hashSize);
-        this.#dictHashTable     = new Uint16Array(this.#hashSize);
-        this.#dictionary        = new Uint8Array(0xFFFF);
-        this.#dictSize          = 0;
-        this.#hasProducedHeader = false;
-        this.#hasFinalised      = false;
+        this.#hashSize      = 2 ** this.#opts.hashBits - 1 >>> 0;
+        this.#dictHashTable = new Uint16Array(this.#hashSize);
+        this.#dictionary    = new Buffer();
+        this.#dictionary.reserve(0xFFFF);
 
         if (this.#opts.dictionary) {
-            this.#populateDict(toUint8Array(this.#opts.dictionary.data));
+            // Use the last 64 KiB of the dictionary.
+            this.#populateDict(new Buffer(this.#opts.dictionary.data));
         }
     }
 
-    get #frameDescriptor(): LZ4FrameDescriptor {
-        return {
-            independentBlocks: this.#opts.independentBlocks,
-            blockChecksums:    this.#opts.blockChecksums,
-            contentSize:       this.#opts.contentSize,
-            contentChecksum:   this.#opts.contentChecksum,
-            dictionaryID:      this.#opts.dictionary?.id,
-            maximumBlockSize:  this.#opts.maximumBlockSize
-        };
-    }
-
-    #populateDict(input: Uint8Array): void {
-        if (input.byteLength >= 0xFFFF) {
+    #populateDict(input: Buffer): void {
+        if (input.length >= 0xFFFF) {
             // The input is going to completely wash our dictionary
             // away. Take the last 64 KiB of the input.
-            const dictStart = input.byteLength - 0xFFFF;
-            const dictEnd   = dictStart        + 0xFFFF;
-            const dictView  = input.subarray(dictStart, dictEnd);
-            this.#dictionary.set(dictView);
-            this.#dictSize = 0xFFFF;
+            this.#dictionary.unsafeAppend(input.unsafeSubarray(-0xFFFF));
 
             // And every offset in the dictionary hash table is now
             // invalid. Need to rebuild it entirely.
-            this.#dictHashTable.fill(0);
             this.#hashDictionary();
         }
-        else if (this.#dictSize + input.byteLength > 0xFFFF) {
+        else if (this.#dictionary.length + input.length > 0xFFFF) {
             // Some part of our existing dictionary is going away.
-            const numErase = this.#dictSize + input.byteLength - 0xFFFF;
-            this.#dictionary.copyWithin(0, numErase);
-            this.#dictionary.set(input, 0xFFFF - input.byteLength);
-            this.#dictSize = 0xFFFF;
+            this.#dictionary.unsafeAppend(input.unsafeSubarray(-0xFFFF));
+            this.#dictionary.drop(this.#dictionary.length - 0xFFFF);
 
             // This means every offset in it is now invalid.
-            this.#dictHashTable.fill(0);
             this.#hashDictionary();
         }
         else {
             // Our dictionary is only growing. Offsets aren't going to be
             // invalidated.
-            const oldDictSize = this.#dictSize;
-            this.#dictionary.set(input, this.#dictSize);
-            this.#dictSize += input.byteLength;
+            const oldDictSize = this.#dictionary.length;
+            this.#dictionary.unsafeAppend(input);
 
             // But since the last 3 octets of the dictionary hasn't been
             // hashed, we now need to do it.
@@ -94,9 +125,10 @@ export class LZ4Compressor {
     }
 
     #hashDictionary(startPos = 0): void {
-        const dictView = new DataView(this.#dictionary.buffer);
-        for (let offset = startPos; offset + 4 <= this.#dictSize; offset++) {
-            const word = dictView.getUint32(offset, true);
+        this.#dictHashTable.fill(0, startPos);
+
+        for (let offset = startPos; offset + 4 <= this.#dictionary.length; offset++) {
+            const word = this.#dictionary.getUint32(offset, true);
             const hash = this.#hashWord(word);
 
             // The value 0 means "no match". Adding one is safe, because we
@@ -124,171 +156,135 @@ export class LZ4Compressor {
         return (h & this.#hashSize) >>> 0;
     }
 
-    public update(input: Uint8Array): Uint8Array {
-        this.#throwIfFinalised();
-        return this.#updateImpl(toDataView(input));
+    public *run(): Generator<OutputT, void, InputT> {
+        yield* this.#output.writeUint32(0x184D2204, true); // magic
+
+        yield* writeFrameDescriptor(this.#output, {
+            independentBlocks: this.#opts.independentBlocks,
+            blockChecksums:    this.#opts.blockChecksums,
+            contentSize:       this.#opts.contentSize,
+            contentChecksum:   this.#opts.contentChecksum,
+            dictionaryID:      this.#opts.dictionary?.id,
+            maximumBlockSize:  this.#opts.maximumBlockSize
+        });
+
+        yield* this.#compressFrame();
     }
 
-    #throwIfFinalised() {
-        if (this.#hasFinalised) {
-            throw new Error("The compressor has already been finalised");
-        }
-    }
+    *#compressFrame(): Generator<OutputT, void, InputT> {
+        const contentHash = this.#opts.contentChecksum ? new XXH32() : undefined;
+        let   contentSize = 0;
+        while ((yield* this.#input.isEOF()) == false) {
+            // Take the next block from the input and try compressing
+            // it. If it doesn't compress, then write it as an uncompressed
+            // block. Unfortunately this cannot be implemented as a
+            // one-pass operation and we have to keep the entire block in
+            // memory.
+            const {rawBlock, compBlock} = yield* this.#compressBlock();
 
-    #updateImpl(input: DataView): Uint8Array {
-        // Split the input into blocks and compress them immediately. Do
-        // not buffer the input until it reaches maximumBlockSize. This
-        // results in a suboptimal compression ratio but the whole point of
-        // LZ4 is being fast and using minimal amount of memory. If we were
-        // to value compression ratio and don't care anything else we would
-        // be using LZMA, weren't we?
-
-        if (this.#contentHasher) {
-            this.#contentHasher.update(toUint8Array(input));
-        }
-
-        // Allocate memory for output by calculating the theoretical worst
-        // output size.
-        const outBuf = new ArrayBuffer(
-            this.#compressionBound(input.byteLength) +
-                (this.#hasProducedHeader
-                    ? 0
-                    : 4 /* magic */ + MAX_FRAME_DESCRIPTOR_LENGTH));
-        const output = new DataView(outBuf);
-        let   outPos = 0;
-
-        if (!this.#hasProducedHeader) {
-            output.setUint32(outPos, 0x184D2204, true); // magic
-            outPos += 4;
-            outPos = writeFrameDescriptor(outBuf, outPos, this.#frameDescriptor);
-            this.#hasProducedHeader = true;
-        }
-
-        // We don't keep a copy of the previous input, so our hashtable is
-        // totally invalid at this point. Reset it.
-        this.#blockHashTable.fill(0);
-
-        // Split the input into blocks and compress them.
-        for (let inPos = 0; inPos < input.byteLength; inPos += this.#opts.maximumBlockSize) {
-            const blockSize = Math.min(input.byteLength - inPos, this.#opts.maximumBlockSize);
-            const inEnd     = inPos + blockSize;
-
-            // Try and see if the block actually compresses. If it doesn't,
-            // then write it as an uncompressed block.
-            const compPos   = outPos + 4;
-            const newPos    = this.#compressBlock(output, compPos, input, inPos, inEnd);
-            const compSize  = newPos - compPos;
-
-            if (compSize >= blockSize) {
-                // Damn, it made no sense to compress it. Overwrite our
-                // wasted attempt with the source.
-                output.setUint32(outPos, blockSize | 0x80, true);
-                outPos += 4;
-
-                const blockSrc = toUint8Array(input).subarray(inPos, inEnd);
-                new Uint8Array(outBuf, outPos, blockSize).set(blockSrc);
-                outPos += blockSize;
+            if (compBlock.length >= rawBlock.length) {
+                // Damn, it made no sense to compress it. Write an
+                // uncompressed block and discard the other one.
+                yield* this.#output.writeUint32(rawBlock.length | 0x80, true);
+                yield* this.#output.unsafeWrite(rawBlock);
+                if (this.#opts.blockChecksums) {
+                    yield* this.#output.writeUint32(xxHash32(rawBlock), true);
+                }
             }
             else {
-                // It actually compressed but we haven't written the block
-                // size yet. Do it now.
-                output.setUint32(outPos, compSize, true);
-                outPos += 4;
-                outPos += compSize;
+                // It actually compressed.
+                yield* this.#output.writeUint32(compBlock.length, true);
+                yield* this.#output.unsafeWrite(compBlock);
+                if (this.#opts.blockChecksums) {
+                    yield* this.#output.writeUint32(xxHash32(compBlock), true);
+                }
             }
 
-            if (this.#opts.blockChecksums) {
-                const block = new Uint8Array(outBuf, compPos, outPos - compPos);
-                output.setUint32(outPos, xxHash32(block), true);
-                outPos += 4;
-            }
+            contentHash?.update(rawBlock);
+            contentSize += rawBlock.length;
 
-            if (this.#opts.independentBlocks) {
-                // Independent blocks must never refer to previous blocks
-                // so we can't reuse our hashtable. Reset it.
-                this.#blockHashTable.fill(0);
+            if (!this.#opts.independentBlocks) {
+                // Save a copy of the last 64 KiB of the input so that
+                // subsequent blocks can find matches in it.
+                this.#populateDict(rawBlock);
             }
         }
 
-        if (!this.#opts.independentBlocks) {
-            // Save a copy of the last 64 KiB of the input so that
-            // subsequent blocks can find matches in it.
-            this.#populateDict(toUint8Array(input));
+        // EndMark
+        yield* this.#output.writeUint32(0, true);
+
+        if (this.#opts.contentSize !== undefined) {
+            if (this.#opts.contentSize != contentSize) {
+                throw new Error(`Content size mismatches: expected ${this.#opts.contentSize}, got ${contentSize}`);
+            }
         }
 
-        return new Uint8Array(outBuf, 0, outPos);
+        if (contentHash) {
+            yield* this.#output.writeUint32(contentHash.final(), true);
+        }
     }
 
-    #compressionBound(sourceLen: number): number {
-        const numBlocks = Math.max(1, Math.ceil(sourceLen / this.#opts.maximumBlockSize));
-        return sourceLen +
-            Math.ceil(sourceLen / 256) + // Literal overhead
-            numBlocks * (4 + (this.#opts.blockChecksums ? 4 : 0)) // Block overhead
-            | 0;
-    }
-
-    #compressBlock(output: DataView, outPos: number,
-                   input: DataView, inPos: number, inEnd: number): number {
-
-        const blockStart = inPos;
-        const blockSize  = inEnd - inPos;
-
-        if (blockSize < 12) {
-            // The last match must start at least 12 octets before the end
-            // of block. This block is too short to compress. It makes no
-            // sense to analyse it.
-            return outPos + blockSize;
+    *#compressBlock(): Generator<OutputT, Block, InputT> {
+        // Read an entire block from the stream. This is unavoidable,
+        // because we must retain it in memory anyway in order to decide if
+        // we should write a compressed block or not.
+        const rawBlock  = new Buffer();
+        const compBlock = new Buffer();
+        for (let remaining = this.#opts.maximumBlockSize; remaining > 0; ) {
+            const chunk = yield* this.#input.readSome(remaining);
+            if (chunk) {
+                rawBlock.unsafeAppend(chunk);
+            }
+            else {
+                break;
+            }
         }
 
-        const dictView     = new DataView(this.#dictionary.buffer);
+        const blockHashTable = new Uint32Array(this.#hashSize);
         let numNonMatching = 1 << this.#opts.skipTrigger;
-        let literalStart   = blockStart;
+        let literalStart   = 0;
 
-        // Matches cannot be any shorter than 4 octets. The last 5 octets
-        // must always be a literal.
-        while (inPos + 4 <= inEnd - 5) {
-            const word = input.getUint32(inPos, true);
+        // Matches cannot be any shorter than 4 octets, and the last 5
+        // octets must always be a literal.
+        for (let blockPos = 0; blockPos + 9 <= rawBlock.length; ) {
+            const word = rawBlock.getUint32(blockPos, true);
             const hash = this.#hashWord(word);
+            //console.log("word", word, "hash", hash);
 
             // Try finding a match in the dictionary first. This has a
             // chance of finding a longer one. But we don't attempt to find
             // a match in the last 3 octets in the dictionary because
-            // that's too much effort for a negligible effect.
-            const dictPosPlus1 = this.#dictHashTable[hash];
-            if (dictPosPlus1 && dictView.getUint32(dictPosPlus1 - 1, true) == word) {
+            // that's a too much effort for a negligible effect.
+            const dictPosPlus1 = this.#dictHashTable[hash]!;
+            if (dictPosPlus1 > 0 && this.#dictionary.getUint32(dictPosPlus1 - 1, true) == word) {
                 // Found a matching 4-octets in the dictionary but can we
-                // really use it? We need to compute the distance
-                // differently for the chained blocks case and independent
-                // blocks case.
-                const distance = (this.#dictSize - (dictPosPlus1 - 1)) +
-                    ( this.#opts.independentBlocks
-                        ? inPos - blockStart
-                        : inPos
-                    );
+                // really use it?
+                const distance = (this.#dictionary.length - (dictPosPlus1 - 1)) + blockPos;
                 if (distance <= 0xFFFF) {
                     // Yes we can. It's not that far away. Now count the
                     // length of the match in the dictionary.
                     const dictMatchLenMinus4 =
                         this.#findMatchLength(
-                            dictView, dictPosPlus1 - 1 + 4, this.#dictSize,
-                            input, inPos + 4, inEnd);
+                            this.#dictionary, dictPosPlus1 - 1 + 4,
+                            rawBlock, blockPos + 4);
 
                     // Can we possibly continue matching on the block too?
                     const blockMatchLen =
-                        this.#findMatchLength(
-                            input, this.#opts.independentBlocks ? 0 : blockStart, inEnd,
-                            input, inPos + 4, inEnd);
+                        // Did the match reach the end of the dictionary?
+                        dictPosPlus1 - 1 + dictMatchLenMinus4 + 4 >= this.#dictionary.length
+                        ? this.#findMatchLength(
+                            rawBlock, 0,
+                            rawBlock, blockPos + 4 + dictMatchLenMinus4)
+                        : 0;
 
                     // Write a sequence and skip the matched part.
                     const matchLenMinus4 = dictMatchLenMinus4 + blockMatchLen;
-
-                    outPos = this.#writeSequence(
-                        output, outPos,
-                        input, literalStart, inPos,
+                    this.#writeSequence(
+                        compBlock, rawBlock.unsafeSubarray(literalStart, blockPos),
                         distance, matchLenMinus4);
 
-                    inPos       += matchLenMinus4 + 4;
-                    literalStart = inPos;
+                    blockPos    += matchLenMinus4 + 4;
+                    literalStart = blockPos;
                     continue;
                 }
 
@@ -297,12 +293,22 @@ export class LZ4Compressor {
                 numNonMatching = 1 << this.#opts.skipTrigger;
             }
 
-            // No matches in the dictionary. How about in the past input?
-            const blockPosPlus1 = this.#blockHashTable[hash];
-            this.#blockHashTable[hash] = inPos + 1;
+            // No matches in the dictionary. How about in the preceding
+            // part of the block?
+            const blockPosPlus1 = blockHashTable[hash]!;
+            //console.log("bpp1", blockPosPlus1);
 
-            if (blockPosPlus1 && input.getUint32(blockPosPlus1 - 1, true) == word) {
-                const distance = inPos - (blockPosPlus1 - 1);
+            // Don't forget that the last match must start at least 12
+            // octets before the end of block.
+            if (blockPos + 12 <= rawBlock.length) {
+                blockHashTable[hash] = blockPos + 1;
+            }
+
+            if (blockPosPlus1 > 0) {
+                //console.log("found in dict", rawBlock.getUint32(blockPosPlus1 - 1, true));
+            }
+            if (blockPosPlus1 > 0 && rawBlock.getUint32(blockPosPlus1 - 1, true) == word) {
+                const distance = blockPos - (blockPosPlus1 - 1);
                 if (distance <= 0xFFFF) {
                     // Found a match which we can use. Note that we don't
                     // have to worry about inter-block matching in the
@@ -310,17 +316,16 @@ export class LZ4Compressor {
                     // shouldn't contain any data about past blocks then.
                     const matchLenMinus4 =
                         this.#findMatchLength(
-                            input, blockPosPlus1 - 1 + 4, inEnd,
-                            input, inPos + 4, inEnd);
+                            rawBlock, blockPosPlus1 - 1 + 4,
+                            rawBlock, blockPos + 4);
 
                     // Write a sequence and skip the matched part.
-                    outPos = this.#writeSequence(
-                        output, outPos,
-                        input, literalStart, inPos,
+                    this.#writeSequence(
+                        compBlock, rawBlock.unsafeSubarray(literalStart, blockPos),
                         distance, matchLenMinus4);
 
-                    inPos       += matchLenMinus4 + 4;
-                    literalStart = inPos;
+                    blockPos    += matchLenMinus4 + 4;
+                    literalStart = blockPos;
                     continue;
                 }
 
@@ -330,128 +335,76 @@ export class LZ4Compressor {
 
             // No matches found. Skip this position.
             const step = numNonMatching++ >> this.#opts.skipTrigger;
-            inPos += step;
+            blockPos += step;
         }
 
-        if (literalStart == blockStart) {
-            // Absolutely nothing in this block could possibly compress. It
-            // makes no sense to do anything further.
-            return outPos + blockSize;
-        }
-
-        return this.#writeLiteral(output, outPos, input, literalStart, inEnd);
+        this.#writeLiteral(compBlock, rawBlock.unsafeSubarray(literalStart));
+        return {rawBlock, compBlock};
     }
 
-    #findMatchLength(dict: DataView, dictPos: number, dictEnd: number,
-                     input: DataView, inPos: number, inEnd: number): number {
+    #findMatchLength(dict: Buffer, dictPos: number, block: Buffer, blockPos: number): number {
+        const matchStart = blockPos;
+        //console.log("finding", dictPos, blockPos);
 
-        // A match must not cover the last 5 octets of a block.
-        const stop       = inEnd - 5;
-        const matchStart = inPos;
-
-        // Compare 4 octets at once until we reach the last 3.
-        for (; dictPos + 4 <= dictEnd && inPos + 4 <= stop; dictPos += 4, inPos += 4) {
-            if (dict.getUint32(dictPos, true) != input.getUint32(inPos, true)) {
+        // Compare 4 octets at once until we reach the last 3. A match must
+        // not cover the last 5 octets of a block.
+        for (; dictPos + 4 <= dict.length && blockPos + 9 <= block.length; dictPos += 4, blockPos += 4) {
+            if (dict.getUint32(dictPos, true) != block.getUint32(blockPos, true)) {
                 break;
             }
         }
 
         // Compare remaining octets.
-        for (; dictPos < dictEnd && inPos < stop; dictPos++, inPos++) {
-            if (dict.getUint8(dictPos) != input.getUint8(inPos)) {
+        for (; dictPos < dict.length && blockPos + 5 < block.length; dictPos++, blockPos++) {
+            if (dict.getUint8(dictPos) != block.getUint8(blockPos)) {
                 break;
             }
         }
 
-        return inPos - matchStart;
+        //console.log("found", dict.toUint8Array(), dictPos, block.toUint8Array(), blockPos, matchStart, blockPos - matchStart);
+        return blockPos - matchStart;
     }
 
-    #writeSequence(output: DataView, outPos: number,
-                   input: DataView, literalStart: number, literalEnd: number,
-                   distance: number, matchLenMinus4: number): number {
+    #writeSequence(compBlock: Buffer, literal: Buffer, distance: number, matchLenMinus4: number): void {
+        //console.log("seq", compBlock.toUint8Array(), literal.toUint8Array(), distance, matchLenMinus4);
 
         // Write a token and the literal.
-        const newPos = this.#writeLiteral(output, outPos, input, literalStart, literalEnd);
+        const tokenPos = compBlock.length;
+        this.#writeLiteral(compBlock, literal);
 
         // Fix up the token so it contains the match length.
-        output.setUint8(outPos, output.getUint8(outPos) | Math.min(matchLenMinus4, 0xF));
-        outPos          = newPos;
-        matchLenMinus4 -= 0xF;
+        const token = compBlock.getUint8(tokenPos) | Math.min(matchLenMinus4, 0xF);
+        compBlock.setUint8(tokenPos, token);
 
         // Write the offset.
-        output.setUint16(outPos, distance, true);
-        outPos += 2;
+        compBlock.appendUint16(distance, true);
 
         // Write the remaining match length if it doesn't fit in the token.
         if (matchLenMinus4 >= 0xF) {
             matchLenMinus4 -= 0xF;
             for (; matchLenMinus4 >= 0xFF; matchLenMinus4 -= 0xFF) {
-                output.setUint8(outPos, 0xFF);
-                outPos++;
+                compBlock.appendUint8(0xFF);
             }
-            output.setUint8(outPos, matchLenMinus4);
-            outPos++;
+            compBlock.appendUint8(matchLenMinus4);
         }
-
-        return outPos;
     }
 
-    #writeLiteral(output: DataView, outPos: number,
-                  input: DataView, literalStart: number, literalEnd: number): number {
-
-        let literalLen = literalEnd - literalStart;
+    #writeLiteral(compBlock: Buffer, literal: Buffer): void {
+        let literalLen = literal.length;
 
         // Write a token.
-        output.setUint8(outPos, Math.min(literalLen, 0xF) << 4);
-        outPos++;
+        compBlock.appendUint8(Math.min(literalLen, 0xF) << 4);
 
         // Write the remaining literal count if it doesn't fit in the token.
         if (literalLen >= 0xF) {
             literalLen -= 0xF;
             for (; literalLen >= 0xFF; literalLen -= 0xFF) {
-                output.setUint8(outPos, 0xFF);
-                outPos++;
+                compBlock.appendUint8(0xFF);
             }
-            output.setUint8(outPos, literalLen);
-            outPos++;
+            compBlock.appendUint8(literalLen);
         }
 
         // Write the literal.
-        const literal = toUint8Array(input).subarray(literalStart, literalEnd);
-        toUint8Array(output).set(literal, outPos);
-        outPos += literal.byteLength;
-
-        return outPos;
-    }
-
-    public final(): Uint8Array {
-        this.#throwIfFinalised();
-
-        const outBuf = new ArrayBuffer(
-            (this.#hasProducedHeader
-                ? 0
-                : 4 + MAX_FRAME_DESCRIPTOR_LENGTH) +
-            4 + // EndMark
-            (this.#contentHasher ? 4 : 0));
-        const out    = new DataView(outBuf);
-        let   outPos = 0;
-
-        if (!this.#hasProducedHeader) {
-            out.setUint32(outPos, 0x184D2204, true); // magic
-            outPos += 4;
-            outPos = writeFrameDescriptor(outBuf, outPos, this.#frameDescriptor);
-            this.#hasProducedHeader = true;
-        }
-
-        // EndMark
-        out.setUint32(outPos, 0, true);
-        outPos += 4;
-
-        if (this.#contentHasher) {
-            out.setUint32(outPos, this.#contentHasher.final(), true);
-            outPos += 4;
-        }
-
-        return new Uint8Array(outBuf, 0, outPos);
+        compBlock.unsafeAppend(literal);
     }
 }

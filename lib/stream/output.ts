@@ -7,6 +7,15 @@ export abstract class OutputStream<OutputT, InputT> {
      * the data. Do not mutate it afterwards. */
     public abstract unsafeWrite(data: Buffer|Uint8Array): Generator<OutputT, void, InputT>;
 
+    /** Write an unsigned 8-bit integer to the stream. */
+    public abstract writeUint8(n: number): Generator<OutputT, void, InputT>;
+
+    /** Write an unsigned 16-bit integer to the stream. */
+    public abstract writeUint16(n: number, littleEndian?: boolean): Generator<OutputT, void, InputT>;
+
+    /** Write an unsigned 32-bit integer to the stream. */
+    public abstract writeUint32(n: number, littleEndian?: boolean): Generator<OutputT, void, InputT>;
+
     /** Called when the control is about to be suspended outside of the
      * methods in this stream. The value returned by this method will be
      * passed to the `yield` operator.
@@ -47,7 +56,27 @@ export class BufferOutputStream<InputT> extends OutputStream<void, InputT> {
     }
 
     public *unsafeWrite(data: Buffer|Uint8Array): Generator<void, void, InputT> {
+        // We are probably going to do a lot of small writes. Allocate some
+        // extra space.
+        if (data instanceof Buffer) {
+            this.data.reserve(data.length);
+        }
+        else {
+            this.data.reserve(data.byteLength);
+        }
         this.data.unsafeAppend(data);
+    }
+
+    public *writeUint8(n: number): Generator<void, void, InputT> {
+        this.data.appendUint8(n);
+    }
+
+    public *writeUint16(n: number, littleEndian = false): Generator<void, void, InputT> {
+        this.data.appendUint16(n, littleEndian);
+    }
+
+    public *writeUint32(n: number, littleEndian = false): Generator<void, void, InputT> {
+        this.data.appendUint32(n, littleEndian);
     }
 
     public takeData(): void {
@@ -73,12 +102,31 @@ export class PushOutputStream<InputT> extends OutputStream<Uint8Array, InputT> {
         this.#buf.reserve(bufSize);
     }
 
-    public *unsafeWrite(data: Buffer|Uint8Array): Generator<Uint8Array, void, InputT> {
-        this.#buf.unsafeAppend(data);
+    *#maybeFlush(): Generator<Uint8Array, void, InputT> {
         if (this.#buf.length >= this.#bufSize) {
             this.flush(this.#buf.toUint8Array());
             this.#buf.clear();
         }
+    }
+
+    public *unsafeWrite(data: Buffer|Uint8Array): Generator<Uint8Array, void, InputT> {
+        this.#buf.unsafeAppend(data);
+        yield* this.#maybeFlush();
+    }
+
+    public *writeUint8(n: number): Generator<Uint8Array, void, InputT> {
+        this.#buf.appendUint8(n);
+        yield* this.#maybeFlush();
+    }
+
+    public *writeUint16(n: number, littleEndian = false): Generator<Uint8Array, void, InputT> {
+        this.#buf.appendUint16(n, littleEndian);
+        yield* this.#maybeFlush();
+    }
+
+    public *writeUint32(n: number, littleEndian = false): Generator<Uint8Array, void, InputT> {
+        this.#buf.appendUint32(n, littleEndian);
+        yield* this.#maybeFlush();
     }
 
     public takeData(): Uint8Array {

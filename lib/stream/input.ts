@@ -30,7 +30,7 @@ export abstract class InputStream<OutputT, InputT> {
      * will contain less number of octets when there isn't enough data
      * readily available. The caller is free to mutate the returned buffer.
      */
-    public abstract readSome(length: number): Generator<OutputT, Buffer, InputT>;
+    public abstract readSome(length: number): Generator<OutputT, Buffer|undefined, InputT>;
 
     /** Discard an input of the given length. */
     public abstract skip(length: number): Generator<OutputT, void, InputT>;
@@ -146,8 +146,10 @@ export class BufferInputStream<OutputT> extends InputStream<OutputT, void> {
         return this.#buf.take(length);
     }
 
-    public *readSome(length: number): Generator<OutputT, Buffer, void> {
-        return this.#buf.take(length);
+    public *readSome(length: number): Generator<OutputT, Buffer|undefined, void> {
+        return this.#buf.length > 0
+            ? this.#buf.take(length)
+            : undefined;
     }
 
     public *skip(length: number): Generator<OutputT, void, void> {
@@ -163,7 +165,7 @@ export class BufferInputStream<OutputT> extends InputStream<OutputT, void> {
  */
 export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
     readonly #buf: Buffer;
-    readonly #isClosed: boolean;
+    #isClosed: boolean;
 
     public constructor() {
         super();
@@ -180,11 +182,12 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
         }
         else {
             const input = yield* this.needMore();
+            this.gotData(input);
             if (input) {
-                this.#buf.unsafeAppend(input);
                 return false;
             }
             else {
+                this.#isClosed = true;
                 return true;
             }
         }
@@ -192,6 +195,9 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
 
     public gotData(input?: Uint8Array): void {
         if (input) {
+            if (this.#isClosed) {
+                throw new Error("Cannot push data after sinaling EOF");
+            }
             this.#buf.unsafeAppend(input);
         }
     }
@@ -203,10 +209,8 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
             }
             else {
                 const input = yield* this.needMore();
-                if (input) {
-                    this.#buf.unsafeAppend(input);
-                }
-                else {
+                this.gotData(input);
+                if (!input) {
                     throw new PrematureEOF(`Got an EOF before peeking ${length} octets`);
                 }
             }
@@ -218,21 +222,11 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
         return this.#buf.take(length);
     }
 
-    public *readSome(length: number): Generator<OutputT, Buffer, Uint8Array> {
-        while (true) {
-            if (this.#buf.length > 0) {
-                return this.#buf.take(length);
-            }
-            else {
-                const input = yield* this.needMore();
-                if (input) {
-                    this.#buf.unsafeAppend(input);
-                }
-                else {
-                    return new Buffer();
-                }
-            }
+    public *readSome(length: number): Generator<OutputT, Buffer|undefined, Uint8Array> {
+        if (this.#buf.length == 0) {
+            this.gotData(yield* this.needMore());
         }
+        return this.#buf.take(length);
     }
 
     public *skip(length: number): Generator<OutputT, void, Uint8Array> {
