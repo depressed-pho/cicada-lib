@@ -1,4 +1,4 @@
-import { XXH32 } from "../xxHash32.js";
+import { XXH32 } from "../xxhash.js";
 import { OutputStream, InputStream, Buffer, PrematureEOF,
          BufferOutputStream, BufferInputStream } from "../stream.js";
 import { readFrameDescriptor } from "./frame.js";

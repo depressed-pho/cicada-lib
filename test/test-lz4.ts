@@ -11,7 +11,7 @@ function octetsToStr(u8: Uint8Array): string {
     return String.fromCodePoint(...u8);
 }
 
-describe("class LZ4Compressor", () => {
+describe("LZ4.compress()", () => {
     it("can process a zero-length input without dying", () => {
         const src = "";
         const lz4 = LZ4.compress(strToOctets(src));

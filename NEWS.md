@@ -14,6 +14,7 @@
 * Removed `lib/event-emitter.ts`.
 * Renamed `lib/enchantment.ts` to `lib/item/enchantment.ts`.
 * Renamed `lib/item-stack.ts` to `lib/item/stack.ts`.
+* Renamed `lib/octet-stream.ts` to `lib/cic-ascii.ts`.
 * Added `lib/block/minecraft/piston.ts`.
 * Added `lib/lz4.ts`.
 * `World` and `System` are no longer subclasses of `EventEmitter`. We

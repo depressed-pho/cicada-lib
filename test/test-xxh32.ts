@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { XXH32, xxHash32 } from "../lib/xxHash32.js";
+import { XXH32, xxHash32 } from "../lib/xxhash.js";
 
 function strToOctets(str: string): Uint8Array {
     return Uint8Array.from(

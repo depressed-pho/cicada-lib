@@ -1,4 +1,4 @@
-import { XXH32, xxHash32 } from "../xxHash32.js";
+import { XXH32, xxHash32 } from "../xxhash.js";
 import { OutputStream, InputStream, Buffer,
          BufferOutputStream, BufferInputStream } from "../stream.js";
 import { LZ4MaximumBlockSize, LZ4CompressionOptions } from "./options.js";

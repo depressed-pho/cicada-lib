@@ -5,7 +5,7 @@
 import "./shims/text-decoder.js";
 import "./shims/text-encoder.js";
 import { MessageType } from "@protobuf-ts/runtime";
-import { decodeOctets, encodeOctets } from "./octet-stream.js";
+import * as CicASCII from "./cic-ascii.js";
 import * as MC from "@minecraft/server";
 
 let addonNamespace:   string|null = null;
@@ -53,7 +53,7 @@ export function decodeOrCreate<T extends object>(ty: MessageType<T>,
     }
     else {
         try {
-            const bin = decodeOctets(prefs);
+            const bin = CicASCII.decode(prefs);
             return ty.fromBinary(bin);
         }
         catch (e) {
@@ -66,5 +66,5 @@ export function decodeOrCreate<T extends object>(ty: MessageType<T>,
 /** Package private */
 export function encode<T extends object>(ty: MessageType<T>, prefs: T): string {
     const bin = ty.toBinary(prefs);
-    return encodeOctets(bin);
+    return CicASCII.encode(bin);
 }

@@ -1,6 +1,6 @@
 import { Buffer, InputStream, OutputStream } from "../stream.js";
 import { LZ4MaximumBlockSize } from "./options.js";
-import { xxHash32 } from "../xxHash32.js";
+import { xxHash32 } from "../xxhash.js";
 
 export interface LZ4FrameDescriptor {
     independentBlocks: boolean;

@@ -1,5 +1,3 @@
-import { toUint8Array } from "./typed-array.js";
-
 const POW_85 = new Uint32Array([
     85*85*85*85,
     85*85*85,
@@ -12,7 +10,7 @@ const POW_85 = new Uint32Array([
  * (https://en.wikipedia.org/wiki/Ascii85). The function ignores
  * whitespaces.
  */
-export function a85Decode(str: string): Uint8Array {
+export function decode(str: string): Uint8Array {
     // The space needed for the octet sequence is usually not larger than
     // str.length*4/5, but there is a chance it exceeds that because of
     // 'z'. When that happens we reallocate the buffer.
@@ -56,16 +54,16 @@ export function a85Decode(str: string): Uint8Array {
                             buf = buf2;
                         }
                         word   += POW_85[--wordPos]!;
-                        bufPos += a85DecodeWord(buf, bufPos, word, wordPos);
+                        bufPos += decodeWord(buf, bufPos, word, wordPos);
                     }
                 }
                 // There is a space/time tradeoff here. We use
                 // buf.subarray() and we waste space. We use buf.slice()
-                // and we waste time. For now we just waste time in favour
-                // of space but maybe we can do something smarter in the
+                // and we waste time. For now we just waste space in favour
+                // of time but maybe we can do something smarter in the
                 // future, like thresholding the amount of memory to be
                 // wasted.
-                return buf.slice(0, bufPos);
+                return buf.subarray(0, bufPos);
             }
         }
 
@@ -73,7 +71,7 @@ export function a85Decode(str: string): Uint8Array {
         switch (c) {
             case 0x7a: // 'z'
                 if (wordPos === 0) {
-                    bufPos += a85DecodeWord(buf, bufPos, 0, 4);
+                    bufPos += decodeWord(buf, bufPos, 0, 4);
                 }
                 else {
                     throw new TypeError(`Invalid 'z' character at position ${iPos}`);
@@ -88,7 +86,7 @@ export function a85Decode(str: string): Uint8Array {
                 if (c >= 0x21 && c <= 0x75) { // '!' .. 'u'
                     word += (c - 0x21) * POW_85[wordPos++]!;
                     if (wordPos == 5) {
-                        bufPos += a85DecodeWord(buf, bufPos, word, 4);
+                        bufPos += decodeWord(buf, bufPos, word, 4);
                         word    = 0;
                         wordPos = 0;
                     }
@@ -100,7 +98,7 @@ export function a85Decode(str: string): Uint8Array {
     }
 }
 
-function a85DecodeWord(buf: Uint8Array, bufPos: number, word: number, wordLen: number): number {
+function decodeWord(buf: Uint8Array, bufPos: number, word: number, wordLen: number): number {
     if (word > 0xFFFFFFFF) {
         throw new TypeError("Invalid word: greater than 0xFFFFFFFF");
     }
@@ -116,11 +114,7 @@ function a85DecodeWord(buf: Uint8Array, bufPos: number, word: number, wordLen: n
  * (https://en.wikipedia.org/wiki/Ascii85). The function does not insert
  * newlines.
  */
-export function a85Encode(octets: ArrayBufferView|ArrayBufferLike): string {
-    return a85EncodeImpl(toUint8Array(octets));
-}
-
-function a85EncodeImpl(octets: Uint8Array): string {
+export function encode(octets: Uint8Array): string {
     const chunks: string[] = [];
 
     const iLen    = octets.length;
@@ -130,7 +124,7 @@ function a85EncodeImpl(octets: Uint8Array): string {
 
     // Create a working buffer for Ascii85 characters. It is at most 5/4
     // times longer than the octet sequence.
-    const chunkLen = Math.min(65535, Math.ceil(iLen / 4 * 5) + 5);
+    const chunkLen = Math.ceil(iLen / 4 * 5) + 5;
     const chunk    = new Uint8Array(chunkLen);
     let   chunkPos = 0;
 
@@ -138,7 +132,7 @@ function a85EncodeImpl(octets: Uint8Array): string {
         const hasMore = iPos < iLen;
 
         if (!hasMore ||
-            (wordPos == 0 && chunkPos >= chunkLen - 4)) {
+            (wordPos == 0 && chunkPos + 5 > chunkLen)) {
             // Either there's no more octets or there's no room for 5 ASCII
             // letters.
             const completeChunk = chunk.subarray(0, chunkPos);
@@ -153,7 +147,7 @@ function a85EncodeImpl(octets: Uint8Array): string {
                 // There's no more octets, but was the last word complete?
                 if (wordPos != 0) {
                     // No. Encode the leftover.
-                    chunkPos += a85EncodeWord(chunk, chunkPos, word, wordPos);
+                    chunkPos += encodeWord(chunk, chunkPos, word, wordPos);
                     const lastChunk = chunk.subarray(0, chunkPos);
                     chunks.push(String.fromCharCode(...lastChunk));
                 }
@@ -164,20 +158,20 @@ function a85EncodeImpl(octets: Uint8Array): string {
         const o = octets[iPos++]!;
         switch (wordPos) {
             case 0:
-                word  = o << 24;
+                word =         (o << 24)  >>> 0;
                 wordPos++;
                 break;
             case 1:
-                word |= o << 16;
+                word = (word | (o << 16)) >>> 0;
                 wordPos++;
                 break;
             case 2:
-                word |= o <<  8;
+                word = (word | (o <<  8)) >>> 0;
                 wordPos++;
                 break;
             case 3:
-                word     |= o;
-                chunkPos += a85EncodeWord(chunk, chunkPos, word, 4);
+                word = (word |  o       ) >>> 0;
+                chunkPos += encodeWord(chunk, chunkPos, word, 4);
                 word      = 0;
                 wordPos   = 0;
                 break;
@@ -185,7 +179,7 @@ function a85EncodeImpl(octets: Uint8Array): string {
     }
 }
 
-function a85EncodeWord(chunk: Uint8Array, chunkPos: number, word: number, wordLen: number): number {
+function encodeWord(chunk: Uint8Array, chunkPos: number, word: number, wordLen: number): number {
     if (word === 0 && wordLen === 4) {
         // Special case: "z" instead of "!!!!!".
         chunk[chunkPos] = 0x7a;

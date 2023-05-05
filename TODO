@@ -1,3 +1,3 @@
 # -*- org -*-
 
-* TODO [#A] Rename lib/octet-stream.ts to something like cic-ascii.ts
+* DONE [#A] Rename lib/octet-stream.ts to something like cic-ascii.ts
