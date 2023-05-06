@@ -7,9 +7,10 @@ import { Entity, ItemUseEvent, EntityDieEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
 import { ItemStack } from "../item/stack.js";
 import { Player, PlayerSpawnEvent } from "../player.js"
+import { Wrapper } from "../wrapper.js";
 import * as MC from "@minecraft/server";
 
-export class WorldEvents {
+export class WorldEvents extends Wrapper<MC.Events> {
     public readonly blockBreak:     IEventSignal<BlockBreakEvent>;
     public readonly blockPlace:     IEventSignal<BlockPlaceEvent>;
     public readonly entityDie:      IEventSignal<EntityDieEvent, EntityEventOptions>;
@@ -21,11 +22,10 @@ export class WorldEvents {
     public readonly playerLeave:    CustomEventSignal<MC.PlayerLeaveEvent>;
 
     /// Package private
-    public constructor(rawWorld: MC.World) {
-        const rawEvents = rawWorld.events;
-
+    public constructor(rawEvents: MC.Events) {
+        super(rawEvents);
         this.blockBreak = new GluedEventSignalWithoutOptions(
-            rawEvents.blockBreak,
+            this.raw.blockBreak,
             (rawEv: MC.BlockBreakEvent) => {
                 return {
                     block:                  new Block(rawEv.block),
@@ -35,7 +35,7 @@ export class WorldEvents {
                 };
             });
         this.blockPlace = new GluedEventSignalWithoutOptions(
-            rawEvents.blockPlace,
+            this.raw.blockPlace,
             (rawEv: MC.BlockPlaceEvent) => {
                 return {
                     block:     new Block(rawEv.block),
@@ -44,7 +44,7 @@ export class WorldEvents {
                 };
             });
         this.entityDie = new GluedEventSignalWithOptions(
-            rawEvents.entityDie,
+            this.raw.entityDie,
             (rawEv: MC.EntityDieEvent) => {
                 return {
                     damageCause: rawEv.damageCause,
@@ -53,7 +53,7 @@ export class WorldEvents {
             },
             entityEventOptionsToRaw);
         this.itemUse = new GluedEventSignalWithoutOptions(
-            rawEvents.itemUse,
+            this.raw.itemUse,
             (rawEv: MC.ItemUseEvent) => {
                 return {
                     itemStack: new ItemStack(rawEv.item),
@@ -63,7 +63,7 @@ export class WorldEvents {
                 };
             });
         this.pistonActivate = new GluedEventSignalWithoutOptions(
-            rawEvents.pistonActivate,
+            this.raw.pistonActivate,
             (rawEv: MC.PistonActivateEvent) => {
                 return {
                     isExpanding: rawEv.isExpanding,

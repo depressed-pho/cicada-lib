@@ -11,6 +11,11 @@ import * as MC from "@minecraft/server";
 let addonNamespace:   string|null = null;
 let worldInitialised: boolean     = false;
 
+export interface IPreferencesContainer {
+    getPreferences<T extends object>(ty: MessageType<T>): T;
+    setPreferences<T extends object>(ty: MessageType<T>, prefs: T): void;
+}
+
 /** Declare the namespace of your addon. You must call this function on the
  * top level of your script, not in an event handler. */
 export function declareNamespace(ns: string): void {
@@ -29,19 +34,22 @@ export function dynamicPropertyId(type: "player"|"world"): string {
         throw new Error("No namespaces have been declared for the addon.");
     }
     else {
-        return `${addonNamespace}:${type}-preferences`;
+        return `${addonNamespace}:preferences.${type}`;
     }
 }
 
 MC.world.events.worldInitialize.subscribe(ev => {
     if (addonNamespace != null) {
-        const props = new MC.DynamicPropertiesDefinition();
-
-        props.defineString(dynamicPropertyId("player"), 950); // Undocumented maximum at 1000
+        const playerProps = new MC.DynamicPropertiesDefinition();
+        playerProps.defineString(dynamicPropertyId("player"), 950); // Undocumented maximum at 1000
         ev.propertyRegistry.registerEntityTypeDynamicProperties(
-            props, MC.MinecraftEntityTypes.player);
+            playerProps, MC.MinecraftEntityTypes.player);
         // Seriously, only a thousand characters? We will probably have to
         // split our data in several properties then...
+
+        const worldProps = new MC.DynamicPropertiesDefinition();
+        worldProps.defineString(dynamicPropertyId("world"), 950);
+        ev.propertyRegistry.registerWorldDynamicProperties(worldProps);
     }
 });
 

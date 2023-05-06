@@ -2,12 +2,11 @@ import { Dimension } from "./dimension.js";
 import { Location } from "./location.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
+import { Wrapper } from "./wrapper.js";
 import { Direction } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
-export class Block {
-    readonly #block: MC.Block;
-
+export class Block extends Wrapper<MC.Block> {
     /** Clone an existing instance. */
     public constructor(block: Block);
 
@@ -17,47 +16,47 @@ export class Block {
 
     public constructor(arg: Block|MC.Block) {
         if (arg instanceof Block) {
-            this.#block = arg.#block;
+            super(arg.raw);
         }
         else {
-            this.#block = arg;
+            super(arg);
         }
     }
 
     public get dimension(): Dimension {
-        return new Dimension(this.#block.dimension);
+        return new Dimension(this.raw.dimension);
     }
 
     public get isWaterlogged(): boolean {
-        return this.#block.isWaterlogged;
+        return this.raw.isWaterlogged;
     }
 
     public get location(): Location {
-        return new Location(this.#block.location);
+        return new Location(this.raw.location);
     }
 
     public get permutation(): BlockPermutation {
-        return new BlockPermutation(this.#block.permutation);
+        return new BlockPermutation(this.raw.permutation);
     }
 
     public get type(): BlockType {
-        return new BlockType(this.#block.type);
+        return new BlockType(this.raw.type);
     }
 
     public get typeId(): string {
-        return this.#block.typeId;
+        return this.raw.typeId;
     }
 
     public get x(): number {
-        return this.#block.x;
+        return this.raw.x;
     }
 
     public get y(): number {
-        return this.#block.y;
+        return this.raw.y;
     }
 
     public get z(): number {
-        return this.#block.z;
+        return this.raw.z;
     }
 
     /// Get another block at a given offset towards a given direction.
@@ -79,7 +78,7 @@ export class Block {
 
     /** Package private */
     public getComponentOrThrow<T>(componentId: string): T {
-        const c = this.#block.getComponent(componentId);
+        const c = this.raw.getComponent(componentId);
         if (c) {
             return c as T;
         }
@@ -89,40 +88,26 @@ export class Block {
     }
 }
 
-export class BlockPermutation {
-    readonly #perm: MC.BlockPermutation;
-
-    /** Package private */
-    public constructor(rawPerm: MC.BlockPermutation) {
-        this.#perm = rawPerm;
-    }
-
-    /** Package private */
-    public get raw(): MC.BlockPermutation {
-        return this.#perm;
-    }
-
+export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
     public get type(): BlockType {
-        return new BlockType(this.#perm.type);
+        return new BlockType(this.raw.type);
     }
 
     public get states(): BlockStates {
-        return new BlockStates(this.#perm.getAllProperties());
+        return new BlockStates(this.raw.getAllProperties());
     }
 }
 
 export type BlockStateValue = boolean|number|string;
 
 /** A read-only Map type that represents block permutation states. */
-export class BlockStates implements Iterable<[string, BlockStateValue]> {
-    readonly #states: Record<string, BlockStateValue>;
-
+export class BlockStates extends Wrapper<Record<string, BlockStateValue>> implements Iterable<[string, BlockStateValue]> {
     public constructor(states: Record<string, BlockStateValue>) {
-        this.#states = states;
+        super(states);
     }
 
     public get size(): number {
-        return Object.keys(this.#states).length;
+        return Object.keys(this.raw).length;
     }
 
     public [Symbol.iterator](): IterableIterator<[string, BlockStateValue]> {
@@ -130,8 +115,8 @@ export class BlockStates implements Iterable<[string, BlockStateValue]> {
     }
 
     public *entries(): IterableIterator<[string, BlockStateValue]> {
-        for (const key in this.#states) {
-            yield [key, this.#states[key]!];
+        for (const key in this.raw) {
+            yield [key, this.raw[key]!];
         }
     }
 
@@ -143,29 +128,27 @@ export class BlockStates implements Iterable<[string, BlockStateValue]> {
     }
 
     public get(key: string): BlockStateValue|undefined {
-        return this.#states[key];
+        return this.raw[key];
     }
 
     public has(key: string): boolean {
-        return key in this.#states;
+        return key in this.raw;
     }
 
     public *keys(): IterableIterator<string> {
-        for (const key in this.#states) {
+        for (const key in this.raw) {
             yield key;
         }
     }
 
     public *values(): IterableIterator<BlockStateValue> {
-        for (const key in this.#states) {
-            yield this.#states[key]!;
+        for (const key in this.raw) {
+            yield this.raw[key]!;
         }
     }
 }
 
-export class BlockType {
-    readonly #type: MC.BlockType;
-
+export class BlockType extends Wrapper<MC.BlockType> {
     /** Package private */
     public constructor(rawBlockType: MC.BlockType);
 
@@ -174,19 +157,19 @@ export class BlockType {
 
     public constructor(arg0: MC.BlockType|string) {
         if (arg0 instanceof MC.BlockType) {
-            this.#type = arg0;
+            super(arg0);
         }
         else {
-            this.#type = MC.MinecraftBlockTypes.get(arg0);
+            super(MC.MinecraftBlockTypes.get(arg0));
         }
     }
 
     public get canBeWaterlogged(): boolean {
-        return this.#type.canBeWaterlogged;
+        return this.raw.canBeWaterlogged;
     }
 
     public get id(): string {
-        return this.#type.id;
+        return this.raw.id;
     }
 
     public static getAllBlockTypes(): IterableIterator<BlockType> {

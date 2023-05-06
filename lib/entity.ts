@@ -1,104 +1,49 @@
 import { Block } from "./block.js";
 import { Dimension } from "./dimension.js";
+import { HasDynamicProperties } from "./dynamic-props.js";
 import { EntityTags } from "./entity/tags.js";
 import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
+import { Wrapper } from "./wrapper.js";
 import { BlockRaycastOptions, EntityDamageCause, Vector2, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { BlockRaycastOptions, EntityDamageCause };
 
-export class Entity {
-    readonly #entity: MC.Entity;
-
-    /** The constructor is public only because of a language
-     * limitation. User code must never call it directly. */
-    public constructor(rawEntity: MC.Entity) {
-        this.#entity = rawEntity;
-    }
-
-    /** Package private: user code should not use this. */
-    public get raw(): MC.Entity {
-        return this.#entity;
-    }
-
+export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     public get dimension(): Dimension {
-        return new Dimension(this.#entity.dimension);
+        return new Dimension(this.raw.dimension);
     }
 
     public get id(): string {
-        return this.#entity.id;
+        return this.raw.id;
     }
 
     public get isSneaking(): boolean {
-        return this.#entity.isSneaking;
+        return this.raw.isSneaking;
     }
 
     public get location(): Location {
-        return new Location(this.#entity.location);
+        return new Location(this.raw.location);
     }
 
     public get typeId(): string {
-        return this.#entity.typeId;
+        return this.raw.typeId;
     }
 
     /** Returns the set of tags for this entity. The set isn't a
      * snapshot. You can add or remove tags through the standard Set
      * API. */
     public get tags(): Set<string> {
-        return new EntityTags(this.#entity);
+        return new EntityTags(this.raw);
     }
 
     public kill(): void {
-        this.#entity.kill();
+        this.raw.kill();
     }
 
     public getBlockFromViewDirection(options?: BlockRaycastOptions): Block {
-        return new Block(this.#entity.getBlockFromViewDirection(options));
-    }
-
-    public getDynamicProperty(identifier: string): boolean|number|string|undefined;
-    public getDynamicProperty(identifier: string, ty: "boolean?"): boolean|undefined;
-    public getDynamicProperty(identifier: string, ty: "number?" ): number |undefined;
-    public getDynamicProperty(identifier: string, ty: "string?" ): string |undefined;
-    public getDynamicProperty(identifier: string, ty: "boolean" ): boolean;
-    public getDynamicProperty(identifier: string, ty: "number"  ): number;
-    public getDynamicProperty(identifier: string, ty: "string"  ): string |undefined;
-    public getDynamicProperty(identifier: string, ty?: string): boolean|number|string|undefined {
-        const prop = this.#entity.getDynamicProperty(identifier);
-
-        if (ty == null) {
-            // No constraints are requested on the type of the property.
-            return prop;
-        }
-        else {
-            const expectedType = ty.substring(0, ty.length - 1);
-            const actualType   = typeof prop;
-
-            if (prop === undefined) {
-                if (ty.endsWith("?")) {
-                    // It can also be undefined.
-                    return prop;
-                }
-                else {
-                    throw new TypeError(`Dynamic property \`${identifier}' of the entity is expected to be a ${expectedType} but is actually undefined`);
-                }
-            }
-            else if (expectedType === actualType) {
-                return prop;
-            }
-            else {
-                throw new TypeError(`Dynamic property \`${identifier} of the entity is expected to be a ${expectedType} but is actually a ${actualType}`);
-            }
-        }
-    }
-
-    public setDynamicProperty(identifier: string, value: boolean|number|string): void {
-        this.#entity.setDynamicProperty(identifier, value);
-    }
-
-    public removeDynamicProperty(identifier: string): void {
-        this.#entity.removeDynamicProperty(identifier);
+        return new Block(this.raw.getBlockFromViewDirection(options));
     }
 
     public teleport(location: Vector3, opts?: TeleportOptions): void {
@@ -110,18 +55,18 @@ export class Entity {
             if (opts.rotation) {
                 throw new Error("TeleportOptions.facingLocation and .rotation cannot be used at the same time with this API");
             }
-            this.#entity.teleportFacing(
+            this.raw.teleportFacing(
                 location,
-                opts.dimension?.raw || this.#entity.dimension,
+                opts.dimension?.raw || this.raw.dimension,
                 opts.facingLocation,
                 opts.keepVelocity);
         }
         else {
-            this.#entity.teleport(
+            this.raw.teleport(
                 location,
-                opts?.dimension?.raw || this.#entity.dimension,
-                opts?.rotation?.x    || this.#entity.getRotation().x,
-                opts?.rotation?.y    || this.#entity.getRotation().y,
+                opts?.dimension?.raw || this.raw.dimension,
+                opts?.rotation?.x    || this.raw.getRotation().x,
+                opts?.rotation?.y    || this.raw.getRotation().y,
                 opts?.keepVelocity);
         }
         /*
@@ -144,12 +89,12 @@ export class Entity {
                 rawOpts.rotation = opts.rotation;
             }
         }
-        this.#entity.teleport(location, rawOpts);
+        this.raw.teleport(location, rawOpts);
         */
     }
 
     public triggerEvent(eventName: string): void {
-        this.#entity.triggerEvent(eventName);
+        this.raw.triggerEvent(eventName);
     }
 }
 

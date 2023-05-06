@@ -43,7 +43,7 @@
     "merge2": "^1.4.1",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.7.4"
+    "typescript": "^5.0.4"
   },
   "dependencies": {
     "@types/minecraft__server": "github:depressed-pho/types-minecraft__server",

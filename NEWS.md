@@ -8,6 +8,9 @@
   * `Player.prototype.console`
   * `World.prototype.events`
   * `System.prototype.events`
+* Not only `Player`, now `World` also supports `getDynamicProperty`,
+  `setDynamicProperty`, `removeDynamicProperty`, `getPreferences`, and
+  `setPreferences`.
 * Functions provided by `lib/delay.ts` now catch unhandled exceptions and
   print it to `console` if callbacks throw. This works even if they are
   async functions.

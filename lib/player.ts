@@ -2,37 +2,35 @@ import { Entity } from "./entity.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { PlayerConsole } from "./player/console.js";
 import { MessageType } from "@protobuf-ts/runtime";
-import * as Preferences from "./preferences.js";
+import { RawMessage } from "@minecraft/server";
+import { IPreferencesContainer } from "./preferences.js";
+import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
 export { ScreenDisplay, PlayerLeaveEvent } from "@minecraft/server";
 
-export class Player extends Entity {
-    readonly #player: MC.Player;
-
-    /** The constructor is public only because of a language
-     * limitation. User code must never call it directly. */
+export class Player extends Entity implements IPreferencesContainer {
+    /** Package private: user code should not use this. */
     public constructor(rawPlayer: MC.Player) {
         super(rawPlayer);
-        this.#player = rawPlayer;
     }
 
-    /** Package private: user code should not use this. */
+    // @ts-ignore: https://github.com/microsoft/TypeScript/issues/41347
     public override get raw(): MC.Player {
-        return this.#player;
+        return super.raw as MC.Player;
     }
 
     public get name(): string {
-        return this.#player.name;
+        return this.raw.name;
     }
 
     public get inventory(): EntityInventory {
         return new EntityInventory(
-            this.#player.getComponent("minecraft:inventory") as MC.EntityInventoryComponent);
+            this.raw.getComponent("minecraft:inventory") as MC.EntityInventoryComponent);
     }
 
     public get onScreenDisplay(): MC.ScreenDisplay {
-        return this.#player.onScreenDisplay;
+        return this.raw.onScreenDisplay;
     }
 
     /** A Console API that sends messages to the chat screen of this
@@ -40,27 +38,27 @@ export class Player extends Entity {
      * mainly for error reporting and debugging. Use {@link sendMessage}
      * for regular messages. */
     public get console(): Console {
-        return new PlayerConsole(this.#player);
+        return new PlayerConsole(this);
     }
 
     /** Obtain the per-player preferences object for this player. */
     public getPreferences<T extends object>(ty: MessageType<T>): T {
-        return Preferences.decodeOrCreate(
+        return Prefs.decodeOrCreate(
             ty,
             this.getDynamicProperty(
-                Preferences.dynamicPropertyId("player"),
+                Prefs.dynamicPropertyId("player"),
                 "string?"));
     }
 
     /** Update the per-player preferences object for this player. */
     public setPreferences<T extends object>(ty: MessageType<T>, prefs: T): void {
         this.setDynamicProperty(
-            Preferences.dynamicPropertyId("player"),
-            Preferences.encode(ty, prefs));
+            Prefs.dynamicPropertyId("player"),
+            Prefs.encode(ty, prefs));
     }
 
-    public sendMessage(msg: (MC.RawMessage|string)[]|MC.RawMessage|string): void {
-        this.#player.sendMessage(msg);
+    public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
+        this.raw.sendMessage(msg);
     }
 }
 

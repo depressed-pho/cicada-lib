@@ -1,12 +1,16 @@
 import { WorldEvents } from "./world/events.js";
 import { map } from "./iterable.js";
 import { Player, PlayerSpawnEvent } from "./player.js"
+import { HasDynamicProperties } from "./dynamic-props.js";
+import { Wrapper } from "./wrapper.js";
+import { MessageType } from "@protobuf-ts/runtime";
+import { IPreferencesContainer } from "./preferences.js";
+import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
 export { EntityQueryOptions } from "@minecraft/server";
 
-export class World {
-    readonly #world: MC.World;
+export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IPreferencesContainer {
     #isReady: boolean;
     #readinessProbe: number|null;
     #pendingEvents: (() => void)[];
@@ -17,26 +21,35 @@ export class World {
     /** The constructor is public only because of a language
      * limitation. User code must never call it directly. */
     public constructor(rawWorld: MC.World) {
-        this.#world          = rawWorld;
+        super(rawWorld);
         this.#isReady        = false;
         this.#readinessProbe = null;
         this.#pendingEvents  = [];
-
-        this.events          = new WorldEvents(rawWorld);
-
+        this.events          = new WorldEvents(this.raw.events);
         this.#glueEvents();
-    }
-
-    /** Package private: user code should not use this. */
-    get raw(): MC.World {
-        return this.#world;
     }
 
     public getPlayers(opts?: MC.EntityQueryOptions): IterableIterator<Player> {
         // Create an iterable object that progressively constructs Player.
-        return map(this.#world.getPlayers(opts), raw => {
+        return map(this.raw.getPlayers(opts), raw => {
             return new Player(raw);
         });
+    }
+
+    /** Obtain the per-world preferences object. */
+    public getPreferences<T extends object>(ty: MessageType<T>): T {
+        return Prefs.decodeOrCreate(
+            ty,
+            this.getDynamicProperty(
+                Prefs.dynamicPropertyId("world"),
+                "string?"));
+    }
+
+    /** Update the per-world preferences object. */
+    public setPreferences<T extends object>(ty: MessageType<T>, prefs: T): void {
+        this.setDynamicProperty(
+            Prefs.dynamicPropertyId("world"),
+            Prefs.encode(ty, prefs));
     }
 
     #glueEvents(): void {
@@ -48,7 +61,7 @@ export class World {
          */
         const onTick = () => {
             if (!this.#isReady) {
-                const it = this.#world.getPlayers();
+                const it = this.raw.getPlayers();
                 // World.prototype.getPlayers returns null when it's not
                 // ready yet, which isn't even documented!!
                 if (it) {
@@ -67,7 +80,7 @@ export class World {
         };
         this.#readinessProbe = MC.system.runInterval(onTick, 1);
 
-        this.#world.events.playerSpawn.subscribe(rawEv => {
+        this.raw.events.playerSpawn.subscribe(rawEv => {
             const ev: PlayerSpawnEvent = {
                 initialSpawn: rawEv.initialSpawn,
                 player:       new Player(rawEv.player)
@@ -82,7 +95,7 @@ export class World {
             }
         });
 
-        this.#world.events.playerLeave.subscribe(ev => {
+        this.raw.events.playerLeave.subscribe(ev => {
             if (this.#isReady) {
                 this.events.playerLeave.signal(ev);
             }

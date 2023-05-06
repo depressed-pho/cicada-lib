@@ -1,23 +1,15 @@
 import { SystemEvents } from "./system/events.js";
+import { Wrapper } from "./wrapper.js";
 import * as MC from "@minecraft/server";
 
-export class System {
-    readonly #system: MC.System;
-
+export class System extends Wrapper<MC.System> {
     /** System event signals */
     public readonly events: SystemEvents;
 
-    /** The constructor is public only because of a language
-     * limitation. User code must never call it directly. */
+    /** Package private: user code should not use this. */
     public constructor(rawSystem: MC.System) {
-        this.#system = rawSystem;
-
-        this.events  = new SystemEvents(rawSystem);
-    }
-
-    /// Package private
-    public get raw(): MC.System {
-        return this.#system;
+        super(rawSystem);
+        this.events = new SystemEvents(this.raw.events);
     }
 }
 

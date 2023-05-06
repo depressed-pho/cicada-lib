@@ -1,13 +1,13 @@
 import { ConsoleBase, Severity } from "../console-base.js";
-import * as MC from "@minecraft/server";
+import { Player } from "../player.js";
 
 export class PlayerConsole extends ConsoleBase {
-    readonly #player: MC.Player;
+    readonly #player: Player;
 
     /** Package private */
-    public constructor(rawPlayer: MC.Player) {
+    public constructor(player: Player) {
         super();
-        this.#player = rawPlayer;
+        this.#player = player;
     }
 
     protected logImpl(sev: Severity, ...args: any[]): void {
