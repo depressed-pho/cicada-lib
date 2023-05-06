@@ -8,18 +8,20 @@ import { Entity, ItemUseEvent, EntityDieEvent, EntityEventOptions,
 import { ItemStack } from "../item/stack.js";
 import { Player, PlayerSpawnEvent } from "../player.js"
 import { Wrapper } from "../wrapper.js";
+import { PropertyRegistry, WorldInitializeEvent } from "./init.js";
 import * as MC from "@minecraft/server";
 
 export class WorldEvents extends Wrapper<MC.Events> {
-    public readonly blockBreak:     IEventSignal<BlockBreakEvent>;
-    public readonly blockPlace:     IEventSignal<BlockPlaceEvent>;
-    public readonly entityDie:      IEventSignal<EntityDieEvent, EntityEventOptions>;
-    public readonly itemUse:        IEventSignal<ItemUseEvent>;
-    public readonly pistonActivate: IEventSignal<PistonActivateEvent>;
+    public readonly blockBreak:      IEventSignal<BlockBreakEvent>;
+    public readonly blockPlace:      IEventSignal<BlockPlaceEvent>;
+    public readonly entityDie:       IEventSignal<EntityDieEvent, EntityEventOptions>;
+    public readonly itemUse:         IEventSignal<ItemUseEvent>;
+    public readonly pistonActivate:  IEventSignal<PistonActivateEvent>;
+    public readonly worldInitialize: IEventSignal<WorldInitializeEvent>;
     /** An event that is fired when the world is fully loaded. */
-    public readonly ready:          CustomEventSignal<ReadyEvent>;
-    public readonly playerSpawn:    CustomEventSignal<PlayerSpawnEvent>;
-    public readonly playerLeave:    CustomEventSignal<MC.PlayerLeaveEvent>;
+    public readonly ready:           CustomEventSignal<ReadyEvent>;
+    public readonly playerSpawn:     CustomEventSignal<PlayerSpawnEvent>;
+    public readonly playerLeave:     CustomEventSignal<MC.PlayerLeaveEvent>;
 
     /// Package private
     public constructor(rawEvents: MC.Events) {
@@ -68,6 +70,13 @@ export class WorldEvents extends Wrapper<MC.Events> {
                 return {
                     isExpanding: rawEv.isExpanding,
                     piston:      new Piston(rawEv.piston.block)
+                };
+            });
+        this.worldInitialize = new GluedEventSignalWithoutOptions(
+            this.raw.worldInitialize,
+            (rawEv: MC.WorldInitializeEvent) => {
+                return {
+                    propertyRegistry: new PropertyRegistry(rawEv.propertyRegistry)
                 };
             });
         this.ready       = new CustomEventSignal();

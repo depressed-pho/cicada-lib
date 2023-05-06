@@ -4,9 +4,9 @@
  */
 import "./shims/text-decoder.js";
 import "./shims/text-encoder.js";
+import { world } from "./world.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import * as CicASCII from "./cic-ascii.js";
-import * as MC from "@minecraft/server";
 
 let addonNamespace:   string|null = null;
 let worldInitialised: boolean     = false;
@@ -38,18 +38,24 @@ export function dynamicPropertyId(type: "player"|"world"): string {
     }
 }
 
-MC.world.events.worldInitialize.subscribe(ev => {
+world.events.worldInitialize.subscribe(ev => {
     if (addonNamespace != null) {
-        const playerProps = new MC.DynamicPropertiesDefinition();
-        playerProps.defineString(dynamicPropertyId("player"), 950); // Undocumented maximum at 1000
-        ev.propertyRegistry.registerEntityTypeDynamicProperties(
-            playerProps, MC.MinecraftEntityTypes.player);
-        // Seriously, only a thousand characters? We will probably have to
-        // split our data in several properties then...
-
-        const worldProps = new MC.DynamicPropertiesDefinition();
-        worldProps.defineString(dynamicPropertyId("world"), 950);
-        ev.propertyRegistry.registerWorldDynamicProperties(worldProps);
+        ev.propertyRegistry.registerEntityTypeDynamicProperties({
+            "minecraft:player": {
+                [dynamicPropertyId("player")]: {
+                    type: "string",
+                    maxLength: 950 // Undocumented maximum at 1000
+                }
+                // Seriously, only a thousand characters? We will probably
+                // have to split our data in several properties then...
+            }
+        });
+        ev.propertyRegistry.registerWorldDynamicProperties({
+            [dynamicPropertyId("world")]: {
+                type: "string",
+                maxLength: 950
+            }
+        });
     }
 });
 

@@ -27,7 +27,7 @@ export class ActionFormData {
     }
 
     show(player: Player): Promise<UI.ActionFormResponse> {
-        return this.#raw.show(player.raw);
+        return this.#raw.show(player.rawPlayer);
     }
 
     title(titleText: string): ActionFormData {
@@ -59,7 +59,7 @@ export class MessageFormData {
     }
 
     show(player: Player): Promise<UI.MessageFormResponse> {
-        return this.#raw.show(player.raw);
+        return this.#raw.show(player.rawPlayer);
     }
 
     title(titleText: string): MessageFormData {
@@ -86,7 +86,7 @@ export class ModalFormData {
     }
 
     show(player: Player): Promise<UI.ModalFormResponse> {
-        return this.#raw.show(player.raw);
+        return this.#raw.show(player.rawPlayer);
     }
 
     slider(

@@ -15,22 +15,23 @@ export class Player extends Entity implements IPreferencesContainer {
         super(rawPlayer);
     }
 
-    // @ts-ignore: https://github.com/microsoft/TypeScript/issues/41347
-    public override get raw(): MC.Player {
+    // NOTE: We cannot simply override "get raw()" due to
+    // https://github.com/microsoft/TypeScript/issues/41347
+    public get rawPlayer(): MC.Player {
         return super.raw as MC.Player;
     }
 
     public get name(): string {
-        return this.raw.name;
+        return this.rawPlayer.name;
     }
 
     public get inventory(): EntityInventory {
         return new EntityInventory(
-            this.raw.getComponent("minecraft:inventory") as MC.EntityInventoryComponent);
+            this.rawPlayer.getComponent("minecraft:inventory") as MC.EntityInventoryComponent);
     }
 
     public get onScreenDisplay(): MC.ScreenDisplay {
-        return this.raw.onScreenDisplay;
+        return this.rawPlayer.onScreenDisplay;
     }
 
     /** A Console API that sends messages to the chat screen of this
@@ -58,7 +59,7 @@ export class Player extends Entity implements IPreferencesContainer {
     }
 
     public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
-        this.raw.sendMessage(msg);
+        this.rawPlayer.sendMessage(msg);
     }
 }
 
