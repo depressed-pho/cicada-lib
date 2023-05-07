@@ -34,15 +34,18 @@
   },
   "homepage": "https://github.com/depressed-pho/cicada-lib#readme",
   "devDependencies": {
+    "@protobuf-ts/plugin": "^2.9.0",
     "@protobuf-ts/runtime": "^2.8.2",
     "@types/chai": "^4.3.5",
     "@types/mocha": "^10.0.1",
     "chai": "^4.3.7",
+    "fancy-log": "^2.0.0",
     "gulp": "^4.0.2",
     "gulp-cli": "^2.3.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "merge2": "^1.4.1",
     "mocha": "^10.2.0",
+    "npm-which": "^3.0.1",
     "tsimp": "^2.0.10",
     "typescript": "^5.3.3"
   },

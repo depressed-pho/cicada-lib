@@ -1,0 +1,54 @@
+syntax = "proto3";
+package cicadaDB;
+
+message Metadata {
+  repeated Version versions = 1;
+
+  Side activeParts = 2;
+  PartsMeta partsA = 3;
+  PartsMeta partsB = 4;
+
+  Side activeWAL = 5;
+  WALMeta walA = 6;
+  WALMeta walB = 7;
+}
+
+message Version {
+  uint32 num = 1;
+  map<string, Indices> schema = 2;
+}
+
+message Indices {
+  PrimaryKey pKey = 1;
+  repeated Index indices = 2;
+}
+
+message PrimaryKey {
+  // If it's a compound primary key, it cannot be auto-incremented.
+  bool isAutoIncr = 1;
+  Index index = 2;
+}
+
+message Index {
+  // For primary keys there can be any number of keyPaths. For regular
+  // indices there can be one or more keyPaths.
+  repeated string keyPaths = 1;
+  // Primary keys are implicitly unique regardless of the value of this
+  // field.
+  bool isUnique = 2;
+  bool isMulti = 3;
+}
+
+enum Side {
+  A = 0;
+  B = 1;
+}
+
+message PartsMeta {
+  uint32 version = 1;
+  uint32 numChunks = 2;
+}
+
+message WALMeta {
+  uint32 numChunks = 1;
+}

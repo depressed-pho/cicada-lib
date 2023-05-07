@@ -1,0 +1,42 @@
+syntax = "proto3";
+package cicadaDB;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+message Row {
+  Key pKey = 1;
+  Value value = 2;
+}
+
+message Key {
+  oneof variant {
+    double numberKey = 1;
+    google.protobuf.Timestamp dateKey = 2;
+    string stringKey = 3;
+    bytes bytesKey = 4;
+    ArrayKey arrayKey = 5;
+  }
+  message ArrayKey {
+    repeated Key elems = 1;
+  }
+}
+
+message Value {
+  oneof variant {
+    google.protobuf.NullValue nullValue = 1;
+    bool booleanValue = 2;
+    double numberValue = 3;
+    string stringValue = 4;
+    bytes bytesValue = 5;
+    ArrayValue arrayValue = 6;
+    ObjectValue objectValue = 7;
+    google.protobuf.Timestamp dateValue = 8;
+  }
+  message ArrayValue {
+    repeated Value values = 1;
+  }
+  message ObjectValue {
+    map<string, Value> object = 1;
+  }
+}

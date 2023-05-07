@@ -21,6 +21,7 @@
             "DOM"
         ],
         "baseUrl": ".",
+        "rootDirs": [ "lib", "dist" ],
         "types": [
             "chai",
             "@minecraft/server",

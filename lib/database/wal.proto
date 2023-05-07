@@ -1,0 +1,23 @@
+syntax = "proto3";
+package cicadaDB;
+
+import "table.proto";
+
+message WALChunk {
+  repeated WALEntry entries = 1;
+}
+
+message WALEntry {
+  map<string, Rows> tables = 1;
+
+  message Rows {
+    repeated Row rows = 1;
+
+    message Row {
+      Key key = 1;
+      // If this exists it means an insertion or an update. Otherwise it's
+      // a deletion.
+      optional Value value = 2;
+    }
+  }
+}
