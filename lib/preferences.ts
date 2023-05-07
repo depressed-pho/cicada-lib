@@ -4,7 +4,7 @@
  */
 import "./shims/text-decoder.js";
 import "./shims/text-encoder.js";
-import { world } from "./world.js";
+import { PropertyRegistry } from "./world.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import * as CicASCII from "./cic-ascii.js";
 
@@ -38,9 +38,10 @@ export function dynamicPropertyId(type: "player"|"world"): string {
     }
 }
 
-world.events.worldInitialize.subscribe(ev => {
+/** Package private */
+export function initialise(reg: PropertyRegistry) {
     if (addonNamespace != null) {
-        ev.propertyRegistry.registerEntityTypeDynamicProperties({
+        reg.registerEntityTypeDynamicProperties({
             "minecraft:player": {
                 [dynamicPropertyId("player")]: {
                     type: "string",
@@ -50,7 +51,7 @@ world.events.worldInitialize.subscribe(ev => {
                 // have to split our data in several properties then...
             }
         });
-        ev.propertyRegistry.registerWorldDynamicProperties({
+        reg.registerWorldDynamicProperties({
             [dynamicPropertyId("world")]: {
                 type: "string",
                 maxLength: 950
@@ -58,7 +59,7 @@ world.events.worldInitialize.subscribe(ev => {
         });
     }
     worldInitialised = true;
-});
+}
 
 /** Package private */
 export function decodeOrCreate<T extends object>(ty: MessageType<T>,
