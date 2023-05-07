@@ -21,7 +21,7 @@ export interface IPreferencesContainer {
 export function declareNamespace(ns: string): void {
     if (worldInitialised) {
         throw new Error(
-            "Attempted to declare the addon namespace after initialising the world. It's too late.");
+            "Attempted to declare the addon namespace after initialising the world. It's too late");
     }
     else {
         addonNamespace = ns;
@@ -31,7 +31,7 @@ export function declareNamespace(ns: string): void {
 /** Package private */
 export function dynamicPropertyId(type: "player"|"world"): string {
     if (addonNamespace == null) {
-        throw new Error("No namespaces have been declared for the addon.");
+        throw new Error("No namespaces have been declared for the addon");
     }
     else {
         return `${addonNamespace}:preferences.${type}`;
@@ -57,6 +57,7 @@ world.events.worldInitialize.subscribe(ev => {
             }
         });
     }
+    worldInitialised = true;
 });
 
 /** Package private */

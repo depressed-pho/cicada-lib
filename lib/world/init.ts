@@ -31,9 +31,9 @@ export class PropertyRegistry extends Wrapper<MC.PropertyRegistry> {
     public registerEntityTypeDynamicProperties(
         propsForEachEntity: EntityTypeDynamicPropertiesDefinition): void {
 
-        for (const entityType in propsForEachEntity) {
+        for (const [entityType, props] of Object.entries(propsForEachEntity)) {
             this.raw.registerEntityTypeDynamicProperties(
-                propsToRaw(propsForEachEntity[entityType]!),
+                propsToRaw(props),
                 MC.EntityTypes.get(entityType));
         }
     }
@@ -46,9 +46,7 @@ export class PropertyRegistry extends Wrapper<MC.PropertyRegistry> {
 function propsToRaw(props: DynamicPropertiesDefinition): MC.DynamicPropertiesDefinition {
     const raw = new MC.DynamicPropertiesDefinition();
 
-    for (const propId in props) {
-        const def = props[propId]!;
-
+    for (const [propId, def] of Object.entries(props)) {
         switch (def.type) {
             case "boolean":
                 raw.defineBoolean(propId);
