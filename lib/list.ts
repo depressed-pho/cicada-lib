@@ -1,117 +1,95 @@
 interface Cell<T> {
-    prev: Cell<T>|null;
-    next: Cell<T>|null;
     readonly elem: T;
+    readonly next: Cell<T>|null;
 }
 
-/** A doubly-linked list: shift() and unshift() perform better than
- * arrays.
+/** An immutable list-like data structure with amortised O(1) for `cons`
+ * and `snoc` operations.
  */
 export class List<T> {
-    #head: Cell<T>|null;
-    #tail: Cell<T>|null;
+    readonly #prefix: Cell<T>|null;
+    readonly #suffix: Cell<T>|null; // reverse order
 
-    public constructor() {
-        this.#head = null;
-        this.#tail = null;
+    private constructor(prefix: Cell<T>|null, suffix: Cell<T>|null) {
+        this.#prefix = prefix;
+        this.#suffix = suffix;
+    }
+
+    public static empty: List<any> = new List(null, null);
+
+    public static singleton<T>(v: T): List<T> {
+        return List.empty.snoc(v);
     }
 
     public get isEmpty(): boolean {
-        return this.#head == null;
+        return this.#prefix === null && this.#suffix === null;
     }
 
-    public push(t: T): this {
-        const cell = {
-            prev: this.#tail,
-            next: null,
-            elem: t
-        };
-
-        if (!this.#head) {
-            this.#head = cell;
-        }
-
-        if (this.#tail) {
-            this.#tail.next = cell;
-        }
-        this.#tail = cell;
-
-        return this;
+    public cons(v: T): List<T> {
+        return new List({elem: v, next: this.#prefix}, this.#suffix);
     }
 
-    public pop(): T|undefined {
-        if (this.#tail) {
-            const cell = this.#tail;
-            if (this.#tail.prev) {
-                this.#tail.prev.next = null;
-                this.#tail           = this.#tail.prev;
-            }
-            else {
-                this.#head = null;
-                this.#tail = null;
-            }
-            return cell.elem;
+    public uncons(): [T|undefined, List<T>] {
+        if (this.#prefix) {
+            return [this.#prefix.elem, new List(this.#prefix.next, this.#suffix)];
         }
         else {
-            return undefined;
-        }
-    }
-
-    public unshift(t: T): this {
-        const cell = {
-            prev: null,
-            next: this.#head,
-            elem: t
-        };
-
-        if (this.#head) {
-            this.#head.prev = cell;
-        }
-        this.#head = cell;
-
-        if (!this.#tail) {
-            this.#tail = cell;
-        }
-
-        return this;
-    }
-
-    public shift(): T|undefined {
-        if (this.#head) {
-            const cell = this.#head;
-            if (this.#head.next) {
-                this.#head.next.prev = null;
-                this.#head           = this.#head.next;
+            const prefix = List.reverse(this.#suffix);
+            if (prefix) {
+                return [prefix.elem, new List(prefix.next, this.#suffix)];
             }
             else {
-                this.#head = null;
-                this.#tail = null;
+                return [undefined, this];
             }
-            return cell.elem;
-        }
-        else {
-            return undefined;
         }
     }
 
-    public filter(p: (t: T) => boolean): this {
-        for (let cell = this.#head; cell; cell = cell.next) {
-            if (!p(cell.elem)) {
-                if (cell.prev) {
-                    cell.prev.next = cell.next;
-                }
-                else {
-                    this.#head = null;
-                }
+    public snoc(v: T): List<T> {
+        return new List(this.#prefix, {elem: v, next: this.#suffix});
+    }
 
-                if (cell.next) {
-                    cell.next.prev = cell.prev;
-                }
-                else {
-                    this.#tail = null;
-                }
+    public unsnoc(): [List<T>, T|undefined] {
+        if (this.#suffix) {
+            return [new List(this.#prefix, this.#suffix.next), this.#suffix.elem];
+        }
+        else {
+            const suffix = List.reverse(this.#prefix);
+            if (suffix) {
+                return [new List(null, suffix.next), suffix.elem];
+            }
+            else {
+                return [this, undefined];
             }
         }
-        return this;
+    }
+
+    public *[Symbol.iterator](): IterableIterator<T> {
+        for (let cell = this.#prefix; cell; cell = cell.next) {
+            yield cell.elem;
+        }
+        for (let cell = List.reverse(this.#suffix); cell; cell = cell.next) {
+            yield cell.elem;
+        }
+    }
+
+    public filter(p: (v: T) => boolean): List<T> {
+        function go(list: Cell<T>|null): Cell<T>|null {
+            let acc: Cell<T>|null = null;
+            for (let cell = list; cell; cell = cell.next) {
+                if (p(cell.elem)) {
+                    acc = {elem: cell.elem, next: acc};
+                }
+            }
+            return List.reverse(acc);
+        }
+        return new List(go(this.#prefix), go(this.#suffix));
+    }
+
+    private static reverse<T>(list: Cell<T>|null): Cell<T>|null {
+        let acc: Cell<T>|null = null;
+        for (let cell = list; cell; cell = cell.next) {
+            acc = {elem: cell.elem, next: acc};
+        }
+        return acc;
     }
 }

@@ -20,6 +20,7 @@
 * Renamed `lib/octet-stream.ts` to `lib/cic-ascii.ts`.
 * Added `lib/block/minecraft/piston.ts`.
 * Added `lib/lz4.ts`.
+* Added `lib/parser.ts`.
 * `World` and `System` are no longer subclasses of `EventEmitter`. We
   figured that adopting the `EventEmitter` API caused a performance issue
   because we had to subscribe to every event the API supports.
