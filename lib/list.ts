@@ -15,7 +15,14 @@ export class List<T> {
         this.#suffix = suffix;
     }
 
-    public static empty: List<any> = new List(null, null);
+    // QuickJS doesn't allow this: it follows the ES2020 semantics so
+    // "List" will be put in the context at the very end of class
+    // initialisation. "new List()" is not possible in property
+    // initialisers.
+    //public static readonly empty: List<any> = new List(null, null);
+    //
+    // So this is a workaround:
+    public static readonly empty: List<any>;
 
     public static singleton<T>(v: T): List<T> {
         return List.empty.snoc(v);
@@ -93,3 +100,6 @@ export class List<T> {
         return acc;
     }
 }
+
+// @ts-ignore: See above
+List.empty = new List(null, null);

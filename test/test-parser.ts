@@ -12,7 +12,7 @@ describe("Parser", () => {
             });
             it("fails at the end of input", () => {
                 expect(
-                    () => P.parseOnly(P.anyChar, "")
+                    () => P.getResult(P.parse(P.anyChar, ""))
                 ).to.throw;
             });
         });
@@ -24,7 +24,7 @@ describe("Parser", () => {
             });
             it("fails if the predicate returns false", () => {
                 expect(
-                    () => P.parseOnly(P.satisfy(c => c == "🠖"), "abcde")
+                    () => P.getResult(P.parse(P.satisfy(c => c == "🠖"), "abcde"))
                 ).to.throw;
             });
         });
@@ -38,8 +38,8 @@ describe("Parser", () => {
             });
             it("parses `undefined' at the end of input", () => {
                 expect(
-                    P.parseOnly(P.peekChar, "")
-                ).to.be.undefined;
+                    P.parse(P.peekChar, "")
+                ).to.deep.equal({done: undefined, rest: ""});
             });
         });
     });
@@ -47,36 +47,36 @@ describe("Parser", () => {
         describe("asciiDigit", () => {
             it("parses an ASCII digit", () => {
                 expect(
-                    P.parseOnly(P.asciiDigit, "1bcde")
-                ).to.equal("1");
+                    P.parse(P.asciiDigit, "1bcde")
+                ).to.deep.equal({done: "1", rest: "bcde"});
             });
             it("doesn't accept anything other than ASCII digits", () => {
                 expect(
-                    () => P.parseOnly(P.asciiDigit, "abcde")
+                    () => P.getResult(P.parse(P.asciiDigit, "abcde"))
                 ).to.throw;
             });
         });
         describe("asciiAlpha", () => {
             it("parses an ASCII alphabet", () => {
                 expect(
-                    P.parseOnly(P.asciiAlpha, "abcde")
-                ).to.equal("a");
+                    P.parse(P.asciiAlpha, "abcde")
+                ).to.deep.equal({done: "a", rest: "bcde"});
             });
             it("doesn't accept anything other than ASCII alphabets", () => {
                 expect(
-                    () => P.parseOnly(P.asciiAlpha, "1bcde")
+                    () => P.getResult(P.parse(P.asciiAlpha, "1bcde"))
                 ).to.throw;
             });
         });
         describe("asciiSpace", () => {
             it("parses an ASCII whitespace", () => {
                 expect(
-                    P.parseOnly(P.asciiSpace, " bcde")
-                ).to.equal(" ");
+                    P.parse(P.asciiSpace, " bcde")
+                ).to.deep.equal({done: " ", rest: "bcde"});
             });
             it("doesn't accept anything other than ASCII whitespaces", () => {
                 expect(
-                    () => P.parseOnly(P.asciiSpace, "abcde")
+                    () => P.getResult(P.parse(P.asciiSpace, "abcde"))
                 ).to.throw;
             });
         });
@@ -85,24 +85,24 @@ describe("Parser", () => {
         describe("match", () => {
             it("parses any character that matches a given RegExp", () => {
                 expect(
-                    P.parseOnly(P.match(/[0-9]/), "1bcde")
-                ).to.equal("1");
+                    P.parse(P.match(/[0-9]/), "1bcde")
+                ).to.deep.equal({done: "1", rest: "bcde"});
             });
             it("doesn't accept characters that doesn't match a given RegExp", () => {
                 expect(
-                    () => P.parseOnly(P.match(/[0-9]/), "abcde")
+                    () => P.getResult(P.parse(P.match(/[0-9]/), "abcde"))
                 ).to.throw;
             });
         });
         describe("noMatch", () => {
             it("parses any character that doesn't match a given RegExp", () => {
                 expect(
-                    P.parseOnly(P.noMatch(/[0-9]/), "abcde")
-                ).to.equal("a");
+                    P.parse(P.noMatch(/[0-9]/), "abcde")
+                ).to.deep.equal({done: "a", rest: "bcde"});
             });
             it("doesn't accept characters that matches a given RegExp", () => {
                 expect(
-                    () => P.parseOnly(P.match(/[0-9]/), "1bcde")
+                    () => P.getResult(P.parse(P.match(/[0-9]/), "1bcde"))
                 ).to.throw;
             });
         });
@@ -116,7 +116,7 @@ describe("Parser", () => {
             });
             it("fails if the input doesn't start with the given string", () => {
                 expect(
-                    () => P.parseOnly(P.literal("🠖bc"), "abcde")
+                    () => P.getResult(P.parse(P.literal("🠖bc"), "abcde"))
                 ).to.throw;
             });
         });
@@ -168,7 +168,7 @@ describe("Parser", () => {
             });
             it("fails when no characters satisfy the predicate", () => {
                 expect(
-                    () => P.parseOnly(P.takeWhile1(c => c === "🠖"), "abcde")
+                    () => P.getResult(P.parse(P.takeWhile1(c => c === "🠖"), "abcde"))
                 ).to.throw;
             });
         });
@@ -189,8 +189,8 @@ describe("Parser", () => {
         describe("takeRest", () => {
             it("consumes all the remaining input", () => {
                 expect(
-                    P.parseOnly(P.takeRest, "🠖bcde")
-                ).to.equal("🠖bcde");
+                    P.parse(P.takeRest, "🠖bcde")
+                ).to.deep.equal({done: "🠖bcde", rest: ""});
             });
         });
     });
@@ -392,8 +392,8 @@ describe("Parser", () => {
         describe("endOfInput", () => {
             it("succeeds at the end of input", () => {
                 expect(
-                    P.parseOnly(P.endOfInput, "")
-                ).to.be.null;
+                    P.parse(P.endOfInput, "")
+                ).to.deep.equal({done: null, rest: ""});
             });
             it("fails if there is input", () => {
                 expect(
@@ -404,8 +404,8 @@ describe("Parser", () => {
         describe("atEnd", () => {
             it("returns true at the end of input", () => {
                 expect(
-                    P.parseOnly(P.atEnd, "")
-                ).to.be.true;
+                    P.parse(P.atEnd, "")
+                ).to.deep.equal({done: true, rest: ""});
             });
             it("returns false if there is input", () => {
                 expect(

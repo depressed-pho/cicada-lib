@@ -21,7 +21,15 @@ export class UniString {
     }
 
     /// Empty UniString.
-    public static readonly empty = new UniString("");
+
+    // QuickJS doesn't allow this: it follows the ES2020 semantics so
+    // "UniString" will be put in the context at the very end of class
+    // initialisation. "new UniString()" is not possible in property
+    // initialisers.
+    //public static readonly empty = new UniString("");
+    //
+    // So this is a workaround:
+    public static readonly empty: UniString;
 
     get #str(): string {
         if (this.#_str === undefined) {
@@ -81,3 +89,6 @@ export class UniString {
         return this.#str;
     }
 }
+
+// @ts-ignore: See above
+UniString.empty = new UniString("");
