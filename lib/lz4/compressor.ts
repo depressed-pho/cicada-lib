@@ -249,7 +249,6 @@ class LZ4Compressor<OutputT, InputT> {
         for (let blockPos = 0; blockPos + 9 <= rawBlock.length; ) {
             const word = rawBlock.getUint32(blockPos, true);
             const hash = this.#hashWord(word);
-            //console.log("word", word, "hash", hash);
 
             // Try finding a match in the dictionary first. This has a
             // chance of finding a longer one. But we don't attempt to find
@@ -296,7 +295,6 @@ class LZ4Compressor<OutputT, InputT> {
             // No matches in the dictionary. How about in the preceding
             // part of the block?
             const blockPosPlus1 = blockHashTable[hash]!;
-            //console.log("bpp1", blockPosPlus1);
 
             // Don't forget that the last match must start at least 12
             // octets before the end of block.
@@ -304,9 +302,6 @@ class LZ4Compressor<OutputT, InputT> {
                 blockHashTable[hash] = blockPos + 1;
             }
 
-            if (blockPosPlus1 > 0) {
-                //console.log("found in dict", rawBlock.getUint32(blockPosPlus1 - 1, true));
-            }
             if (blockPosPlus1 > 0 && rawBlock.getUint32(blockPosPlus1 - 1, true) == word) {
                 const distance = blockPos - (blockPosPlus1 - 1);
                 if (distance <= 0xFFFF) {
@@ -344,7 +339,6 @@ class LZ4Compressor<OutputT, InputT> {
 
     #findMatchLength(dict: Buffer, dictPos: number, block: Buffer, blockPos: number): number {
         const matchStart = blockPos;
-        //console.log("finding", dictPos, blockPos);
 
         // Compare 4 octets at once until we reach the last 3. A match must
         // not cover the last 5 octets of a block.
@@ -361,13 +355,10 @@ class LZ4Compressor<OutputT, InputT> {
             }
         }
 
-        //console.log("found", dict.toUint8Array(), dictPos, block.toUint8Array(), blockPos, matchStart, blockPos - matchStart);
         return blockPos - matchStart;
     }
 
     #writeSequence(compBlock: Buffer, literal: Buffer, distance: number, matchLenMinus4: number): void {
-        //console.log("seq", compBlock.toUint8Array(), literal.toUint8Array(), distance, matchLenMinus4);
-
         // Write a token and the literal.
         const tokenPos = compBlock.length;
         this.#writeLiteral(compBlock, literal);
