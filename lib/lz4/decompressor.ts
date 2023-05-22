@@ -25,7 +25,7 @@ export function decompress(...args: any[]) {
         case 3:
             return decompressStream(args[0], args[1], args[2]);
         default:
-            throw new Error("Wrong number of arguments");
+            throw new TypeError("Wrong number of arguments");
     }
 }
 

@@ -25,7 +25,7 @@ export function compress(...args: any[]) {
         case 3:
             return compressStream(args[0], args[1], args[2]);
         default:
-            throw new Error("Wrong number of arguments");
+            throw new TypeError("Wrong number of arguments");
     }
 }
 
@@ -142,9 +142,9 @@ class LZ4Compressor<OutputT, InputT> {
         // hashes collide we miss an opportunity for compressing a sequence
         // of data that starts with a colliding 4-octets word. So we need
         // to use a hash function that is very unlikely to collide. On the
-        // other hand we can only use can't use the entirety of the hash
-        // values anyway, so full avalanche is an overkill. The function we
-        // use here has a good quality in low bits:
+        // other hand we can't use the entirety of the hash values anyway,
+        // so full avalanche is an overkill. The function we use here has a
+        // good quality in low bits:
         // http://burtleburtle.net/bob/hash/integer.html
         let h = word | 0;
         h += ~(h  << 15) | 0;

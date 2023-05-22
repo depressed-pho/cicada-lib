@@ -1,4 +1,4 @@
-import { List } from "./list.js";
+import { Queue } from "./queue.js";
 import { UniString } from "./unicode.js";
 
 /// Always-backtracking monadic parser. Mostly a port of
@@ -59,7 +59,7 @@ export class Parser<A> {
 }
 
 export type PrimResult<R> =
-    {pos: number, stack: List<string>, msg: string} | // failed
+    {pos: number, stack: Queue<string>, msg: string} | // failed
     {pos: number, value: R}; // succeeded
 
 export type ParserResult<R> =
@@ -115,7 +115,7 @@ export function pure<A>(value: A): Parser<A> {
 /// A parser that always fails without consuming input.
 export function fail(msg: string): Parser<any> {
     return new Parser((_input, pos) => {
-        return {pos, stack: List.empty, msg};
+        return {pos, stack: Queue.empty, msg};
     });
 }
 
@@ -150,7 +150,7 @@ function ensure(n: number): Parser<UniString> {
         else {
             return {
                 pos,
-                stack: List.empty,
+                stack: Queue.empty,
                 msg:   `Expected ${n} more characters but reached the end of input`
             };
         }
@@ -186,7 +186,7 @@ export const peekCharOrFail: Parser<string> =
             return {pos, value: input.at(pos)!};
         }
         else {
-            return {pos, stack: List.singleton("peekCharOrFail"), msg: "unexpected end of input"};
+            return {pos, stack: Queue.singleton("peekCharOrFail"), msg: "unexpected end of input"};
         }
     });
 
@@ -455,7 +455,7 @@ export function choice<A>(ps: Iterable<Parser<A>>): Parser<A> {
 
 /** Apply the given parser repeatedly, returning every result. */
 export function count<A>(n: number, p: Parser<A>): Parser<A[]> {
-    function go(n: number, acc: List<A>): Parser<List<A>> {
+    function go(n: number, acc: Queue<A>): Parser<Queue<A>> {
         if (n > 0) {
             return p.then(v => go(n-1, acc.snoc(v)));
         }
@@ -463,7 +463,7 @@ export function count<A>(n: number, p: Parser<A>): Parser<A[]> {
             return pure(acc);
         }
     }
-    return go(n, List.empty).then(vs => pure(Array.from(vs)));
+    return go(n, Queue.empty).then(vs => pure(Array.from(vs)));
 }
 
 /** Try to apply the parser `p`. If the parser fails it returns the value
@@ -478,7 +478,7 @@ export function option<A>(v: A, p: Parser<A>): Parser<A> {
  * consuming input, which leads to an infinite loop.
  */
 export function many<A>(p: Parser<A>): Parser<A[]> {
-    function go(acc: List<A>, pos0: number): Parser<A[]> {
+    function go(acc: Queue<A>, pos0: number): Parser<A[]> {
         return p.then(value => {
             return getPos.then(pos1 => {
                 if (pos1 === pos0) {
@@ -492,7 +492,7 @@ export function many<A>(p: Parser<A>): Parser<A[]> {
             });
         }).orElse(pure(Array.from(acc)));
     }
-    return getPos.then(pos0 => go(List.empty, pos0));
+    return getPos.then(pos0 => go(Queue.empty, pos0));
 }
 
 /** Apply the parser `p` *one* or more times. Return an array of the
@@ -508,12 +508,12 @@ export function many1<A>(p: Parser<A>): Parser<A[]> {
 }
 
 /** Apply the parser `p` *zero* or more times until the parser `end`
- * succeeds, and return the list of values returned by `p`. The parser
+ * succeeds, and return an array of values returned by `p`. The parser
  * throws if `p` succeeds without consuming input, which leads to an
  * infinite loop.
  */
 export function manyTill<A>(p: Parser<A>, end: Parser<any>): Parser<A[]> {
-    function go(pos0: number, acc: List<A>): Parser<A[]> {
+    function go(pos0: number, acc: Queue<A>): Parser<A[]> {
         return end.then(() => pure(Array.from(acc)))
             .orElse(p.then(value =>
                 getPos.then(pos1 => {
@@ -527,11 +527,11 @@ export function manyTill<A>(p: Parser<A>, end: Parser<any>): Parser<A[]> {
                     }
                 })));
     }
-    return getPos.then(pos0 => go(pos0, List.empty));
+    return getPos.then(pos0 => go(pos0, Queue.empty));
 }
 
-/** Apply *zero* or more occurrences of `p`, separated by `sep`. Return a
- * list of the values returned by `p`. The parser throws if both `p` and
+/** Apply *zero* or more occurrences of `p`, separated by `sep`. Return an
+ * array of the values returned by `p`. The parser throws if both `p` and
  * `sep` succeed without consuming input, which leads to an infinite loop.
  */
 export function sepBy<A>(p: Parser<A>, sep: Parser<any>): Parser<A[]> {
@@ -545,12 +545,12 @@ export function sepBy<A>(p: Parser<A>, sep: Parser<any>): Parser<A[]> {
             .orElse(pure([]));
 }
 
-/** Apply *one* or more occurrences of `p`, separated by `sep`. Return a
- * list of the values returned by `p`. The parser throws if both `p` and
+/** Apply *one* or more occurrences of `p`, separated by `sep`. Return an
+ * array of the values returned by `p`. The parser throws if both `p` and
  * `sep` succeed without consuming input, which leads to an infinite loop.
  */
 export function sepBy1<A>(p: Parser<A>, sep: Parser<any>): Parser<A[]> {
-    function go(pos0: number, acc: List<A>): Parser<A[]> {
+    function go(pos0: number, acc: Queue<A>): Parser<A[]> {
         return p.then(value =>
             sep.then(() =>
                 getPos.then(pos1 => {
@@ -567,7 +567,7 @@ export function sepBy1<A>(p: Parser<A>, sep: Parser<any>): Parser<A[]> {
                 }))
                .orElse(pure(Array.from(acc.snoc(value)))));
     }
-    return getPos.then(pos0 => go(pos0, List.empty));
+    return getPos.then(pos0 => go(pos0, Queue.empty));
 }
 
 /* This is like {@link many} but discards the result. The parser throws if
