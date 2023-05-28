@@ -191,6 +191,99 @@ export class Queue<T> implements Iterable<T> {
         }
     }
 
+    /** O(m+n). Concatenate two or more queues. */
+    public concat(...qs: Queue<T>[]): Queue<T> {
+        function go(a: Queue<T>, b: Queue<T>): Queue<T> {
+            if (a.isEmpty) {
+                return b;
+            }
+            else if (b.isEmpty) {
+                return a;
+            }
+            else {
+                return new Queue(
+                    a.length + b.length,
+                    Queue.#concat(a.#prefix, Queue.#reverse(a.#suffix, b.#prefix)),
+                    b.#suffix);
+            }
+        }
+        let ret: Queue<T> = this;
+        for (const q of qs) {
+            ret = go(ret, q);
+        }
+        return ret;
+    }
+
+    /** O(n). Return elements of the queue after the first `n`. If the
+     * queue contains fewer than `n` elements, the entire queue is
+     * returned.
+     */
+    public take(n: number): Queue<T> {
+        if (n <= 0) {
+            return Queue.empty;
+        }
+        else if (n >= this.length || !this.#prefix || !this.#suffix) {
+            return this;
+        }
+        else {
+            const pLen = Queue.#length(this.#prefix);
+            if (n < pLen) {
+                // We can completely ignore the suffix.
+                let taken: List<T> = null; // in reverse order
+                for (let i = 0, cell = this.#prefix; i < n && cell; i++, cell = cell.next!) {
+                    taken = {elem: cell.elem, next: taken};
+                }
+                return Queue.#balanceSuffix(taken);
+            }
+            else if (n > pLen) {
+                const sLen = Queue.#length(this.#suffix);
+                let taken: List<T> = this.#suffix; // in reverse order
+                for (let i = 0; i < sLen - (n - pLen); i++) {
+                    taken = taken!.next;
+                }
+                return Queue.#link(this.#prefix, taken);
+            }
+            else {
+                return Queue.#balancePrefix(this.#prefix);
+            }
+        }
+    }
+
+    /** O(n). Return elements of the queue after the first `n`. If the
+     * queue contains fewer than `n` elements, the empty queue is
+     * returned.
+     */
+    public drop(n: number): Queue<T> {
+        if (n <= 0) {
+            return this;
+        }
+        else if (n >= this.length || !this.#prefix || !this.#suffix) {
+            return Queue.empty;
+        }
+        else {
+            const pLen = Queue.#length(this.#prefix);
+            if (n < pLen) {
+                let rem: List<T> = this.#prefix;
+                for (let i = 0; i < n; i++) {
+                    rem = rem!.next;
+                }
+                return Queue.#link(rem, this.#suffix);
+            }
+            else if (n > pLen) {
+                // We can completely ignore the prefix.
+                const sLen = Queue.#length(this.#suffix);
+                let rem: List<T> = null; // in reverse order
+                for (let i = 0, cell = this.#suffix; i < sLen - (n - pLen) && cell; i++, cell = cell.next!) {
+                    rem = {elem: cell.elem, next: rem};
+                }
+                return Queue.#balancePrefix(rem);
+            }
+            else {
+                return Queue.#balanceSuffix(this.#suffix);
+            }
+        }
+    }
+
     /** O(n). Fold the queue with a left-associative operator. */
     public foldl<A>(f: (acc: A, v: T) => A, init: A): A {
         const acc0 = Queue.#foldl(f, init, this.#prefix);
@@ -403,17 +496,21 @@ export class Queue<T> implements Iterable<T> {
         return [this.#reverse(fst), snd];
     }
 
-    static #reverse<T>(list: List<T>): List<T> {
+    static #concat<T>(a: List<T>, b: List<T>): List<T> {
+        return this.#reverse(this.#reverse(a), b);
+    }
+
+    static #reverse<T>(list: List<T>, suffix?: List<T>): List<T> {
         if (!list) {
             // It's an empty list.
-            return null;
+            return suffix ?? null;
         }
         else if (!list.next) {
             // It's a singleton. Reversing it is a no-op.
-            return list;
+            return {elem: list.elem, next: suffix ?? null};
         }
         else {
-            let acc: List<T> = null;
+            let acc: List<T> = suffix ?? null;
             for (let cell: List<T> = list; cell; cell = cell.next) {
                 acc = {elem: cell.elem, next: acc};
             }

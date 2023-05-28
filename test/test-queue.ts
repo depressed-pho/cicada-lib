@@ -3,6 +3,15 @@ import { expect } from "chai";
 import { Queue } from "../lib/queue.js";
 
 describe("Queue", () => {
+    describe("Construction", () => {
+        describe(".prototype.concat", () => {
+            it("concatenates two or more queues", () => {
+                const q1 = Queue.from([0, 1, 2]);
+                const q2 = Queue.from([3, 4]);
+                expect(Array.from(q1.concat(q2))).to.deep.equal([0, 1, 2, 3, 4]);
+            });
+        });
+    });
     describe("Sub-queues", () => {
         describe(".prototype.spanl", () => {
             it("returns the longest prefix and the remainder", () => {
@@ -34,6 +43,20 @@ describe("Queue", () => {
                 const [q1, q2] = q.breakr(n => n <= 2);
                 expect(Array.from(q1)).to.deep.equal([3, 4]);
                 expect(Array.from(q2)).to.deep.equal([0, 1, 2]);
+            });
+        });
+    });
+    describe("Indexing", () => {
+        describe(".prototype.take", () => {
+            it("takes the first n elements", () => {
+                const q = Queue.from([0, 1, 2, 3, 4]);
+                expect(Array.from(q.take(3))).to.deep.equal([0, 1, 2]);
+            });
+        });
+        describe(".prototype.drop", () => {
+            it("drops the first n elements", () => {
+                const q = Queue.from([0, 1, 2, 3, 4]);
+                expect(Array.from(q.drop(3))).to.deep.equal([3, 4]);
             });
         });
     });
