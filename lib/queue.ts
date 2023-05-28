@@ -12,10 +12,12 @@ export class Queue<T> implements Iterable<T> {
     // Invariant: When the prefix is empty, the suffix is either empty or a
     // singleton. And when the suffix is empty, the prefix is either empty
     // or a singleton.
+    readonly length: number;
     readonly #prefix: List<T>;
     readonly #suffix: List<T>; // in reverse order
 
-    private constructor(prefix: List<T>, suffix: List<T>) {
+    private constructor(length: number, prefix: List<T>, suffix: List<T>) {
+        this.length  = length;
         this.#prefix = prefix;
         this.#suffix = suffix;
     }
@@ -32,7 +34,7 @@ export class Queue<T> implements Iterable<T> {
 
     /** O(1). Create a singleton queue. */
     public static singleton<T>(v: T): Queue<T> {
-        return new Queue({elem: v, next: null}, null);
+        return new Queue(1, {elem: v, next: null}, null);
     }
 
     /** O(n). Turn an iterable object into a queue. */
@@ -60,13 +62,13 @@ export class Queue<T> implements Iterable<T> {
                 // A special case where the prefix is a singleton and the
                 // suffix is empty. We can cheaply create a queue with two
                 // singletons.
-                return new Queue({elem: v, next: null}, this.#prefix);
+                return new Queue(this.length + 1, {elem: v, next: null}, this.#prefix);
             }
         }
         else {
             // The suffix isn't empty. We can prepend it to the prefix
             // without violating the invariant.
-            return new Queue({elem: v, next: this.#prefix}, this.#suffix);
+            return new Queue(this.length + 1, {elem: v, next: this.#prefix}, this.#suffix);
         }
     }
 
@@ -110,7 +112,7 @@ export class Queue<T> implements Iterable<T> {
         else {
             // The prefix has two or more elements. Splitting it is
             // trivial.
-            return [this.#prefix.elem, new Queue(this.#prefix.next, this.#suffix)];
+            return [this.#prefix.elem, new Queue(this.length - 1, this.#prefix.next, this.#suffix)];
         }
     }
 
@@ -125,13 +127,13 @@ export class Queue<T> implements Iterable<T> {
                 // A special case where the prefix is empty and the suffix
                 // is a singleton. We can cheaply create a queue with two
                 // singletons.
-                return new Queue(this.#suffix, {elem: v, next: null});
+                return new Queue(this.length + 1, this.#suffix, {elem: v, next: null});
             }
         }
         else {
             // The prefix isn't empty. We can append it to the suffix
             // without violating the invariant.
-            return new Queue(this.#prefix, {elem: v, next: this.#suffix});
+            return new Queue(this.length + 1, this.#prefix, {elem: v, next: this.#suffix});
         }
     }
 
@@ -175,7 +177,7 @@ export class Queue<T> implements Iterable<T> {
         else {
             // The suffix has two or more elements. Splitting it is
             // trivial.
-            return [new Queue(this.#prefix, this.#suffix.next), this.#suffix.elem];
+            return [new Queue(this.length - 1, this.#prefix, this.#suffix.next), this.#suffix.elem];
         }
     }
 
@@ -226,6 +228,7 @@ export class Queue<T> implements Iterable<T> {
             // suffix. We have to reverse them both. This is still O(n) but
             // ugh..
             return new Queue(
+                Queue.#length(revPrefix) + Queue.#length(revSuffix),
                 Queue.#reverse(revPrefix),
                 Queue.#reverse(revSuffix));
         }
@@ -242,6 +245,98 @@ export class Queue<T> implements Iterable<T> {
         }
     }
 
+    /** O(n). Split the queue into two queues. The first queue is the
+     * longest prefix of elements which satisfy the predicate `p` and the
+     * second is the remainder of the queue.
+     */
+    public spanl(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
+        let fst: List<T> = null; // in reverse order
+        let snd: List<T> = null;
+        for (let cell = this.#prefix; cell; cell = cell.next) {
+            if (p(cell.elem)) {
+                fst = {elem: cell.elem, next: fst};
+            }
+            else {
+                snd = cell;
+                break;
+            }
+        }
+        if (snd)
+            // We have found a break point in the prefix, which means the
+            // entire suffix should be a part of the second queue.
+            return [
+                Queue.#balanceSuffix(fst),
+                Queue.#link(snd, this.#suffix)
+            ];
+        for (let cell = Queue.#reverse(this.#suffix); cell; cell = cell.next) {
+            if (p(cell.elem)) {
+                fst = {elem: cell.elem, next: fst};
+            }
+            else {
+                snd = cell;
+                break;
+            }
+        }
+        return [
+            Queue.#balanceSuffix(fst),
+            Queue.#balancePrefix(snd)
+        ];
+    }
+
+    /** O(n). This is like {@link spanl} but the predicate is negated. */
+    public breakl(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
+        return this.spanl(v => !p(v));
+    }
+
+    /** O(n). This is like {@link spanr} but the predicate is negated. */
+    public breakr(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
+        return this.spanr(v => !p(v));
+    }
+
+    /** O(n). Split the queue into two queues. The first queue is the
+     * longest suffix of elements which satisfy the predicate `p` and the
+     * second is the remainder of the queue.
+     */
+    public spanr(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
+        let fst: List<T> = null;
+        let snd: List<T> = null; // in reverse order
+        for (let cell = this.#suffix; cell; cell = cell.next) {
+            if (p(cell.elem)) {
+                fst = {elem: cell.elem, next: fst};
+            }
+            else {
+                snd = cell;
+                break;
+            }
+        }
+        if (snd)
+            // We have found a break point in the suffix, which means the
+            // entire prefix should be a part of the second queue.
+            return [
+                Queue.#balancePrefix(fst),
+                Queue.#link(this.#prefix, snd)
+            ];
+        for (let cell = Queue.#reverse(this.#prefix); cell; cell = cell.next) {
+            if (p(cell.elem)) {
+                fst = {elem: cell.elem, next: fst};
+            }
+            else {
+                snd = cell;
+                break;
+            }
+        }
+        return [
+            Queue.#balancePrefix(fst),
+            Queue.#balanceSuffix(snd)
+        ];
+    }
+
+    static #link<T>(prefix: List<T>, suffix: List<T>): Queue<T> {
+        return !prefix ? this.#balanceSuffix(suffix)
+             : !suffix ? this.#balancePrefix(prefix)
+             :           new Queue(this.#length(prefix) + this.#length(suffix), prefix, suffix);
+    }
+
     static #balancePrefix<T>(prefix: List<T>): Queue<T> {
         if (!prefix) {
             // It's an empty list.
@@ -249,18 +344,20 @@ export class Queue<T> implements Iterable<T> {
         }
         else if (!prefix.next) {
             // It's a singleton.
-            return new Queue(prefix, null);
+            return new Queue(1, prefix, null);
         }
         else if (!prefix.next.next) {
             // The queue has exactly two elements.
             return new Queue(
+                2,
                 {elem: prefix.elem     , next: null},
                 {elem: prefix.next.elem, next: null});
         }
         else {
             // There's more. Move half of elements to suffix.
-            const [fst, snd] = this.#splitAt(this.#length(prefix) >>> 1, prefix);
-            return new Queue(fst, this.#reverse(snd));
+            const len        = this.#length(prefix);
+            const [fst, snd] = this.#splitAt(len >>> 1, prefix);
+            return new Queue(len, fst, this.#reverse(snd));
         }
     }
 
@@ -271,18 +368,20 @@ export class Queue<T> implements Iterable<T> {
         }
         else if (!suffix.next) {
             // It's a singleton.
-            return new Queue(suffix, null);
+            return new Queue(1, suffix, null);
         }
         else if (!suffix.next.next) {
             // The queue has exactly two elements.
             return new Queue(
+                2,
                 {elem: suffix.next.elem, next: null},
                 {elem: suffix.elem     , next: null});
         }
         else {
             // There's more. Move half of elements to prefix.
-            const [fst, snd] = this.#splitAt(this.#length(suffix) >>> 1, suffix);
-            return new Queue(this.#reverse(snd), fst);
+            const len        = this.#length(suffix);
+            const [fst, snd] = this.#splitAt(len >>> 1, suffix);
+            return new Queue(len, this.#reverse(snd), fst);
         }
     }
 
@@ -339,4 +438,4 @@ export class Queue<T> implements Iterable<T> {
     }
 }
 // @ts-ignore: See above
-Queue.empty = new Queue(null, null);
+Queue.empty = new Queue(0, null, null);
