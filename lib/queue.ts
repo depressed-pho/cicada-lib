@@ -93,7 +93,7 @@ export class Queue<T> implements Iterable<T> {
     /** O(1) amortized, O(n) worst case. Split the queue into its first
      * element and the rest, or throw if it's empty.
      */
-    public get uncons(): [T, Queue<T>] {
+    public uncons(): [T, Queue<T>] {
         if (!this.#prefix) {
             if (!this.#suffix) {
                 throw new RangeError("The queue is empty");
@@ -158,7 +158,7 @@ export class Queue<T> implements Iterable<T> {
     /** O(1) amortized, O(n) worst case. Split the queue into its last
      * element and the rest, or throw if it's empty.
      */
-    public get unsnoc(): [Queue<T>, T] {
+    public unsnoc(): [Queue<T>, T] {
         if (!this.#suffix) {
             if (!this.#prefix) {
                 throw new RangeError("The queue is empty");

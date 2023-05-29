@@ -1194,7 +1194,7 @@ function buildFrom<T>(cmp: CompareFn<T>, elems: Queue<T>): Tree<T> {
         return null;
     }
 
-    const [fst, rest] = elems.uncons;
+    const [fst, rest] = elems.uncons();
     const tree        = singleton(fst);
     if (rest.isEmpty) {
         // Singleton input -> singleton tree
@@ -1224,7 +1224,7 @@ function buildFromOrdered<T>(cmp: CompareFn<T>, height: number, tree: Tree<T>, e
         return tree;
     }
     else {
-        const [fst, rest] = elems.uncons;
+        const [fst, rest] = elems.uncons();
         if (rest.isEmpty) {
             // Just one element to insert.
             return insertMax(fst, tree);
@@ -1257,7 +1257,7 @@ function buildSibling<T>(cmp: CompareFn<T>, height: number, elems: Queue<T>): [T
         return [null, Queue.empty, Queue.empty];
     }
     else {
-        const [fst, rest] = elems.uncons;
+        const [fst, rest] = elems.uncons();
         if (height === 1) {
             const tree = singleton(fst);
             return !isOrdered(cmp, fst, rest)
@@ -1275,7 +1275,7 @@ function buildSibling<T>(cmp: CompareFn<T>, height: number, elems: Queue<T>): [T
                 return sibling;
             }
             else {
-                const [ordFst, ordRest1] = ordRest.uncons;
+                const [ordFst, ordRest1] = ordRest.uncons();
                 if (ordRest1.isEmpty) {
                     // It's ordered and we have the very last element to
                     // insert.

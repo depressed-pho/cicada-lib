@@ -1576,7 +1576,7 @@ function buildFrom<K, V>(cmp: CompareFn<K>, pairs: Queue<[K, V]>): Tree<K, V> {
         return null;
     }
 
-    const [fst, rest] = pairs.uncons;
+    const [fst, rest] = pairs.uncons();
     const tree        = singleton(fst[0], fst[1]);
     if (rest.isEmpty) {
         // Singleton input -> singleton tree
@@ -1606,7 +1606,7 @@ function buildFromOrdered<K, V>(cmp: CompareFn<K>, height: number, tree: Tree<K,
         return tree;
     }
     else {
-        const [fst, rest] = pairs.uncons;
+        const [fst, rest] = pairs.uncons();
         if (rest.isEmpty) {
             // Just one pair to insert.
             return insertMax(fst[0], fst[1], tree);
@@ -1639,7 +1639,7 @@ function buildSibling<K, V>(cmp: CompareFn<K>, height: number, pairs: Queue<[K, 
         return [null, Queue.empty, Queue.empty];
     }
     else {
-        const [fst, rest] = pairs.uncons;
+        const [fst, rest] = pairs.uncons();
         if (height === 1) {
             const tree = singleton(fst[0], fst[1]);
             return !isOrdered(cmp, fst, rest)
@@ -1657,7 +1657,7 @@ function buildSibling<K, V>(cmp: CompareFn<K>, height: number, pairs: Queue<[K, 
                 return sibling;
             }
             else {
-                const [ordFst, ordRest1] = ordRest.uncons;
+                const [ordFst, ordRest1] = ordRest.uncons();
                 if (ordRest1.isEmpty) {
                     // It's ordered and we have the very last pair to
                     // insert.
