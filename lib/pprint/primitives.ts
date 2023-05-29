@@ -53,7 +53,7 @@ interface Nest {
  * line of the second doc. */
 interface Union {
     tag: Tag.Union,
-    fst: Doc, // FIXME: Lazily evaluate these.
+    fst: Doc,
     snd: Doc
 }
 interface Column {
