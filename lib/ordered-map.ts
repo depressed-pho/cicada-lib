@@ -1,9 +1,7 @@
 import { ReversibleIterable, ReversibleIterableIterator, reversible } from "./iterable.js";
 import { Queue } from "./queue.js";
-
-/** Positivity denotes `a` is greater than `b`.
- */
-export type CompareFn<K> = (a: K, b: K) => number;
+import { CompareFn, OrdSet } from "./ordered-set.js";
+import * as S from "./ordered-set.js";
 
 /** Used when combining old and new values for the same key.
  */
@@ -40,13 +38,15 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
 
     /** O(1). Create an empty map. If a comparing function is provided, the keys
      * will be compared using the function instead of the language built-in
-     * comparison operators. */
+     * comparison operators.
+     */
     public constructor(compareFn?: CompareFn<K>);
 
     /** Create a map from an iterator of key/value pair. If the iterator
      * yields a sequence of strictly-ascending keys, a fast O(n) algorithm
      * is used. Otherwise it will fall back to a slow O(n log n)
-     * algorithm. */
+     * algorithm.
+     */
     public constructor(entries: Iterable<[K, V]>, compareFn?: CompareFn<K>);
 
     /** For internal use only. */
@@ -168,6 +168,41 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
         return sz !== this.size;
     }
 
+    /** O(m log n). Delete all keys in some container. If `keys` is an
+     * `OrdSet<K>` it works faster than regular containers.
+     */
+    public deleteKeys(keys: Iterable<K>): void {
+        if (keys instanceof OrdSet<K>) {
+            this.#root = withoutKeys(this.#cmp, this.#root, keys.root);
+        }
+        else {
+            for (const key of keys) {
+                this.#root = delete_(this.#cmp, key, this.#root);
+            }
+        }
+    }
+
+    /** O(m log n). Retain all keys in some container, and delete
+     * everything else. If `keys` is an `OrdSet<K>` it works faster than
+     * regular containers.
+     */
+    public restrictKeys(keys: Iterable<K>): void {
+        if (keys instanceof OrdSet<K>) {
+            this.#root = restrictKeys(this.#cmp, this.#root, keys.root);
+        }
+        else {
+            let oldRoot: Tree<K, V> = this.#root;
+            let newRoot: Tree<K, V> = null;
+            for (const key of keys) {
+                const value = lookup(this.#cmp, key, oldRoot);
+                if (value !== undefined) {
+                    newRoot = insert(this.#cmp, key, value, newRoot);
+                }
+            }
+            this.#root = newRoot;
+        }
+    }
+
     /** O(log n). Update a value at a specific key with the result of the
      * provided function. When the key isn't present in the map, nothing
      * will happen.
@@ -187,8 +222,7 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
     }
 
     /** O(log n). Like {@link adjust}, but if the provided function returns
-     * `undefined` the element is deleted. This implies that `undefined` is
-     * not a valid inhabitant of the type `V`.
+     * `undefined` the element is deleted.
      */
     public update(key: K, updateFn: UpdateFn<K, V>): void {
         function alterFn(oldValue: V|undefined, key: K): V|undefined {
@@ -201,8 +235,7 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
 
     /** O(log n). Alter a value at a specific key, or its absence
      * thereof. This can be used to insert, delete, or update a value in an
-     * `OrdMap`. This implies that `undefined` is not a valid inhabitant of
-     * the type `V`.
+     * `OrdMap`.
      */
     public alter(key: K, alterFn: AlterFn<K, V>): void {
         this.#root = alter(this.#cmp, alterFn, key, this.#root);
@@ -317,6 +350,12 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
         return this.entries();
     }
 
+    /** O(n). The set of all keys of the map. */
+    public keysSet(): OrdSet<K> {
+        const tree = keysSet(this.#root);
+        return new OrdSet(undefined, this.#cmp, tree);
+    }
+
     /** O(n). Create a new map consisting of elements that satisfy the
      * given predicate.
      */
@@ -395,6 +434,20 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
         ];
     }
 
+    /** O(log n). Update the element at the given index. Nothing happens if
+     * the index is out or range.
+     */
+    public updateAt(i: number, updateFn: UpdateFn<K, V>): void {
+        this.#root = updateAt(updateFn, i, this.#root);
+    }
+
+    /** O(log n). Delete the element at the given index. Nothing happens if
+     * the index is out or range.
+     */
+    public deleteAt(i: number): void {
+        this.#root = updateAt(() => undefined, i, this.#root);
+    }
+
     /** O(log n). Retrieve the minimal element of the map, or `undefined`
      * if the map is empty.
      */
@@ -462,7 +515,11 @@ interface Bin<K, V> {
     right: Tree<K, V>;
 }
 
+// The maximal relative difference between the size of two trees.
 const DELTA = 3;
+// The ratio between an outer and inner sibling of the heavier subtree in
+// an unbalanced setting. It determines whether a double or single rotation
+// should be performed to restore balance.
 const RATIO = 2;
 
 function defaultCmp<K>(a: K, b: K): -1|0|1 {
@@ -508,9 +565,10 @@ function member<K, V>(cmp: CompareFn<K>, key: K, tree: Tree<K, V>): boolean {
             return false;
         }
         else {
-            switch (coerceOrd(cmp(key, tree.key))) {
-                case -1: tree = tree.left;  break;
-                case  1: tree = tree.right; break;
+            const {key: k, left: l, right: r} = tree;
+            switch (coerceOrd(cmp(key, k))) {
+                case -1: tree = l; break;
+                case  1: tree = r; break;
                 case  0: return true;
             }
         }
@@ -600,27 +658,24 @@ function insert<K, V>(cmp: CompareFn<K>, key: K, value: V, tree: Tree<K, V>, com
         return singleton(key, value);
     }
     else {
-        switch (coerceOrd(cmp(key, tree.key))) {
+        const {key: k, value: v, left: l, right: r} = tree;
+        switch (coerceOrd(cmp(key, k))) {
             case -1:
                 // insert() may return an identical node. We can skip the
                 // rebalancing if that's the case.
-                const left1 = insert(cmp, key, value, tree.left, combineFn);
-                return left1 === tree.left
-                    ? tree
-                    : balanceL(tree.key, tree.value, left1, tree.right);
+                const l1 = insert(cmp, key, value, l, combineFn);
+                return l1 === l ? tree : balanceL(k, v, l1, r);
             case 1:
-                const right1 = insert(cmp, key, value, tree.right, combineFn);
-                return right1 === tree.right
-                    ? tree
-                    : balanceR(tree.key, tree.value, tree.left, right1);
+                const r1 = insert(cmp, key, value, r, combineFn);
+                return r1 === r ? tree : balanceR(k, v, l, r1);
             case 0:
                 // If the key/value pairs are pointer-equivalent, we can
                 // reuse the same node. Note that we can't ignore the
                 // pointer-equivalence of keys, because just because cmp()
                 // tells us they are the same doesn't necessarily mean they
                 // are identical and interchangeable.
-                const combined = combineFn ? combineFn(tree.value, value, key) : value;
-                return (key === tree.key && combined === tree.value)
+                const combined = combineFn ? combineFn(v, value, key) : value;
+                return (key === k && combined === v)
                     ? tree
                     : {...tree, key, value: combined};
         }
@@ -635,20 +690,17 @@ function insertR<K, V>(cmp: CompareFn<K>, key: K, value: V, tree: Tree<K, V>, co
         return singleton(key, value);
     }
     else {
-        switch (coerceOrd(cmp(key, tree.key))) {
+        const {key: k, value: v, left: l, right: r} = tree;
+        switch (coerceOrd(cmp(key, k))) {
             case -1:
-                const left1 = insertR(cmp, key, value, tree.left, combineFn);
-                return left1 === tree.left
-                    ? tree
-                    : balanceL(tree.key, tree.value, left1, tree.right);
+                const l1 = insertR(cmp, key, value, l, combineFn);
+                return l1 === l ? tree : balanceL(k, v, l1, r);
             case 1:
-                const right1 = insertR(cmp, key, value, tree.right, combineFn);
-                return right1 === tree.right
-                    ? tree
-                    : balanceR(tree.key, tree.value, tree.left, right1);
+                const r1 = insertR(cmp, key, value, r, combineFn);
+                return r1 === r ? tree : balanceR(k, v, l, r1);
             case 0:
-                const combined = combineFn ? combineFn(value, tree.value, tree.key) : tree.value;
-                return combined === tree.value
+                const combined = combineFn ? combineFn(value, v, k) : v;
+                return combined === v
                     ? tree
                     : {...tree, value: combined};
         }
@@ -661,21 +713,59 @@ function delete_<K, V>(cmp: CompareFn<K>, key: K, tree: Tree<K, V>): Tree<K, V> 
         return null;
     }
     else {
-        switch (coerceOrd(cmp(key, tree.key))) {
+        const {key: k, value: v, left: l, right: r} = tree;
+        switch (coerceOrd(cmp(key, k))) {
             case -1:
-                // delete() may return an identical node. We can skip the
+                // delete_() may return an identical node. We can skip the
                 // rebalancing if that's the case.
-                const left1 = delete_(cmp, key, tree.left);
-                return left1 === tree.left
-                    ? tree
-                    : balanceR(tree.key, tree.value, left1, tree.right);
+                const l1 = delete_(cmp, key, l);
+                return l1 === l ? tree : balanceR(k, v, l1, r);
             case 1:
-                const right1 = delete_(cmp, key, tree.right);
-                return right1 === tree.right
-                    ? tree
-                    : balanceL(tree.key, tree.value, tree.left, right1);
+                const r1 = delete_(cmp, key, r);
+                return r1 === r ? tree : balanceL(k, v, l, r1);
             case 0:
-                return glue(tree.left, tree.right);
+                return glue(l, r);
+        }
+    }
+}
+
+function withoutKeys<K, V>(cmp: CompareFn<K>, m: Tree<K, V>, keys: S.Tree<K>): Tree<K, V> {
+    if (!m) {
+        return null;
+    }
+    else if (!keys) {
+        return m;
+    }
+    else {
+        const {elem: k, left: kl, right: kr} = keys;
+        const [ml, mv, mr] = split(cmp, k, m);
+        const ml1          = withoutKeys(cmp, ml, kl);
+        const mr1          = withoutKeys(cmp, mr, kr);
+        return (mv === undefined && ml1 === ml && mr1 === mr)
+            ? m
+            : link2(ml1, mr1);
+    }
+}
+
+function restrictKeys<K, V>(cmp: CompareFn<K>, m: Tree<K, V>, keys: S.Tree<K>): Tree<K, V> {
+    if (!m) {
+        return null;
+    }
+    else if (!keys) {
+        return null;
+    }
+    else {
+        const {key: k, value: v, left: ml, right: mr} = m;
+        const [kl, kb, kr] = S.split(cmp, k, keys);
+        const mlkl         = restrictKeys(cmp, ml, kl);
+        const mrkr         = restrictKeys(cmp, mr, kr);
+        if (kb) {
+            return (mlkl === ml && mrkr === kr)
+                ? m
+                : link(k, v, mlkl, mrkr);
+        }
+        else {
+            return link2(mlkl, mrkr);
         }
     }
 }
@@ -688,31 +778,24 @@ function alter<K, V>(cmp: CompareFn<K>, f: AlterFn<K, V>, key: K, tree: Tree<K, 
             : null;
     }
     else {
-        switch (coerceOrd(cmp(key, tree.key))) {
+        const {key: k, value: v, left: l, right: r} = tree;
+        switch (coerceOrd(cmp(key, k))) {
             case -1:
                 // alter() may return an identical node. We can skip the
                 // rebalancing if that's the case.
-                const left1 = alter(cmp, f, key, tree.left);
-                return left1 === tree.left
-                    ? tree
-                    : balance(tree.key, tree.value, left1, tree.right);
+                const l1 = alter(cmp, f, key, l);
+                return l1 === l ? tree : balance(k, v, l1, r);
             case 1:
-                const right1 = alter(cmp, f, key, tree.right);
-                return right1 === tree.right
-                    ? tree
-                    : balance(tree.key, tree.value, tree.left, right1);
+                const r1 = alter(cmp, f, key, r);
+                return r1 === r ? tree : balance(k, v, l, r1);
             case 0:
                 // The altering function may decide not to change the
                 // value. We can reuse the node if that's the case.
-                const altered = f(tree.value, tree.key);
-                if (altered !== undefined) {
-                    return altered === tree.value
-                        ? tree
-                        : {...tree, value: altered};
-                }
-                else {
-                    return glue(tree.left, tree.right);
-                }
+                const altered = f(v, k);
+                if (altered !== undefined)
+                    return altered === v ? tree : {...tree, value: altered};
+                else
+                    return glue(l, r);
         }
     }
 }
@@ -841,6 +924,15 @@ function iterateAsc<K, V, A>(f: (k: K, v: V) => Iterable<A>, tree: Tree<K, V>): 
     return reversible(goAsc(tree), () => goDesc(tree));
 }
 
+function keysSet<K>(tree: Tree<K, any>): S.Tree<K> {
+    if (!tree) {
+        return null;
+    }
+    else {
+        return S.bin(tree.size, tree.key, keysSet(tree.left), keysSet(tree.right));
+    }
+}
+
 function filter<K, V>(p: (v: V, k: K) => boolean, tree: Tree<K, V>): Tree<K, V> {
     if (!tree) {
         return null;
@@ -890,17 +982,18 @@ function split<K, V>(cmp: CompareFn<K>, key: K, tree: Tree<K, V>): [Tree<K, V>, 
         return [null, undefined, null];
     }
     else {
-        switch (coerceOrd(cmp(key, tree.key))) {
+        const {key: k, value: v, left: l, right: r} = tree;
+        switch (coerceOrd(cmp(key, k))) {
             case -1: {
-                const [ll, v, lr] = split(cmp, key, tree.left);
-                return [ll, v, link(tree.key, tree.value, lr, tree.right)];
+                const [ll, lv, lr] = split(cmp, key, l);
+                return [ll, lv, link(k, v, lr, r)];
             }
             case  1: {
-                const [rl, v, rr] = split(cmp, key, tree.right)
-                return [link(tree.key, tree.value, tree.left, rl), v, rr];
+                const [rl, rv, rr] = split(cmp, key, r)
+                return [link(k, v, l, rl), rv, rr];
             }
             case  0:
-                return [tree.left, tree.value, tree.right];
+                return [l, v, r];
         }
     }
 }
@@ -912,16 +1005,17 @@ function lookupIndex<K, V>(cmp: CompareFn<K>, key: K, tree: Tree<K, V>): number|
             return undefined;
         }
         else {
-            switch (coerceOrd(cmp(key, tree.key))) {
+            const {key: k, left: l, right: r} = tree;
+            switch (coerceOrd(cmp(key, k))) {
                 case -1:
-                    tree = tree.left;
+                    tree = l;
                     break;
                 case  1:
-                    idx += size(tree.left) + 1;
-                    tree = tree.right;
+                    idx += size(l) + 1;
+                    tree = r;
                     break;
                 case  0:
-                    return idx + size(tree.left);
+                    return idx + size(l);
             }
         }
     }
@@ -945,6 +1039,35 @@ function elemAt<K, V>(idx: number, tree: Tree<K, V>): [K, V]|undefined {
             else {
                 return [k, v];
             }
+        }
+    }
+}
+
+function updateAt<K, V>(f: UpdateFn<K, V>, idx: number, tree: Tree<K, V>): Tree<K, V> {
+    if (!tree) {
+        return null;
+    }
+    else {
+        const {key: k, value: v, left: l, right: r} = tree;
+        const ls = size(l);
+        if (idx < ls) {
+            // updateAt() may return an identical node. We can skip the
+            // rebalancing if that's the case.
+            const l1 = updateAt(f, idx, l);
+            return l1 === l ? tree : balanceR(k, v, l1, r);
+        }
+        else if (idx > ls) {
+            const r1 = updateAt(f, idx-ls-1, r);
+            return r1 === r ? tree : balanceL(k, v, l, r1);
+        }
+        else {
+            // The updator function may decide not to change the value. We
+            // can reuse the node if that's the case.
+            const updated = f(v, k);
+            if (updated !== undefined)
+                return updated === v ? tree : {...tree, value: updated};
+            else
+                return glue(l, r);
         }
     }
 }
@@ -1467,7 +1590,7 @@ function buildFrom<K, V>(cmp: CompareFn<K>, pairs: Queue<[K, V]>): Tree<K, V> {
 
 function isOrdered<K, V>(cmp: CompareFn<K>, fst: [K, V], rest: Queue<[K, V]>): boolean {
     return rest.isEmpty
-        ? true // No more pair to compare.
+        ? true // No more pairs to compare.
         : cmp(fst[0], rest.head[0]) < 0;
 }
 
@@ -1476,7 +1599,7 @@ function buildFromUnordered<K, V>(cmp: CompareFn<K>, tree: Tree<K, V>, pairs: Qu
     return pairs.foldl((t, [k, v]) => insert(cmp, k, v, t), tree);
 }
 
-// O(n) way of building a tree from an strictly-ascending queue.
+// O(n) way of building a tree from a strictly-ascending queue.
 function buildFromOrdered<K, V>(cmp: CompareFn<K>, height: number, tree: Tree<K, V>, pairs: Queue<[K, V]>): Tree<K, V> {
     if (pairs.isEmpty) {
         // No more pairs to insert.

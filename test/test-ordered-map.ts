@@ -1,6 +1,7 @@
 import "mocha";
 import { expect } from "chai";
 import { OrdMap } from "../lib/ordered-map.js";
+import { OrdSet } from "../lib/ordered-set.js";
 
 describe("OrdMap", () => {
     describe("Query", () => {
@@ -118,6 +119,26 @@ describe("OrdMap", () => {
 
                 expect(m.delete("qux")).to.be.false;
                 expect(m.has("qux")).to.be.false;
+            });
+        });
+        describe(".prototype.deleteKeys", () => {
+            it("deletes all the keys in a container", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                const s = new OrdSet(["foo", "bar"]);
+                m.deleteKeys(s);
+                expect(Array.from(m)).to.deep.equal([
+                    ["baz", 3]
+                ]);
+            });
+        });
+        describe(".prototype.restrictKeys", () => {
+            it("retains all the keys in a container and deletes everything else", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                const s = new OrdSet(["foo", "bar"]);
+                m.restrictKeys(s);
+                expect(Array.from(m)).to.deep.equal([
+                    ["bar", 2], ["foo", 1]
+                ]);
             });
         });
         describe(".prototype.adjust", () => {
@@ -298,6 +319,13 @@ describe("OrdMap", () => {
                 ]);
             });
         });
+        describe(".prototype.keysSet", () => {
+            it("returns the set of keys", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                const s = m.keysSet();
+                expect(Array.from(s)).to.deep.equal(["bar", "baz", "foo"]);
+            });
+        });
     });
     describe("Filter", () => {
         describe(".prototype.filter", () => {
@@ -364,7 +392,7 @@ describe("OrdMap", () => {
             });
         });
         describe(".prototype.splitAt", () => {
-            it("split the map at the given index", () => {
+            it("splits the map at the given index", () => {
                 const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
                 const [m1, m2] = m.splitAt(1);
                 expect(Array.from(m1)).to.deep.equal([
@@ -372,6 +400,26 @@ describe("OrdMap", () => {
                 ]);
                 expect(Array.from(m2)).to.deep.equal([
                     ["baz", 3], ["foo", 1]
+                ]);
+            });
+        });
+        describe(".prototype.updateAt", () => {
+            it("updates the value at the given key index", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                m.updateAt(1, n => n * 10);
+                m.updateAt(9, n => n * 10);
+                expect(Array.from(m)).to.deep.equal([
+                    ["bar", 2], ["baz", 30], ["foo", 1]
+                ]);
+            });
+        });
+        describe(".prototype.deleteAt", () => {
+            it("deletes the value at the given key index", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                m.deleteAt(1);
+                m.deleteAt(9);
+                expect(Array.from(m)).to.deep.equal([
+                    ["bar", 2], ["foo", 1]
                 ]);
             });
         });
