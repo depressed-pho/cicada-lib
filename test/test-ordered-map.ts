@@ -259,6 +259,20 @@ describe("OrdMap", () => {
                 expect(m.foldl(f, "#")).to.equal("(((#)foo)bar)baz");
             });
         });
+        describe(".prototype.any", () => {
+            it("checks if there are any elements that satisfy a predicate", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                expect(m.any(n => n >= 3)).to.be.true;
+                expect(m.any(n => n >= 4)).to.be.false;
+            });
+        });
+        describe(".prototype.all", () => {
+            it("checks if all of the elements satisfy a predicate", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                expect(m.all(n => n >= 1)).to.be.true;
+                expect(m.all(n => n >= 2)).to.be.false;
+            });
+        });
     });
     describe("Iteration", () => {
         describe(".prototype.keys", () => {

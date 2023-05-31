@@ -158,6 +158,20 @@ describe("OrdSet", () => {
                 expect(s.foldl(f, "#")).to.equal("(((#)1)2)3");
             });
         });
+        describe(".prototype.any", () => {
+            it("checks if there are any elements that satisfy a predicate", () => {
+                const s = new OrdSet([1, 2, 3]);
+                expect(s.any(n => n >= 3)).to.be.true;
+                expect(s.any(n => n >= 4)).to.be.false;
+            });
+        });
+        describe(".prototype.all", () => {
+            it("checks if all of the elements satisfy a predicate", () => {
+                const s = new OrdSet([1, 2, 3]);
+                expect(s.all(n => n >= 1)).to.be.true;
+                expect(s.all(n => n >= 2)).to.be.false;
+            });
+        });
     });
     describe("Iteration", () => {
         describe(".prototype.values", () => {

@@ -196,6 +196,20 @@ export class OrdSet<T> implements ReversibleIterable<T> {
         return foldl(f, acc0, this.#root);
     }
 
+    /** O(n). Return `true` iff there is at least one element that
+     * satisfies the given predicate.
+     */
+    public any(p: (elem: T) => boolean): boolean {
+        return any(p, this.#root);
+    }
+
+    /** O(n). Return `true` iff there are no elements that don't satisfy
+     * the given predicate.
+     */
+    public all(p: (elem: T) => boolean): boolean {
+        return all(p, this.#root);
+    }
+
     /** O(n). Iterate over elements in ascending order.
      */
     public values(): ReversibleIterableIterator<T> {
@@ -642,6 +656,18 @@ function foldl<T, Acc>(f: (acc: Acc, elem: T) => Acc, acc0: Acc, tree: Tree<T>):
         return acc0;
     else
         return foldl(f, f(foldl(f, acc0, tree.left), tree.elem), tree.right);
+}
+
+function any<T>(p: (elem: T) => boolean, tree: Tree<T>): boolean {
+    return !tree        ? false
+         : p(tree.elem) ? true
+         :                (any(p, tree.left) || any(p, tree.right));
+}
+
+function all<T>(p: (elem: T) => boolean, tree: Tree<T>): boolean {
+    return !tree         ? true
+         : !p(tree.elem) ? false
+         :                 (all(p, tree.left) && all(p, tree.right));
 }
 
 function iterateAsc<T>(tree: Tree<T>): ReversibleIterableIterator<T> {

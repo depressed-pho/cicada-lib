@@ -286,8 +286,28 @@ export class Queue<T> implements Iterable<T> {
 
     /** O(n). Fold the queue with a left-associative operator. */
     public foldl<A>(f: (acc: A, v: T) => A, init: A): A {
-        const acc0 = Queue.#foldl(f, init, this.#prefix);
-        return Queue.#foldr((v, acc) => f(acc, v), acc0, this.#suffix);
+        const acc1 = Queue.#foldl(f, init, this.#prefix);
+        return Queue.#foldr((v, acc) => f(acc, v), acc1, this.#suffix);
+    }
+
+    /** O(n). Fold the queue with a right-associative operator. */
+    public foldr<A>(f: (v: T, acc: A) => A, init: A): A {
+        const acc1 = Queue.#foldl((acc, v) => f(v, acc), init, this.#suffix);
+        return Queue.#foldr(f, acc1, this.#prefix);
+    }
+
+    /** O(n). Return `true` iff there is at least one element that
+     * satisfies the given predicate.
+     */
+    public any(p: (v: T) => boolean): boolean {
+        return Queue.#any(p, this.#prefix) || Queue.#any(p, this.#suffix);
+    }
+
+    /** O(n). Return `true` iff there are no elements that don't satisfy
+     * the given predicate.
+     */
+    public all(p: (v: T) => boolean): boolean {
+        return Queue.#all(p, this.#prefix) && Queue.#all(p, this.#suffix);
     }
 
     /** O(n). Create a new queue with only elements that satisfy the given
@@ -532,6 +552,24 @@ export class Queue<T> implements Iterable<T> {
             acc = f(cell.elem, acc);
         }
         return acc;
+    }
+
+    static #any<T>(p: (v: T) => boolean, list: List<T>): boolean {
+        for (let cell = list; cell; cell = cell.next) {
+            if (p(cell.elem)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static #all<T>(p: (v: T) => boolean, list: List<T>): boolean {
+        for (let cell = list; cell; cell = cell.next) {
+            if (!p(cell.elem)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 // @ts-ignore: See above

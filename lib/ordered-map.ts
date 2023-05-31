@@ -315,6 +315,20 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
         return foldl(f, acc0, this.#root);
     }
 
+    /** O(n). Return `true` iff there is at least one element that
+     * satisfies the given predicate.
+     */
+    public any(p: (value: V, key: K) => boolean): boolean {
+        return any(p, this.#root);
+    }
+
+    /** O(n). Return `true` iff there are no elements that don't satisfy
+     * the given predicate.
+     */
+    public all(p: (value: V, key: K) => boolean): boolean {
+        return all(p, this.#root);
+    }
+
     /** O(n). Iterate over keys in ascending order.
      */
     public keys(): ReversibleIterableIterator<K> {
@@ -904,6 +918,18 @@ function foldl<K, V, Acc>(f: (acc: Acc, v: V, k: K) => Acc, acc0: Acc, tree: Tre
         return acc0;
     else
         return foldl(f, f(foldl(f, acc0, tree.left), tree.value, tree.key), tree.right);
+}
+
+function any<K, V>(p: (v: V, k: K) => boolean, tree: Tree<K, V>): boolean {
+    return !tree                   ? false
+         : p(tree.value, tree.key) ? true
+         :                           (any(p, tree.left) || any(p, tree.right));
+}
+
+function all<K, V>(p: (v: V, k: K) => boolean, tree: Tree<K, V>): boolean {
+    return !tree                    ? true
+         : !p(tree.value, tree.key) ? false
+         :                            (all(p, tree.left) && all(p, tree.right));
 }
 
 function iterateAsc<K, V, A>(f: (k: K, v: V) => Iterable<A>, tree: Tree<K, V>): ReversibleIterableIterator<A> {

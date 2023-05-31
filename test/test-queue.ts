@@ -60,4 +60,20 @@ describe("Queue", () => {
             });
         });
     });
+    describe("Folds", () => {
+        describe(".prototype.any", () => {
+            it("checks if there are any elements that satisfy a predicate", () => {
+                const q = Queue.from([0, 1, 2, 3, 4]);
+                expect(q.any(n => n >= 4)).to.be.true;
+                expect(q.any(n => n >= 5)).to.be.false;
+            });
+        });
+        describe(".prototype.all", () => {
+            it("checks if all of the elements satisfy a predicate", () => {
+                const q = Queue.from([0, 1, 2, 3, 4]);
+                expect(q.all(n => n >= 0)).to.be.true;
+                expect(q.all(n => n >= 1)).to.be.false;
+            });
+        });
+    });
 });
