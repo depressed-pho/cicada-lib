@@ -1,3 +1,4 @@
 # -*- org -*-
 
 * DONE [#A] Rename lib/octet-stream.ts to something like cic-ascii.ts
+* DONE [#A] Fix "npm run watch" apparently leaking memory

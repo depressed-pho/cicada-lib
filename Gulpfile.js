@@ -7,12 +7,13 @@ export async function clean() {
     await rm("dist", {force: true, recursive: true});
 }
 
+const tsProject = ts.createProject("tsconfig.json");
 export const build =
     gulp.series(
         clean,
         function transpile() {
             const tsResult = gulp.src("lib/**/*.ts", {sourcemaps: true})
-                  .pipe(ts("tsconfig.json"));
+                  .pipe(tsProject());
 
             return merge([
                 tsResult.dts.pipe(gulp.dest("dist")),
