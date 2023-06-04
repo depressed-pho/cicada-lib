@@ -352,7 +352,7 @@ describe("OrdMap", () => {
             });
         });
         describe(".prototype.partition", () => {
-            it("returns two maps consisting of elements that satisfy a predicate and those don't", () => {
+            it("returns two maps consisting of elements that satisfy a predicate and those that don't", () => {
                 const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
                 const p = (v: number) => v % 2 == 1;
                 const [m1, m2] = m.partition(p);

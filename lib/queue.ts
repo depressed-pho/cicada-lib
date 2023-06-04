@@ -326,25 +326,32 @@ export class Queue<T> implements Iterable<T> {
         const revPrefix = go(this.#prefix);
         const revSuffix = go(this.#suffix);
 
-        if (!revPrefix) {
-            // The prefix is now empty and we have a reversed suffix. We
-            // can consider the reversed suffix as a new prefix.
-            return Queue.#balancePrefix(revSuffix);
+        return Queue.#linkRev(revPrefix, revSuffix);
+    }
+
+    /** O(n). Partition the queue according to a predicate. The first queue
+     * contains elements that satisfy the predicate, and the second queue
+     * contains those that don't.
+     */
+    public partition(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
+        function go(list: List<T>): [List<T>, List<T>] {
+            let accT: List<T> = null;
+            let accF: List<T> = null;
+            for (let cell = list; cell; cell = cell.next) {
+                if (p(cell.elem))
+                    accT = {elem: cell.elem, next: accT};
+                else
+                    accF = {elem: cell.elem, next: accF};
+            }
+            return [accT, accF]; // The results are in reverse order.
         }
-        else if (!revSuffix) {
-            // The suffix is now empty and we have a reversed prefix. We
-            // can consider the reversed prefix as a new suffix.
-            return Queue.#balanceSuffix(revPrefix);
-        }
-        else {
-            // Now we have a non-empty reversed prefix and a reversed
-            // suffix. We have to reverse them both. This is still O(n) but
-            // ugh..
-            return new Queue(
-                Queue.#length(revPrefix) + Queue.#length(revSuffix),
-                Queue.#reverse(revPrefix),
-                Queue.#reverse(revSuffix));
-        }
+        const [revPrefixT, revPrefixF] = go(this.#prefix);
+        const [revSuffixT, revSuffixF] = go(this.#suffix);
+
+        return [
+            Queue.#linkRev(revPrefixT, revSuffixT),
+            Queue.#linkRev(revPrefixF, revSuffixF)
+        ];
     }
 
     /** O(n). Apply the given function to each value in the queue from the
@@ -447,7 +454,16 @@ export class Queue<T> implements Iterable<T> {
     static #link<T>(prefix: List<T>, suffix: List<T>): Queue<T> {
         return !prefix ? this.#balanceSuffix(suffix)
              : !suffix ? this.#balancePrefix(prefix)
-             :           new Queue(this.#length(prefix) + this.#length(suffix), prefix, suffix);
+             :           new Queue(this.#length(prefix) + this.#length(suffix),
+                                   prefix, suffix);
+    }
+
+    static #linkRev<T>(revPrefix: List<T>, revSuffix: List<T>): Queue<T> {
+        return !revPrefix ? this.#balancePrefix(revSuffix)
+             : !revSuffix ? this.#balanceSuffix(revPrefix)
+             :              new Queue(this.#length(revPrefix) + this.#length(revSuffix),
+                                      this.#reverse(revPrefix),
+                                      this.#reverse(revSuffix));
     }
 
     static #balancePrefix<T>(prefix: List<T>): Queue<T> {

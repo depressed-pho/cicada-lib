@@ -45,6 +45,20 @@ describe("Queue", () => {
                 expect(Array.from(q2)).to.deep.equal([0, 1, 2]);
             });
         });
+        describe(".prototype.filter", () => {
+            it("returns elements that satisfy a predicate", () => {
+                const q = Queue.from([0, 1, 2, 3, 4]);
+                expect(Array.from(q.filter(n => n % 2 == 0))).to.deep.equal([0, 2, 4]);
+            });
+        });
+        describe(".prototype.partition", () => {
+            it("returns two queues consisting of elements that satisfy a predicate and those that don't", () => {
+                const q = Queue.from([0, 1, 2, 3, 4]);
+                const [q1, q2] = q.partition(n => n % 2 == 0);
+                expect(Array.from(q1)).to.deep.equal([0, 2, 4]);
+                expect(Array.from(q2)).to.deep.equal([1, 3]);
+            });
+        });
     });
     describe("Indexing", () => {
         describe(".prototype.take", () => {
