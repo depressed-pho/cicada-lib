@@ -3,11 +3,8 @@ import { IEventSignal, GluedEventSignalWithoutOptions,
 import { ScriptEventCommandMessageEvent } from "../script-event.js";
 import { BeforeWatchdogTerminateEvent } from "../watchdog.js";
 import { Wrapper } from "../wrapper.js";
+import { identity } from "../function.js";
 import * as MC from "@minecraft/server";
-
-function identity<T>(x: T): T {
-    return x;
-}
 
 export class SystemEvents extends Wrapper<MC.SystemEvents> {
     public readonly beforeWatchdogTerminate: IEventSignal<BeforeWatchdogTerminateEvent>;
