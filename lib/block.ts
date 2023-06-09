@@ -94,7 +94,7 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
     }
 
     public get states(): BlockStates {
-        return new BlockStates(this.raw.getAllProperties());
+        return new BlockStates(this.raw.getAllStates());
     }
 }
 
@@ -182,13 +182,13 @@ export class BlockType extends Wrapper<MC.BlockType> {
 
 }
 
-export interface BlockPlaceEvent {
+export interface BlockPlaceAfterEvent {
     readonly block:     Block;
     readonly dimension: Dimension;
     readonly player:    Player;
 }
 
-export interface BlockBreakEvent {
+export interface BlockBreakAfterEvent {
     readonly block:                  Block;
     readonly brokenBlockPermutation: BlockPermutation;
     readonly dimension:              Dimension;

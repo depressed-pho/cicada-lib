@@ -47,30 +47,6 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     }
 
     public teleport(location: Vector3, opts?: TeleportOptions): void {
-        // FIXME: Remove this shim code when @minecraft/server is updated.
-        if (opts && opts.checkForBlocks) {
-            throw new Error("TeleportOptions.checkForBlocks is not supported by this API");
-        }
-        if (opts && opts.facingLocation) {
-            if (opts.rotation) {
-                throw new Error("TeleportOptions.facingLocation and .rotation cannot be used at the same time with this API");
-            }
-            this.raw.teleportFacing(
-                location,
-                opts.dimension?.raw || this.raw.dimension,
-                opts.facingLocation,
-                opts.keepVelocity);
-        }
-        else {
-            this.raw.teleport(
-                location,
-                opts?.dimension?.raw || this.raw.dimension,
-                opts?.rotation?.x    || this.raw.getRotation().x,
-                opts?.rotation?.y    || this.raw.getRotation().y,
-                opts?.keepVelocity);
-        }
-        /*
-        // New API
         let rawOpts: MC.TeleportOptions = {};
         if (opts) {
             if (opts.checkForBlocks) {
@@ -90,7 +66,6 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
             }
         }
         this.raw.teleport(location, rawOpts);
-        */
     }
 
     public triggerEvent(eventName: string): void {
@@ -106,7 +81,7 @@ export interface TeleportOptions {
     rotation?:       Vector2;
 }
 
-export interface EntityDieEvent {
+export interface EntityDieAfterEvent {
     readonly damageCause: EntityDamageCause;
     readonly deadEntity: Entity;
 }
@@ -128,7 +103,7 @@ export function entityEventOptionsToRaw(opts: EntityEventOptions): MC.EntityEven
     return ret;
 }
 
-export interface ItemUseEvent {
+export interface ItemUseAfterEvent {
     readonly itemStack: ItemStack;
     readonly source: Entity;
 }

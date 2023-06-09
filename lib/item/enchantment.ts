@@ -2,7 +2,6 @@ import { Wrapper } from "../wrapper.js";
 import * as MC from "@minecraft/server";
 
 export class ItemEnchants extends Wrapper<MC.ItemEnchantsComponent> {
-    /* FIXME: This doesn't work: "Failed to set property 'enchantments'" */
     public setSlot(slot: number|string): this {
         const list = new EnchantmentList(slot);
         this.raw.enchantments = list.raw;
@@ -69,32 +68,8 @@ export class Enchantment extends Wrapper<MC.Enchantment> {
         if (arg0 instanceof MC.Enchantment) {
             super(arg0);
         }
-        else if (arg0 instanceof MC.EnchantmentType) {
-            super(new MC.Enchantment(arg0, ...rest));
-        }
         else {
-            super(
-                (() => {
-                    /* Fucking shit. The API doesn't provides a functionality for this. */
-                    const ty = (() => {
-                        let id = arg0;
-                        if (id.startsWith("minecraft:")) {
-                            id = id.replace("minecraft:", "");
-                        }
-                        id = id.replaceAll(
-                            /_(.)/g,
-                            (_, c) => c.toUpperCase());
-
-                        if ((MC.MinecraftEnchantmentTypes as any)[id] != null) {
-                            return (MC.MinecraftEnchantmentTypes as any)[id];
-                        }
-                        else {
-                            throw Error(`Unknown enchantment ID: ${arg0}`);
-                        }
-                    })();
-                    return new MC.Enchantment(ty, ...rest);
-                })()
-            );
+            super(new MC.Enchantment(arg0, ...rest));
         }
     }
 

@@ -1,22 +1,20 @@
+import { Wrapper } from "./wrapper.js";
 import { WatchdogTerminateReason } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { WatchdogTerminateReason };
 
-export class BeforeWatchdogTerminateEvent {
-    readonly #event: MC.BeforeWatchdogTerminateEvent;
-
-    /** The constructor is public only because of a language
-     * limitation. User code must never call it directly. */
-    public constructor(rawEvent: MC.BeforeWatchdogTerminateEvent) {
-        this.#event = rawEvent;
+export class WatchdogTerminateBeforeEvent extends Wrapper<MC.WatchdogTerminateBeforeEvent> {
+    /** Package private: user code should not use this. */
+    public constructor(rawEvent: MC.WatchdogTerminateBeforeEvent) {
+        super(rawEvent);
     }
 
     public cancel(): void {
-        this.#event.cancel = true;
+        this.raw.cancel = true;
     }
 
     public get terminateReason(): WatchdogTerminateReason {
-        return this.#event.terminateReason;
+        return this.raw.terminateReason;
     }
 }

@@ -7,7 +7,7 @@ import { IPreferencesContainer } from "./preferences.js";
 import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
-export { ScreenDisplay, PlayerLeaveEvent } from "@minecraft/server";
+export { ScreenDisplay, PlayerLeaveAfterEvent } from "@minecraft/server";
 
 export class Player extends Entity implements IPreferencesContainer {
     /** Package private: user code should not use this. */
@@ -63,7 +63,7 @@ export class Player extends Entity implements IPreferencesContainer {
     }
 }
 
-export interface PlayerSpawnEvent {
+export interface PlayerSpawnAfterEvent {
     readonly initialSpawn: boolean;
     readonly player: Player;
 }

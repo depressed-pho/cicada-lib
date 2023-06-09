@@ -65,6 +65,6 @@ function propsToRaw(props: DynamicPropertiesDefinition): MC.DynamicPropertiesDef
     return raw;
 }
 
-export interface WorldInitializeEvent {
+export interface WorldInitializeAfterEvent {
     propertyRegistry: PropertyRegistry;
 }

@@ -41,7 +41,7 @@ export class Piston extends Faced(Block) {
     }
 }
 
-export interface PistonActivateEvent {
+export interface PistonActivateAfterEvent {
     readonly isExpanding: boolean;
     readonly piston: Piston;
 }
