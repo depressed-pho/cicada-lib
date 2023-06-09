@@ -58,7 +58,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
             this.raw.itemUse,
             (rawEv: MC.ItemUseAfterEvent) => {
                 return {
-                    itemStack: new ItemStack(rawEv.item),
+                    itemStack: new ItemStack(rawEv.itemStack),
                     source:    rawEv.source.typeId === "minecraft:player"
                         ? new Player(rawEv.source as MC.Player)
                         : new Entity(rawEv.source)
