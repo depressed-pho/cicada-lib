@@ -2,7 +2,7 @@ import { Block } from "./block.js";
 import { Entity } from "./entity.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
-import { ScriptEventSource } from "@minecraft/server";
+import type { ScriptEventSource } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { ScriptEventSource };
