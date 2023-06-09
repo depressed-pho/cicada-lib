@@ -43,17 +43,16 @@ export class Piston extends Faced(Block) {
 }
 
 export class PistonActivateAfterEvent extends Wrapper<MC.PistonActivateAfterEvent> {
+    readonly isExpanding: boolean;
+    readonly piston: Piston;
+
     /// Package private
     public constructor(rawEv: MC.PistonActivateAfterEvent) {
         super(rawEv);
-    }
-
-    public get isExpanding(): boolean {
-        return this.raw.isExpanding;
-    }
-
-    public get piston(): Piston {
-        return new Piston(this.raw.piston.block);
+        // Every field of MC.PistonActivateAfterEvent becomes undefined
+        // after the event handler returns. We must copy them now.
+        this.isExpanding = rawEv.isExpanding;
+        this.piston      = new Piston(rawEv.piston.block);
     }
 }
 
