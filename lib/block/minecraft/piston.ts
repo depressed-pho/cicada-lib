@@ -1,5 +1,6 @@
 import { map } from "../../iterable.js";
 import { Block } from "../../block.js";
+import { Wrapper } from "../../wrapper.js";
 import { Faced } from "../faced.js";
 import * as MC from "@minecraft/server";
 
@@ -41,7 +42,30 @@ export class Piston extends Faced(Block) {
     }
 }
 
-export interface PistonActivateAfterEvent {
-    readonly isExpanding: boolean;
-    readonly piston: Piston;
+export class PistonActivateAfterEvent extends Wrapper<MC.PistonActivateAfterEvent> {
+    /// Package private
+    public constructor(rawEv: MC.PistonActivateAfterEvent) {
+        super(rawEv);
+    }
+
+    public get isExpanding(): boolean {
+        return this.raw.isExpanding;
+    }
+
+    public get piston(): Piston {
+        return new Piston(this.raw.piston.block);
+    }
+}
+
+export class PistonActivateBeforeEvent extends PistonActivateAfterEvent {
+    /// Package private
+    public constructor(rawEv: MC.PistonActivateBeforeEvent) {
+        super(rawEv);
+    }
+
+    public cancel(): void {
+        // NOTE: We cannot simply override "get raw()" due to
+        // https://github.com/microsoft/TypeScript/issues/41347
+        (super.raw as MC.PistonActivateBeforeEvent).cancel = true;
+    }
 }

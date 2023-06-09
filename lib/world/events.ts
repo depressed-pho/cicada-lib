@@ -1,7 +1,7 @@
 import { IEventSignal, CustomEventSignal, GluedEventSignalWithoutOptions,
          GluedEventSignalWithOptions } from "../event.js";
 import { Block, BlockPermutation, BlockBreakAfterEvent, BlockPlaceAfterEvent } from "../block.js";
-import { Piston, PistonActivateAfterEvent } from "../block/minecraft/piston.js";
+import { PistonActivateAfterEvent, PistonActivateBeforeEvent } from "../block/minecraft/piston.js";
 import { Dimension } from "../dimension.js";
 import { Entity, ItemUseAfterEvent, EntityDieAfterEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
@@ -66,12 +66,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
             });
         this.pistonActivate = new GluedEventSignalWithoutOptions(
             this.raw.pistonActivate,
-            (rawEv: MC.PistonActivateAfterEvent) => {
-                return {
-                    isExpanding: rawEv.isExpanding,
-                    piston:      new Piston(rawEv.piston.block)
-                };
-            });
+            (rawEv: MC.PistonActivateAfterEvent) => new PistonActivateAfterEvent(rawEv));
         this.worldInitialize = new GluedEventSignalWithoutOptions(
             this.raw.worldInitialize,
             (rawEv: MC.WorldInitializeAfterEvent) => {
@@ -86,9 +81,14 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
 }
 
 export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
+    public readonly pistonActivate: IEventSignal<PistonActivateBeforeEvent>;
+
     /// Package private
     public constructor(rawEvents: MC.WorldBeforeEvents) {
         super(rawEvents);
+        this.pistonActivate = new GluedEventSignalWithoutOptions(
+            this.raw.pistonActivate,
+            (rawEv: MC.PistonActivateBeforeEvent) => new PistonActivateBeforeEvent(rawEv));
     }
 }
 
