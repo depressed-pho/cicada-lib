@@ -332,26 +332,20 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
     /** O(n). Iterate over keys in ascending order.
      */
     public keys(): ReversibleIterableIterator<K> {
-        return iterateAsc(function* (k) {
-            yield k;
-        }, this.#root);
+        return iterateAsc((k, _v) => k, this.#root);
     }
 
     /** O(n). Iterate over values in ascending order of their keys.
      */
     public values(): ReversibleIterableIterator<V> {
-        return iterateAsc(function* (_, v) {
-            yield v;
-        }, this.#root);
+        return iterateAsc((_k, v) => v, this.#root);
     }
 
     /** O(n). Iterate over key/value pairs where the keys are in ascending
      * order.
      */
     public entries(): ReversibleIterableIterator<[K, V]> {
-        return iterateAsc(function* (k, v) {
-            yield [k, v];
-        }, this.#root);
+        return iterateAsc((k, v) => [k, v], this.#root);
     }
 
     /** O(n). This is identical to `.entries().reverse()`. */
@@ -932,18 +926,18 @@ function all<K, V>(p: (v: V, k: K) => boolean, tree: Tree<K, V>): boolean {
          :                            (all(p, tree.left) && all(p, tree.right));
 }
 
-function iterateAsc<K, V, A>(f: (k: K, v: V) => Iterable<A>, tree: Tree<K, V>): ReversibleIterableIterator<A> {
-    function *goAsc(tree: Tree<K, V>): IterableIterator<A> {
+function iterateAsc<K, V, R>(f: (k: K, v: V) => R, tree: Tree<K, V>): ReversibleIterableIterator<R> {
+    function *goAsc(tree: Tree<K, V>): IterableIterator<R> {
         if (tree) {
             yield* goAsc(tree.left);
-            yield* f(tree.key, tree.value);
+            yield  f(tree.key, tree.value);
             yield* goAsc(tree.right);
         }
     }
-    function *goDesc(tree: Tree<K, V>): IterableIterator<A> {
+    function *goDesc(tree: Tree<K, V>): IterableIterator<R> {
         if (tree) {
             yield* goDesc(tree.right);
-            yield* f(tree.key, tree.value);
+            yield  f(tree.key, tree.value);
             yield* goDesc(tree.left);
         }
     }
