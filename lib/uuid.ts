@@ -1,6 +1,6 @@
 import { lazy } from "./lazy.js";
 
-const RE_UUID = /^([0-9a-fA-F]{8})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{12})$/;
+const RE_UUID = /^([0-9a-fA-F]{8})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})([0-9a-fA-F]{8})$/;
 const GREG_POSIX_MS_DELTA = 12219292800000;
 const BYTE_TO_HEX = lazy(() => {
     const arr = [];
@@ -17,35 +17,62 @@ export class UUID {
     #timeHiAndVersion:      number = 0; // 2 octets
     #clockSeqHiAndReserved: number = 0; // 1 octet
     #clockSeqLow:           number = 0; // 1 octet
-    #node:                  number = 0; // 6 octets
+    #nodeHi:                number = 0; // 2 octets; split because we can't do 64-bits arithmetics
+    #nodeLo:                number = 0; // 4 octets
 
     static #lastMS:       number = 0;
     static #lastNS:       number = 0;
-    static #lastClockSeq: number = Math.floor(Math.random() *         0x3FFF);
-    static #v1node:       number = Math.floor(Math.random() * 0xFFFFFFFFFFFF);
+    static #lastClockSeq: number = Math.floor(Math.random() *     0x3FFF);
+    static #v1NodeHi:     number = Math.floor(Math.random() *     0xFFFF);
+    static #v1NodeLo:     number = Math.floor(Math.random() * 0xFFFFFFFF);
 
     /** Construct a nil UUID. */
     protected constructor() {}
 
     /** Construct a UUID object by parsing a UUID string. */
-    public static parse(str: string): UUID {
-        const m = RE_UUID.exec(str);
-        if (m) {
-            const uuid = new UUID();
-            uuid.#timeLow               = Number.parseInt(m[1]!, 16);
-            uuid.#timeMid               = Number.parseInt(m[2]!, 16);
-            uuid.#timeHiAndVersion      = Number.parseInt(m[3]!, 16);
-            uuid.#clockSeqHiAndReserved = Number.parseInt(m[4]!.slice(0, 2), 16);
-            uuid.#clockSeqLow           = Number.parseInt(m[4]!.slice(2   ), 16);
-            uuid.#node                  = Number.parseInt(m[5]!, 16);
-            return uuid;
+    public static parse(str: string): UUID;
+
+    /** Construct a UUID object by parsing big-endian UUID octets. */
+    public static parse(bin: Uint8Array): UUID;
+
+    public static parse(arg: string|Uint8Array): UUID {
+        if (typeof arg === "string") {
+            const m = RE_UUID.exec(arg);
+            if (m) {
+                const uuid = new UUID();
+                uuid.#timeLow               = Number.parseInt(m[1]!, 16);
+                uuid.#timeMid               = Number.parseInt(m[2]!, 16);
+                uuid.#timeHiAndVersion      = Number.parseInt(m[3]!, 16);
+                uuid.#clockSeqHiAndReserved = Number.parseInt(m[4]!.slice(0, 2), 16);
+                uuid.#clockSeqLow           = Number.parseInt(m[4]!.slice(2   ), 16);
+                uuid.#nodeHi                = Number.parseInt(m[5]!, 16);
+                uuid.#nodeLo                = Number.parseInt(m[6]!, 16);
+                return uuid;
+            }
+            else {
+                throw new TypeError(`Unparsable UUID: ${arg}`);
+            }
         }
         else {
-            throw new TypeError(`Unparsable UUID: ${str}`);
+            if (arg.length === 16) {
+                const v    = new DataView(arg.buffer, arg.byteOffset, arg.byteLength);
+                const uuid = new UUID();
+                uuid.#timeLow               = v.getUint32(0);
+                uuid.#timeMid               = v.getUint16(4);
+                uuid.#timeHiAndVersion      = v.getUint16(6);
+                uuid.#clockSeqHiAndReserved = v.getUint8(8);
+                uuid.#clockSeqLow           = v.getUint8(9);
+                uuid.#nodeHi                = v.getUint16(10);
+                uuid.#nodeLo                = v.getUint32(12);
+                return uuid;
+            }
+            else {
+                throw new TypeError(`Unparsable UUID: ${arg}`);
+            }
         }
     }
 
-    /** Construct an Nil UUID. */
+    /** Construct a Nil UUID. */
     public static nil(): UUID {
         return new UUID();
     }
@@ -84,7 +111,8 @@ export class UUID {
         uuid.#timeHiAndVersion      = ((timeHiMid >> 16) & 0xFFFF) | 0x1000;
         uuid.#clockSeqHiAndReserved = ((clockSeq  >>  8) &   0xFF) |   0x80;
         uuid.#clockSeqLow           = ( clockSeq         &   0xFF);
-        uuid.#node                  = UUID.#v1node;
+        uuid.#nodeHi                = UUID.#v1NodeHi;
+        uuid.#nodeLo                = UUID.#v1NodeLo;
         return uuid;
     }
 
@@ -95,37 +123,53 @@ export class UUID {
      * security. */
     public static v4(): UUID {
         const uuid = new UUID();
-        uuid.#timeLow               = Math.floor(Math.random() *     0xFFFFFFFF);
-        uuid.#timeMid               = Math.floor(Math.random() *         0xFFFF);
-        uuid.#timeHiAndVersion      = Math.floor(Math.random() *         0x0FFF) | 0x4000;
-        uuid.#clockSeqHiAndReserved = Math.floor(Math.random() *           0x3F) |   0x80;
-        uuid.#clockSeqLow           = Math.floor(Math.random() *           0xFF);
-        uuid.#node                  = Math.floor(Math.random() * 0xFFFFFFFFFFFF);
+        uuid.#timeLow               = Math.floor(Math.random() * 0xFFFFFFFF);
+        uuid.#timeMid               = Math.floor(Math.random() *     0xFFFF);
+        uuid.#timeHiAndVersion      = Math.floor(Math.random() *     0x0FFF) | 0x4000;
+        uuid.#clockSeqHiAndReserved = Math.floor(Math.random() *       0x3F) |   0x80;
+        uuid.#clockSeqLow           = Math.floor(Math.random() *       0xFF);
+        uuid.#nodeHi                = Math.floor(Math.random() *     0xFFFF);
+        uuid.#nodeLo                = Math.floor(Math.random() * 0xFFFFFFFF);
         return uuid;
     }
 
+    /** Turn a UUID into a string. */
     public toString(): string {
         return [
-            BYTE_TO_HEX[(this.#timeLow               >> 24) & 0xFF],
-            BYTE_TO_HEX[(this.#timeLow               >> 16) & 0xFF],
-            BYTE_TO_HEX[(this.#timeLow               >>  8) & 0xFF],
-            BYTE_TO_HEX[ this.#timeLow                      & 0xFF],
+            BYTE_TO_HEX[(this.#timeLow               >>> 24) & 0xFF],
+            BYTE_TO_HEX[(this.#timeLow               >>> 16) & 0xFF],
+            BYTE_TO_HEX[(this.#timeLow               >>>  8) & 0xFF],
+            BYTE_TO_HEX[ this.#timeLow                       & 0xFF],
             "-",
-            BYTE_TO_HEX[(this.#timeMid               >>  8) & 0xFF],
-            BYTE_TO_HEX[ this.#timeMid                      & 0xFF],
+            BYTE_TO_HEX[(this.#timeMid               >>>  8) & 0xFF],
+            BYTE_TO_HEX[ this.#timeMid                       & 0xFF],
             "-",
-            BYTE_TO_HEX[(this.#timeHiAndVersion      >>  8) & 0xFF],
-            BYTE_TO_HEX[ this.#timeHiAndVersion             & 0xFF],
+            BYTE_TO_HEX[(this.#timeHiAndVersion      >>>  8) & 0xFF],
+            BYTE_TO_HEX[ this.#timeHiAndVersion              & 0xFF],
             "-",
-            BYTE_TO_HEX[ this.#clockSeqHiAndReserved        & 0xFF],
-            BYTE_TO_HEX[ this.#clockSeqLow                  & 0xFF],
+            BYTE_TO_HEX[ this.#clockSeqHiAndReserved         & 0xFF],
+            BYTE_TO_HEX[ this.#clockSeqLow                   & 0xFF],
             "-",
-            BYTE_TO_HEX[(this.#node                  >> 40) & 0xFF],
-            BYTE_TO_HEX[(this.#node                  >> 32) & 0xFF],
-            BYTE_TO_HEX[(this.#node                  >> 24) & 0xFF],
-            BYTE_TO_HEX[(this.#node                  >> 16) & 0xFF],
-            BYTE_TO_HEX[(this.#node                  >>  8) & 0xFF],
-            BYTE_TO_HEX[ this.#node                         & 0xFF]
+            BYTE_TO_HEX[(this.#nodeHi                >>>  8) & 0xFF],
+            BYTE_TO_HEX[ this.#nodeHi                        & 0xFF],
+            BYTE_TO_HEX[(this.#nodeLo                >>> 24) & 0xFF],
+            BYTE_TO_HEX[(this.#nodeLo                >>> 16) & 0xFF],
+            BYTE_TO_HEX[(this.#nodeLo                >>>  8) & 0xFF],
+            BYTE_TO_HEX[ this.#nodeLo                        & 0xFF]
         ].join("");
+    }
+
+    /** Turn a UUID into big-endian octets. */
+    public toOctets(): Uint8Array {
+        const u8 = new Uint8Array(16);
+        const v  = new DataView(u8.buffer);
+        v.setUint32(0, this.#timeLow);
+        v.setUint16(4, this.#timeMid);
+        v.setUint16(6, this.#timeHiAndVersion);
+        v.setUint8(8, this.#clockSeqHiAndReserved);
+        v.setUint8(9, this.#clockSeqLow);
+        v.setUint16(10, this.#nodeHi);
+        v.setUint32(12, this.#nodeLo);
+        return u8;
     }
 }
