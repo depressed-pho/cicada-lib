@@ -4,6 +4,7 @@
 
 * New properties:
   * `Block.prototype.getItemStack`
+  * Setter for `Block.prototype.type`.
   * `World.prototype.getDimension`
 
 ## 2.0.0 -- 2023-09-17

@@ -44,6 +44,19 @@ export class Block extends Wrapper<MC.Block> {
         return new BlockType(this.raw.type);
     }
 
+    public set type(type: BlockType | string) {
+        // FIXME: In the new API Block.prototype.setType accepts string
+        // too. Remove this glue code when it's updated.
+        if (typeof type === "string") {
+            this.raw.setType(new BlockType(type).raw);
+        }
+        else {
+            this.raw.setType(type.raw);
+        }
+        // new API:
+        // this.raw.setType(type);
+    }
+
     public get typeId(): string {
         return this.raw.typeId;
     }
