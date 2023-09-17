@@ -62,14 +62,13 @@ export class Block extends Wrapper<MC.Block> {
     /// Get another block at a given offset towards a given direction.
     public offset(dir: Direction, delta = 1): Block|undefined {
         const loc = this.location;
-        // Horizontal directions seem to be opposite in Bedrock?
         switch (dir) {
             case Direction.down:  loc.y -= delta; break;
-            case Direction.east:  loc.x -= delta; break;
-            case Direction.north: loc.z += delta; break;
-            case Direction.south: loc.z -= delta; break;
+            case Direction.east:  loc.x += delta; break;
+            case Direction.north: loc.z -= delta; break;
+            case Direction.south: loc.z += delta; break;
             case Direction.up:    loc.y += delta; break;
-            case Direction.west:  loc.x += delta; break;
+            case Direction.west:  loc.x -= delta; break;
             default:
                 throw new TypeError(`Invalid direction: ${dir}`);
         }

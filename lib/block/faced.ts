@@ -16,13 +16,13 @@ export function Faced<T extends Constructor<Block>>(base: T) {
                 case 1:
                     return Direction.up;
                 case 2:
-                    return Direction.north;
-                case 3:
                     return Direction.south;
+                case 3:
+                    return Direction.north;
                 case 4:
-                    return Direction.west;
-                case 5:
                     return Direction.east;
+                case 5:
+                    return Direction.west;
                 case undefined:
                     throw new TypeError("The block permutation does not have a state `facing_direction'");
                 default:
