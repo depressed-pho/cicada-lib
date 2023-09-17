@@ -12,17 +12,17 @@ export function Faced<T extends Constructor<Block>>(base: T) {
             const rawDir = this.permutation.states.get("facing_direction");
             switch (rawDir) {
                 case 0:
-                    return Direction.down;
+                    return Direction.Down;
                 case 1:
-                    return Direction.up;
+                    return Direction.Up;
                 case 2:
-                    return Direction.south;
+                    return Direction.South;
                 case 3:
-                    return Direction.north;
+                    return Direction.North;
                 case 4:
-                    return Direction.east;
+                    return Direction.East;
                 case 5:
-                    return Direction.west;
+                    return Direction.West;
                 case undefined:
                     throw new TypeError("The block permutation does not have a state `facing_direction'");
                 default:

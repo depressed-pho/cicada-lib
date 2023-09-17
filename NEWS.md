@@ -2,7 +2,7 @@
 
 ## 2.0.0 -- not released yet
 
-* Updated for Minecraft Bedrock 1.20.0 (@minecraft/server 1.3.0-beta).
+* Updated for Minecraft Bedrock 1.20.10 (@minecraft/server 1.3.0).
 * New properties:
   * `Block.prototype.offset`
   * `Entity.prototype.getBlockFromViewDirection`

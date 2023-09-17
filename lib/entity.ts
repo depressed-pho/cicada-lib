@@ -1,4 +1,4 @@
-import { Block } from "./block.js";
+import { Block, BlockRaycastHit } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
 import { EntityTags } from "./entity/tags.js";
@@ -42,8 +42,15 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         this.raw.kill();
     }
 
-    public getBlockFromViewDirection(options?: BlockRaycastOptions): Block {
-        return new Block(this.raw.getBlockFromViewDirection(options));
+    public getBlockFromViewDirection(options?: BlockRaycastOptions): BlockRaycastHit | undefined {
+        let rawHit = this.raw.getBlockFromViewDirection(options);
+        return rawHit
+            ? {
+                block:        new Block(rawHit.block),
+                face:         rawHit.face,
+                faceLocation: rawHit.faceLocation
+              }
+            : undefined;
     }
 
     public teleport(location: Vector3, opts?: TeleportOptions): void {

@@ -3,7 +3,7 @@ import { Location } from "./location.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
-import { Direction } from "@minecraft/server";
+import { Direction, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export class Block extends Wrapper<MC.Block> {
@@ -63,12 +63,12 @@ export class Block extends Wrapper<MC.Block> {
     public offset(dir: Direction, delta = 1): Block|undefined {
         const loc = this.location;
         switch (dir) {
-            case Direction.down:  loc.y -= delta; break;
-            case Direction.east:  loc.x += delta; break;
-            case Direction.north: loc.z -= delta; break;
-            case Direction.south: loc.z += delta; break;
-            case Direction.up:    loc.y += delta; break;
-            case Direction.west:  loc.x -= delta; break;
+            case Direction.Down:  loc.y -= delta; break;
+            case Direction.East:  loc.x += delta; break;
+            case Direction.North: loc.z -= delta; break;
+            case Direction.South: loc.z += delta; break;
+            case Direction.Up:    loc.y += delta; break;
+            case Direction.West:  loc.x -= delta; break;
             default:
                 throw new TypeError(`Invalid direction: ${dir}`);
         }
@@ -179,6 +179,12 @@ export class BlockType extends Wrapper<MC.BlockType> {
         });
     }
 
+}
+
+export interface BlockRaycastHit {
+    readonly block:        Block;
+    readonly face:         Direction;
+    readonly faceLocation: Vector3;
 }
 
 export interface BlockPlaceAfterEvent {
