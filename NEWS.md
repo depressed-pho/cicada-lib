@@ -3,6 +3,7 @@
 ## 2.1.0 -- not released yet
 
 * New properties:
+  * `Block.prototype.getItemStack`
   * `World.prototype.getDimension`
 
 ## 2.0.0 -- 2023-09-17

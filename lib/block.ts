@@ -1,5 +1,6 @@
 import { Dimension } from "./dimension.js";
 import { Location } from "./location.js";
+import { ItemStack } from "./item/stack.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
@@ -84,6 +85,10 @@ export class Block extends Wrapper<MC.Block> {
         else {
             throw new TypeError(`The block does not have a component \`${componentId}'`);;
         }
+    }
+
+    public getItemStack(amount?: number, withData?: boolean): ItemStack {
+        return new ItemStack(this.raw.getItemStack(amount, withData));
     }
 }
 
