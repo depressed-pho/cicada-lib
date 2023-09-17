@@ -1,9 +1,10 @@
 import { Dimension } from "./dimension.js";
+import { Direction } from "./direction.js";
 import { Location } from "./location.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
-import { Direction, Vector3 } from "@minecraft/server";
+import { Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export class Block extends Wrapper<MC.Block> {
