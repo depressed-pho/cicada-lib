@@ -1,3 +1,4 @@
+import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
 import { Player, PlayerSpawnAfterEvent } from "./player.js"
@@ -32,6 +33,10 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.afterEvents     = new WorldAfterEvents(this.raw.afterEvents);
         this.beforeEvents    = new WorldBeforeEvents(this.raw.beforeEvents);
         this.#glueEvents();
+    }
+
+    public getDimension(id: string): Dimension {
+        return new Dimension(this.raw.getDimension(id));
     }
 
     public getPlayers(opts?: MC.EntityQueryOptions): IterableIterator<Player> {

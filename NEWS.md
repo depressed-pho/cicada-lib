@@ -1,5 +1,10 @@
 # Release notes
 
+## 2.1.0 -- not released yet
+
+* New properties:
+  * `World.prototype.getDimension`
+
 ## 2.0.0 -- 2023-09-17
 
 * Updated for Minecraft Bedrock 1.20.10 (@minecraft/server 1.3.0).
