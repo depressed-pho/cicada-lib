@@ -1,6 +1,6 @@
 import { Block } from "../block.js";
 import { Constructor } from "../mixin.js";
-import { Direction } from "../direction.js";
+import { Direction } from "@minecraft/server";
 
 export { Direction };
 
