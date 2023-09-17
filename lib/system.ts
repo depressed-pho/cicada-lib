@@ -13,20 +13,8 @@ export class System extends Wrapper<MC.System> {
     public constructor(rawSystem: MC.System) {
         super(rawSystem);
 
-        // FIXME: In MCBE 1.20.0 MC.System has not transitioned to
-        // after/before events yet. Delete this glue code when it's
-        // updated.
-        this.afterEvents  = new SystemAfterEvents({
-            scriptEventReceive: (this.raw as any).events.scriptEventReceive
-        } as any);
-        this.beforeEvents = new SystemBeforeEvents({
-            watchdogTerminate: (this.raw as any).events.beforeWatchdogTerminate
-        } as any);
-
-        /* New API
         this.afterEvents  = new SystemAfterEvents(this.raw.afterEvents);
         this.beforeEvents = new SystemBeforeEvents(this.raw.beforeEvents);
-        */
     }
 }
 
