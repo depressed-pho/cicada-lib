@@ -172,7 +172,7 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
      * `OrdSet<K>` it works faster than regular containers.
      */
     public deleteKeys(keys: Iterable<K>): void {
-        if (keys instanceof OrdSet<K>) {
+        if (keys instanceof OrdSet) {
             this.#root = withoutKeys(this.#cmp, this.#root, keys.root);
         }
         else {
@@ -187,7 +187,7 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
      * regular containers.
      */
     public restrictKeys(keys: Iterable<K>): void {
-        if (keys instanceof OrdSet<K>) {
+        if (keys instanceof OrdSet) {
             this.#root = restrictKeys(this.#cmp, this.#root, keys.root);
         }
         else {
