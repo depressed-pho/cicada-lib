@@ -35,8 +35,8 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.#glueEvents();
     }
 
-    public getDimension(id: string): Dimension {
-        return new Dimension(this.raw.getDimension(id));
+    public getDimension(identifier: string): Dimension {
+        return new Dimension(this.raw.getDimension(identifier));
     }
 
     public getPlayers(opts?: MC.EntityQueryOptions): IterableIterator<Player> {
