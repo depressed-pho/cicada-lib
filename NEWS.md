@@ -1,6 +1,6 @@
 # Release notes
 
-## 2.0.0 -- not released yet
+## 2.0.0 -- 2023-09-17
 
 * Updated for Minecraft Bedrock 1.20.10 (@minecraft/server 1.3.0).
 * New properties:
