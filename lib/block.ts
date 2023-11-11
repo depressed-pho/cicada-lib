@@ -90,18 +90,19 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     /** Package private */
-    public getComponentOrThrow<T>(componentId: string): T {
+    public getComponentOrThrow<T extends keyof MC.BlockComponentTypeMap>(componentId: T): MC.BlockComponentTypeMap[T] {
         const c = this.raw.getComponent(componentId);
         if (c) {
-            return c as T;
+            return c;
         }
         else {
             throw new TypeError(`The block does not have a component \`${componentId}'`);;
         }
     }
 
-    public getItemStack(amount?: number, withData?: boolean): ItemStack {
-        return new ItemStack(this.raw.getItemStack(amount, withData));
+    public getItemStack(amount?: number, withData?: boolean): ItemStack | undefined {
+        const rawSt = this.raw.getItemStack(amount, withData);
+        return rawSt ? new ItemStack(rawSt) : undefined;
     }
 }
 
@@ -177,7 +178,15 @@ export class BlockType extends Wrapper<MC.BlockType> {
             super(arg0);
         }
         else {
-            super(MC.MinecraftBlockTypes.get(arg0));
+            super((() => {
+                const rawBt = MC.BlockTypes.get(arg0);
+                if (rawBt) {
+                    return rawBt;
+                }
+                else {
+                    throw new Error(`No such block ID exists: ${arg0}`);
+                }
+            })());
         }
     }
 
@@ -192,7 +201,7 @@ export class BlockType extends Wrapper<MC.BlockType> {
     public static getAllBlockTypes(): IterableIterator<BlockType> {
         // Create an iterable object that progressively constructs
         // BlockType.
-        return map(MC.MinecraftBlockTypes.getAllBlockTypes(), raw => {
+        return map(MC.BlockTypes.getAll(), raw => {
             return new BlockType(raw);
         });
     }
@@ -205,15 +214,18 @@ export interface BlockRaycastHit {
     readonly faceLocation: Vector3;
 }
 
-export interface BlockPlaceAfterEvent {
+export interface BlockEvent {
     readonly block:     Block;
     readonly dimension: Dimension;
-    readonly player:    Player;
 }
 
-export interface BlockBreakAfterEvent {
-    readonly block:                  Block;
+export interface PlayerBreakBlockAfterEvent extends BlockEvent {
     readonly brokenBlockPermutation: BlockPermutation;
-    readonly dimension:              Dimension;
+    readonly itemStackAfterBreak?:   ItemStack;
+    readonly itemStackBeforeBreak?:  ItemStack
     readonly player:                 Player;
+}
+
+export interface PlayerPlaceBlockAfterEvent extends BlockEvent {
+    readonly player:    Player;
 }

@@ -9,7 +9,6 @@ import { IPreferencesContainer } from "./preferences.js";
 import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
-export * from "./world/init.js";
 export { EntityQueryOptions } from "@minecraft/server";
 
 export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IPreferencesContainer {
@@ -119,10 +118,3 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
 }
 
 export const world = new World(MC.world);
-
-// The reason why this is here is to avoid circular imports. It's usually
-// not a problem but here we rely on code on the top level so we must avoid
-// that at all cost.
-world.afterEvents.worldInitialize.subscribe(ev => {
-    Prefs.initialise(ev.propertyRegistry);
-});

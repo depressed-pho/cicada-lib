@@ -4,61 +4,17 @@
  */
 import "./shims/text-decoder.js";
 import "./shims/text-encoder.js";
-import { PropertyRegistry } from "./world.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import * as CicASCII from "./cic-ascii.js";
-
-let addonNamespace:   string|null = null;
-let worldInitialised: boolean     = false;
 
 export interface IPreferencesContainer {
     getPreferences<T extends object>(ty: MessageType<T>): T;
     setPreferences<T extends object>(ty: MessageType<T>, prefs: T): void;
 }
 
-/** Declare the namespace of your addon. You must call this function on the
- * top level of your script, not in an event handler. */
-export function declareNamespace(ns: string): void {
-    if (worldInitialised) {
-        throw new Error(
-            "Attempted to declare the addon namespace after initialising the world. It's too late");
-    }
-    else {
-        addonNamespace = ns;
-    }
-}
-
 /** Package private */
 export function dynamicPropertyId(type: "player"|"world"): string {
-    if (addonNamespace == null) {
-        throw new Error("No namespaces have been declared for the addon");
-    }
-    else {
-        return `${addonNamespace}:preferences.${type}`;
-    }
-}
-
-/** Package private */
-export function initialise(reg: PropertyRegistry) {
-    if (addonNamespace != null) {
-        reg.registerEntityTypeDynamicProperties({
-            "minecraft:player": {
-                [dynamicPropertyId("player")]: {
-                    type: "string",
-                    maxLength: 950 // Undocumented maximum at 1000
-                }
-                // Seriously, only a thousand characters? We will probably
-                // have to split our data in several properties then...
-            }
-        });
-        reg.registerWorldDynamicProperties({
-            [dynamicPropertyId("world")]: {
-                type: "string",
-                maxLength: 950
-            }
-        });
-    }
-    worldInitialised = true;
+    return `preferences.${type}`;
 }
 
 /** Package private */

@@ -1,25 +1,36 @@
 import { Constructor } from "./mixin.js";
 import { Wrapper } from "./wrapper.js";
+import { Vector3 } from "@minecraft/server";
 
 export interface ObjectWithDynamicProperties {
-    getDynamicProperty(identifier: string): boolean | number | string | undefined;
-    removeDynamicProperty(identifier: string): boolean;
-    setDynamicProperty(identifier: string, value: boolean | number | string): void;
+    getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
+    getDynamicPropertyIds(): string[];
+    getDynamicPropertyTotalByteCount(): number;
+    setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
 }
+
+export type DynamicPropertyTypeMap = {
+    "boolean?": boolean|undefined,
+    "number?" : number |undefined,
+    "string?" : string |undefined,
+    "Vector3?": Vector3|undefined,
+    "boolean" : boolean,
+    "number"  : number,
+    "string"  : string,
+    "Vector3" : Vector3,
+};
 
 /** A mixin for objects that have dynamic properties, such as Entity or
  * World.
  */
 export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDynamicProperties>>>(base: T) {
     return class HasDynamicProperties extends base {
-        public getDynamicProperty(identifier: string): boolean|number|string|undefined;
-        public getDynamicProperty(identifier: string, ty: "boolean?"): boolean|undefined;
-        public getDynamicProperty(identifier: string, ty: "number?" ): number |undefined;
-        public getDynamicProperty(identifier: string, ty: "string?" ): string |undefined;
-        public getDynamicProperty(identifier: string, ty: "boolean" ): boolean;
-        public getDynamicProperty(identifier: string, ty: "number"  ): number;
-        public getDynamicProperty(identifier: string, ty: "string"  ): string |undefined;
-        public getDynamicProperty(identifier: string, ty?: string): boolean|number|string|undefined {
+        public getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
+
+        public getDynamicProperty<Ty extends keyof DynamicPropertyTypeMap>(
+            identifier: string, ty: Ty): DynamicPropertyTypeMap[Ty];
+
+        public getDynamicProperty(identifier: string, ty?: string): boolean|number|string|Vector3|undefined {
             const prop = this.raw.getDynamicProperty(identifier);
 
             if (ty == null) {
@@ -39,6 +50,9 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
                         throw new TypeError(`Dynamic property \`${identifier}' is expected to be a ${expectedType} but is actually undefined`);
                     }
                 }
+                else if (expectedType === "Vector3" && actualType === "object") {
+                    return prop;
+                }
                 else if (expectedType === actualType) {
                     return prop;
                 }
@@ -48,11 +62,8 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
             }
         }
 
-        public removeDynamicProperty(identifier: string): void {
-            this.raw.removeDynamicProperty(identifier);
-        }
-
-        public setDynamicProperty(identifier: string, value: boolean|number|string): void {
+        public setDynamicProperty(identifier: string,
+                                  value: boolean|number|string|Vector3|undefined): void {
             this.raw.setDynamicProperty(identifier, value);
         }
     };

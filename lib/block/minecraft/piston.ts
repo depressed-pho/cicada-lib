@@ -11,8 +11,7 @@ export class Piston extends Faced(Block) {
     public constructor(...args: ConstructorParameters<typeof Block>) {
         super(...args);
         this.#piston =
-            this.getComponentOrThrow<MC.BlockPistonComponent>(
-                MC.BlockPistonComponent.componentId);
+            this.getComponentOrThrow(MC.BlockPistonComponent.componentId);
     }
 
     public get isExpanded(): boolean {

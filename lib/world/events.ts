@@ -1,6 +1,7 @@
 import { IEventSignal, CustomEventSignal, GluedEventSignalWithoutOptions,
          GluedEventSignalWithOptions } from "../event.js";
-import { Block, BlockPermutation, BlockBreakAfterEvent, BlockPlaceAfterEvent } from "../block.js";
+import { Block, BlockPermutation, PlayerBreakBlockAfterEvent,
+         PlayerPlaceBlockAfterEvent } from "../block.js";
 import { PistonActivateAfterEvent, PistonActivateBeforeEvent } from "../block/minecraft/piston.js";
 import { Dimension } from "../dimension.js";
 import { Entity, ItemUseAfterEvent, EntityDieAfterEvent, EntityEventOptions,
@@ -8,37 +9,41 @@ import { Entity, ItemUseAfterEvent, EntityDieAfterEvent, EntityEventOptions,
 import { ItemStack } from "../item/stack.js";
 import { Player, PlayerSpawnAfterEvent } from "../player.js"
 import { Wrapper } from "../wrapper.js";
-import { PropertyRegistry, WorldInitializeAfterEvent } from "./init.js";
 import * as MC from "@minecraft/server";
 
 export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
-    public readonly blockBreak:      IEventSignal<BlockBreakAfterEvent>;
-    public readonly blockPlace:      IEventSignal<BlockPlaceAfterEvent>;
-    public readonly entityDie:       IEventSignal<EntityDieAfterEvent, EntityEventOptions>;
-    public readonly itemUse:         IEventSignal<ItemUseAfterEvent>;
-    public readonly pistonActivate:  IEventSignal<PistonActivateAfterEvent>;
-    public readonly worldInitialize: IEventSignal<WorldInitializeAfterEvent>;
+    public readonly playerBreakBlock: IEventSignal<PlayerBreakBlockAfterEvent>;
+    public readonly playerPlaceBlock: IEventSignal<PlayerPlaceBlockAfterEvent>;
+    public readonly entityDie:        IEventSignal<EntityDieAfterEvent, EntityEventOptions>;
+    public readonly itemUse:          IEventSignal<ItemUseAfterEvent>;
+    public readonly pistonActivate:   IEventSignal<PistonActivateAfterEvent>;
     /** An event that is fired when the world is fully loaded. */
-    public readonly ready:           CustomEventSignal<ReadyAfterEvent>;
-    public readonly playerSpawn:     CustomEventSignal<PlayerSpawnAfterEvent>;
-    public readonly playerLeave:     CustomEventSignal<MC.PlayerLeaveAfterEvent>;
+    public readonly ready:            CustomEventSignal<ReadyAfterEvent>;
+    public readonly playerSpawn:      CustomEventSignal<PlayerSpawnAfterEvent>;
+    public readonly playerLeave:      CustomEventSignal<MC.PlayerLeaveAfterEvent>;
 
     /// Package private
     public constructor(rawEvents: MC.WorldAfterEvents) {
         super(rawEvents);
-        this.blockBreak = new GluedEventSignalWithoutOptions(
-            this.raw.blockBreak,
-            (rawEv: MC.BlockBreakAfterEvent) => {
+        this.playerBreakBlock = new GluedEventSignalWithoutOptions(
+            this.raw.playerBreakBlock,
+            (rawEv: MC.PlayerBreakBlockAfterEvent) => {
                 return {
                     block:                  new Block(rawEv.block),
-                    brokenBlockPermutation: new BlockPermutation(rawEv.brokenBlockPermutation),
                     dimension:              new Dimension(rawEv.dimension),
-                    player:                 new Player(rawEv.player)
+                    brokenBlockPermutation: new BlockPermutation(rawEv.brokenBlockPermutation),
+                    player:                 new Player(rawEv.player),
+                    ...(rawEv.itemStackAfterBreak
+                        ? {itemStackAfterBreak: new ItemStack(rawEv.itemStackAfterBreak)}
+                        : {}),
+                    ...(rawEv.itemStackBeforeBreak
+                        ? {itemStackBeforeBreak: new ItemStack(rawEv.itemStackBeforeBreak)}
+                        : {}),
                 };
             });
-        this.blockPlace = new GluedEventSignalWithoutOptions(
-            this.raw.blockPlace,
-            (rawEv: MC.BlockPlaceAfterEvent) => {
+        this.playerPlaceBlock = new GluedEventSignalWithoutOptions(
+            this.raw.playerPlaceBlock,
+            (rawEv: MC.PlayerPlaceBlockAfterEvent) => {
                 return {
                     block:     new Block(rawEv.block),
                     dimension: new Dimension(rawEv.dimension),
@@ -67,13 +72,6 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
         this.pistonActivate = new GluedEventSignalWithoutOptions(
             this.raw.pistonActivate,
             (rawEv: MC.PistonActivateAfterEvent) => new PistonActivateAfterEvent(rawEv));
-        this.worldInitialize = new GluedEventSignalWithoutOptions(
-            this.raw.worldInitialize,
-            (rawEv: MC.WorldInitializeAfterEvent) => {
-                return {
-                    propertyRegistry: new PropertyRegistry(rawEv.propertyRegistry)
-                };
-            });
         this.ready       = new CustomEventSignal();
         this.playerSpawn = new CustomEventSignal();
         this.playerLeave = new CustomEventSignal();
