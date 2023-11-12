@@ -46,8 +46,8 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@types/minecraft__server": "github:depressed-pho/types-minecraft__server",
-    "@types/minecraft__server-ui": "github:depressed-pho/types-minecraft__server-ui"
+    "@minecraft/server": "^1.8.0-beta.1.20.50-preview.24",
+    "@minecraft/server-ui": "^1.2.0-beta.1.20.50-preview.24"
   },
   "peerDependencies": {
     "@protobuf-ts/runtime": "^2.8.2"

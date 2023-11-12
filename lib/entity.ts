@@ -5,10 +5,10 @@ import { EntityTags } from "./entity/tags.js";
 import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
 import { Wrapper } from "./wrapper.js";
-import { BlockRaycastOptions, EntityDamageCause, Vector2, Vector3 } from "@minecraft/server";
+import { BlockRaycastOptions, EntityDamageSource, Vector2, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
-export { BlockRaycastOptions, EntityDamageCause };
+export { BlockRaycastOptions, EntityDamageSource };
 
 export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     public get dimension(): Dimension {
@@ -89,7 +89,7 @@ export interface TeleportOptions {
 }
 
 export interface EntityDieAfterEvent {
-    readonly damageCause: EntityDamageCause;
+    readonly damageSource: EntityDamageSource;
     readonly deadEntity: Entity;
 }
 

@@ -54,8 +54,8 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
             this.raw.entityDie,
             (rawEv: MC.EntityDieAfterEvent) => {
                 return {
-                    damageCause: rawEv.damageCause,
-                    deadEntity:  new Entity(rawEv.deadEntity)
+                    damageSource: rawEv.damageSource,
+                    deadEntity:    new Entity(rawEv.deadEntity)
                 };
             },
             entityEventOptionsToRaw);
