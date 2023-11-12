@@ -17,6 +17,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
     public readonly entityDie:        IEventSignal<EntityDieAfterEvent, EntityEventOptions>;
     public readonly itemUse:          IEventSignal<ItemUseAfterEvent>;
     public readonly pistonActivate:   IEventSignal<PistonActivateAfterEvent>;
+    public readonly worldInitialize:  IEventSignal<MC.WorldInitializeAfterEvent>;
     /** An event that is fired when the world is fully loaded. */
     public readonly ready:            CustomEventSignal<ReadyAfterEvent>;
     public readonly playerSpawn:      CustomEventSignal<PlayerSpawnAfterEvent>;
@@ -72,6 +73,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
         this.pistonActivate = new GluedEventSignalWithoutOptions(
             this.raw.pistonActivate,
             (rawEv: MC.PistonActivateAfterEvent) => new PistonActivateAfterEvent(rawEv));
+        this.worldInitialize = this.raw.worldInitialize;
         this.ready       = new CustomEventSignal();
         this.playerSpawn = new CustomEventSignal();
         this.playerLeave = new CustomEventSignal();
