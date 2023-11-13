@@ -9,6 +9,8 @@
   * `Block.prototype.type` setter
   * `Dimension.prototype.spawnItem`
   * `World.prototype.getDimension`
+* Added `lib/sync/mpsc.ts`
+* Added `lib/sync/notify.ts`
 
 ## 2.0.0 -- 2023-09-17
 
