@@ -4,7 +4,7 @@ import { Notify } from "./notify.js"
  * seen value. Producers can update the value at any time. Consumers can
  * observe the latest value, and can also wait for it to be updated.
  */
-export class Watch<T> {
+export class Channel<T> {
     #latest: T;
     #seen: boolean;
     #updated: Notify;
