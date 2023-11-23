@@ -11,6 +11,7 @@
   * `World.prototype.getDimension`
 * Added `lib/sync/mpsc.ts`
 * Added `lib/sync/notify.ts`
+* Added `lib/sync/watch.ts`
 
 ## 2.0.0 -- 2023-09-17
 
