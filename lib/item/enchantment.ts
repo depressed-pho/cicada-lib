@@ -1,79 +1,160 @@
 import { Wrapper } from "../wrapper.js";
+import { EnchantmentType } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
-export class ItemEnchants extends Wrapper<MC.ItemEnchantsComponent> {
-    public setSlot(slot: number|string): this {
-        const list = new EnchantmentList(slot);
-        this.raw.enchantments = list.raw;
-        return this;
+export { EnchantmentType };
+
+export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefined> implements Set<Enchantment> {
+    public get size(): number {
+        return this.raw ? this.raw.getEnchantments().length : 0;
+    }
+
+    public get [Symbol.toStringTag](): string {
+        return "ItemEnchantments";
+    }
+
+    public [Symbol.iterator](): IterableIterator<Enchantment> {
+        return this.values();
     }
 
     public add(ench: Enchantment): this {
-        const list = new EnchantmentList(this.raw.enchantments);
-        list.add(ench);
-        return this;
+        if (this.raw) {
+            this.raw.addEnchantment(ench);
+            return this;
+        }
+        else {
+            throw new TypeError("this item can have no enchantments");
+        }
+    }
+
+    public canAdd(ench: Enchantment): boolean {
+        return this.raw
+            ? this.raw.canAddEnchantment(ench)
+            : false;
+    }
+
+    public clear(): void {
+        if (this.raw) {
+            this.raw.removeAllEnchantments();
+        }
+    }
+
+    public delete(ench: Enchantment|EnchantmentType|string): boolean {
+        if (this.has(ench)) {
+            if (ench instanceof Enchantment) {
+                this.raw!.removeEnchantment(ench.type);
+            }
+            else {
+                this.raw!.removeEnchantment(ench);
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public *entries(): IterableIterator<[Enchantment, Enchantment]> {
+        for (const ench of this) {
+            yield [ench, ench];
+        }
+    }
+
+    public forEach(f: (value: Enchantment, value2: Enchantment, set: Set<Enchantment>) => void, thisArg?: any): void {
+        const boundF = f.bind(thisArg);
+        for (const ench of this) {
+            boundF(ench, ench, this);
+        }
+    }
+
+    public get(type: EnchantmentType|string): Enchantment|undefined {
+        if (this.raw) {
+            const raw = this.raw.getEnchantment(type);
+            return raw ? new Enchantment(raw) : undefined;
+        }
+        else {
+            return undefined;
+        }
+    }
+
+    public has(ench: Enchantment|EnchantmentType|string): boolean {
+        if (this.raw) {
+            if (ench instanceof Enchantment) {
+                const existing = this.get(ench.type);
+                return existing
+                    ? existing.level == ench.level
+                    : false;
+            }
+            else {
+                return this.raw.hasEnchantment(ench);
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
+    public keys(): IterableIterator<Enchantment> {
+        return this.values();
+    }
+
+    public *values(): IterableIterator<Enchantment> {
+        if (this.raw) {
+            for (const raw of this.raw.getEnchantments()) {
+                yield new Enchantment(raw);
+            }
+        }
     }
 }
 
-export class EnchantmentList extends Wrapper<MC.EnchantmentList> {
-    /** Package private: user code should not use this. */
-    public constructor(rawEnchantmentList: MC.EnchantmentList);
+export class Enchantment implements MC.Enchantment {
+    #type: EnchantmentType;
+    #level: number;
 
-    /** Construct a list of enchantment with a given enchantment slot. */
-    public constructor(slot: number|string);
-
-    public constructor(arg0: MC.EnchantmentList|number|string) {
-        if (arg0 instanceof MC.EnchantmentList) {
-            super(arg0);
-        }
-        else if (typeof arg0 === "number") {
-            super(new MC.EnchantmentList(arg0));
-        }
-        else {
-            super(
-                (() => {
-                    const slot = (() => {
-                        if ((MC.EnchantmentSlot as any)[arg0] != null) {
-                            return (MC.EnchantmentSlot as any)[arg0];
-                        }
-                        else {
-                            throw Error(`Unknown enchantment slot: ${arg0}`);
-                        }
-                    })();
-                    return new MC.EnchantmentList(slot);
-                })()
-            );
-        }
-    }
-
-    public add(ench: Enchantment): this {
-        if (this.raw.canAddEnchantment(ench.raw)) {
-            this.raw.addEnchantment(ench.raw);
-        }
-        else {
-            throw Error(`Incompatible enchantment for this item stack: ${ench.type.id}`);
-        }
-        return this;
-    }
-}
-
-export class Enchantment extends Wrapper<MC.Enchantment> {
     /** Package private: user code should not use this. */
     public constructor(rawEnchantment: MC.Enchantment);
 
     /** Construct an enchantment. */
-    public constructor(enchType: MC.EnchantmentType|string, level?: number);
+    public constructor(type: EnchantmentType|string, level: number);
 
-    public constructor(arg0: MC.Enchantment|MC.EnchantmentType|string, ...rest: any[]) {
-        if (arg0 instanceof MC.Enchantment) {
-            super(arg0);
+    public constructor(...args: any[]) {
+        if (args[0] instanceof EnchantmentType) {
+            this.#type  = args[0];
+            this.#level = args[1];
+        }
+        else if (typeof args[0] === "string") {
+            const type = MC.EnchantmentTypes.get(args[0]);
+            if (type) {
+                this.#type  = type;
+                this.#level = args[1];
+            }
+            else {
+                throw new Error(`Non-existent enchantment type: ${args[0]}`);
+            }
         }
         else {
-            super(new MC.Enchantment(arg0, ...rest));
+            if (typeof args[0].type === "string") {
+                const type = MC.EnchantmentTypes.get(args[0].type);
+                if (type) {
+                    this.#type  = type;
+                    this.#level = args[0].level;
+                }
+                else {
+                    throw new Error(`Non-existent enchantment type: ${args[0].type}`);
+                }
+            }
+            else {
+                this.#type  = args[0].type;
+                this.#level = args[0].level;
+            }
         }
     }
 
-    get type(): MC.EnchantmentType {
-        return this.raw.type;
+    get type(): EnchantmentType {
+        return this.#type;
+    }
+
+    get level(): number {
+        return this.#level;
     }
 }

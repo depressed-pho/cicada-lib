@@ -2,7 +2,7 @@
 
 ## 2.1.0 -- not released yet
 
-* Updated for Minecraft Bedrock 1.20.41 (@minecraft/server 1.7.0-beta).
+* Updated for Minecraft Bedrock 1.20.50 (@minecraft/server 1.8.0-beta).
 * Switched to the official TypeScript type declarations.
 * New properties:
   * `Block.prototype.getItemStack`

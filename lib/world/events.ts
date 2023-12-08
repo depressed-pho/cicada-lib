@@ -1,8 +1,8 @@
 import { IEventSignal, CustomEventSignal, GluedEventSignalWithoutOptions,
          GluedEventSignalWithOptions } from "../event.js";
 import { Block, BlockPermutation, PlayerBreakBlockAfterEvent,
-         PlayerPlaceBlockAfterEvent } from "../block.js";
-import { PistonActivateAfterEvent, PistonActivateBeforeEvent } from "../block/minecraft/piston.js";
+         PlayerPlaceBlockAfterEvent, PlayerBreakBlockBeforeEvent } from "../block.js";
+import { PistonActivateAfterEvent } from "../block/minecraft/piston.js";
 import { Dimension } from "../dimension.js";
 import { Entity, ItemUseAfterEvent, EntityDieAfterEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
@@ -81,14 +81,14 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
 }
 
 export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
-    public readonly pistonActivate: IEventSignal<PistonActivateBeforeEvent>;
+    public readonly playerBreakBlock: IEventSignal<PlayerBreakBlockBeforeEvent>;
 
     /// Package private
     public constructor(rawEvents: MC.WorldBeforeEvents) {
         super(rawEvents);
-        this.pistonActivate = new GluedEventSignalWithoutOptions(
-            this.raw.pistonActivate,
-            (rawEv: MC.PistonActivateBeforeEvent) => new PistonActivateBeforeEvent(rawEv));
+        this.playerBreakBlock = new GluedEventSignalWithoutOptions(
+            this.raw.playerBreakBlock,
+            (rawEv: MC.PlayerBreakBlockBeforeEvent) => new PlayerBreakBlockBeforeEvent(rawEv));
     }
 }
 

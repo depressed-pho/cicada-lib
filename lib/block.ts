@@ -219,6 +219,30 @@ export interface BlockEvent {
     readonly dimension: Dimension;
 }
 
+export class PlayerBreakBlockBeforeEvent extends Wrapper<MC.PlayerBreakBlockBeforeEvent> {
+    /// Package private
+    public constructor(rawEv: MC.PlayerBreakBlockBeforeEvent) {
+        super(rawEv);
+    }
+
+    public cancel() {
+        this.raw.cancel = true;
+    }
+
+    public get itemStack(): ItemStack|undefined {
+        return this.raw.itemStack ? new ItemStack(this.raw.itemStack) : undefined;
+    }
+
+    public set itemStack(st: ItemStack|undefined) {
+        // @ts-ignore: Override exactOptionalPropertyTypes
+        this.raw.itemStack = st ? st.raw : undefined;
+    }
+
+    public get player(): Player {
+        return new Player(this.raw.player);
+    }
+}
+
 export interface PlayerBreakBlockAfterEvent extends BlockEvent {
     readonly brokenBlockPermutation: BlockPermutation;
     readonly itemStackAfterBreak?:   ItemStack;
@@ -227,5 +251,5 @@ export interface PlayerBreakBlockAfterEvent extends BlockEvent {
 }
 
 export interface PlayerPlaceBlockAfterEvent extends BlockEvent {
-    readonly player:    Player;
+    readonly player: Player;
 }

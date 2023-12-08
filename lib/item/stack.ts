@@ -1,5 +1,5 @@
 import { Wrapper } from "../wrapper.js";
-import { ItemEnchants } from "./enchantment.js";
+import { ItemEnchantments } from "./enchantment.js";
 import * as MC from "@minecraft/server";
 
 export class ItemStack extends Wrapper<MC.ItemStack> {
@@ -36,8 +36,8 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         this.raw.setLore(lore);
     }
 
-    get enchantments(): ItemEnchants {
-        return new ItemEnchants(
-            this.raw.getComponent("minecraft:enchantments") as MC.ItemEnchantsComponent);
+    get enchantments(): ItemEnchantments {
+        return new ItemEnchantments(
+            this.raw.getComponent("minecraft:enchantable"));
     }
 }
