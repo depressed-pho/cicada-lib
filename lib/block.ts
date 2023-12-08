@@ -1,5 +1,6 @@
 import { Dimension } from "./dimension.js";
 import { Location } from "./location.js";
+import { Constructor } from "./mixin.js";
 import { ItemStack } from "./item/stack.js";
 import { map } from "./iterable.js";
 import { Player } from "./player.js";
@@ -219,7 +220,19 @@ export interface BlockEvent {
     readonly dimension: Dimension;
 }
 
-export class PlayerBreakBlockBeforeEvent extends Wrapper<MC.PlayerBreakBlockBeforeEvent> {
+function IsBlockEvent<T extends Constructor<Wrapper<MC.BlockEvent>>>(base: T) {
+    return class IsBlockEvent extends base {
+        public get block(): Block {
+            return new Block(this.raw.block);
+        }
+
+        public dimension(): Dimension {
+            return new Dimension(this.raw.dimension);
+        }
+    };
+}
+
+export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerBreakBlockBeforeEvent>) {
     /// Package private
     public constructor(rawEv: MC.PlayerBreakBlockBeforeEvent) {
         super(rawEv);
