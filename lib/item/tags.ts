@@ -1,38 +1,38 @@
 import * as MC from "@minecraft/server";
 
-export class EntityTags implements Set<string> {
-    readonly #entity: MC.Entity;
+/** A read-only set of item tags. It is mostly compatible with the Set
+ * interface but any mutations will throw a `TypeError`.
+ */
+export class ItemTags implements Set<string> {
+    readonly #stack: MC.ItemStack;
 
     /// Package private.
-    public constructor(rawEntity: MC.Entity) {
-        this.#entity = rawEntity;
+    public constructor(rawStack: MC.ItemStack) {
+        this.#stack = rawStack;
     }
 
     public get size(): number {
-        return this.#entity.getTags().length;
+        return this.#stack.getTags().length;
     }
 
     public get [Symbol.toStringTag](): string {
-        return "EntityTags";
+        return "ItemTags";
     }
 
     public [Symbol.iterator](): IterableIterator<string> {
         return this.values();
     }
 
-    public add(tag: string): this {
-        this.#entity.addTag(tag);
-        return this;
+    public add(_tag: string): this {
+        throw new TypeError(`ItemTags are read-only`);
     }
 
     public clear(): void {
-        for (const tag of this.#entity.getTags()) {
-            this.#entity.removeTag(tag);
-        }
+        throw new TypeError(`ItemTags are read-only`);
     }
 
-    public delete(tag: string): boolean {
-        return this.#entity.removeTag(tag);
+    public delete(_tag: string): boolean {
+        throw new TypeError(`ItemTags are read-only`);
     }
 
     public *entries(): IterableIterator<[string, string]> {
@@ -49,7 +49,7 @@ export class EntityTags implements Set<string> {
     }
 
     public has(tag: string): boolean {
-        return this.#entity.hasTag(tag);
+        return this.#stack.hasTag(tag);
     }
 
     public keys(): IterableIterator<string> {
@@ -57,6 +57,6 @@ export class EntityTags implements Set<string> {
     }
 
     public values(): IterableIterator<string> {
-        return this.#entity.getTags()[Symbol.iterator]();
+        return this.#stack.getTags()[Symbol.iterator]();
     }
 }

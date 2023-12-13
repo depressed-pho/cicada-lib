@@ -1,5 +1,6 @@
 import { Wrapper } from "../wrapper.js";
 import { ItemEnchantments } from "./enchantment.js";
+import { ItemTags } from "./tags.js";
 import * as MC from "@minecraft/server";
 
 export class ItemStack extends Wrapper<MC.ItemStack> {
@@ -23,6 +24,10 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
     }
     set amount(n: number) {
         this.raw.amount = n;
+    }
+
+    get tags(): ItemTags {
+        return new ItemTags(this.raw);
     }
 
     get typeId(): string {

@@ -8,6 +8,7 @@
   * `Block.prototype.getItemStack`
   * `Block.prototype.type` setter
   * `Dimension.prototype.spawnItem`
+  * `ItemStack.prototype.tags`
   * `World.prototype.getDimension`
 * Added `lib/sync/mpsc.ts`
 * Added `lib/sync/notify.ts`
