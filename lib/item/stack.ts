@@ -4,6 +4,8 @@ import { ItemTags } from "./tags.js";
 import * as MC from "@minecraft/server";
 
 export class ItemStack extends Wrapper<MC.ItemStack> {
+    #tags?: ItemTags;
+
     /** Package private: user code should not use this. */
     public constructor(rawItemStack: MC.ItemStack);
 
@@ -26,8 +28,12 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         this.raw.amount = n;
     }
 
+    /** Returns the set of tags for this item stack. */
     get tags(): ItemTags {
-        return new ItemTags(this.raw);
+        if (!this.#tags)
+            this.#tags = new ItemTags(this.raw);
+
+        return this.#tags;
     }
 
     get typeId(): string {

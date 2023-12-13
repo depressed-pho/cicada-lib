@@ -11,6 +11,8 @@ import * as MC from "@minecraft/server";
 export { BlockRaycastOptions, EntityDamageSource };
 
 export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
+    #tags?: EntityTags;
+
     public get dimension(): Dimension {
         return new Dimension(this.raw.dimension);
     }
@@ -35,7 +37,10 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
      * snapshot. You can add or remove tags through the standard Set
      * API. */
     public get tags(): Set<string> {
-        return new EntityTags(this.raw);
+        if (!this.#tags)
+            this.#tags = new EntityTags(this.raw);
+
+        return this.#tags;
     }
 
     public kill(): void {
