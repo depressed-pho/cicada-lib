@@ -7,6 +7,7 @@
 * New properties:
   * `Block.prototype.getItemStack`
   * `Block.prototype.type` setter
+  * `BlockPermutation.prototype.tags`
   * `Dimension.prototype.spawnItem`
   * `ItemStack.prototype.tags`
   * `World.prototype.getDimension`

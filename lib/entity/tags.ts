@@ -41,7 +41,7 @@ export class EntityTags implements Set<string> {
         }
     }
 
-    public forEach(f: (value: string, value2: string, set: Set<string>) => void, thisArg?: any): void {
+    public forEach(f: (value: string, value2: string, set: EntityTags) => void, thisArg?: any): void {
         const boundF = f.bind(thisArg);
         for (const tag of this) {
             boundF(tag, tag, this);

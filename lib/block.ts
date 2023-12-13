@@ -1,12 +1,15 @@
+import { BlockPermutation } from "./block/permutation.js";
+import { BlockType } from "./block/type.js";
 import { Dimension } from "./dimension.js";
 import { Location } from "./location.js";
 import { Constructor } from "./mixin.js";
 import { ItemStack } from "./item/stack.js";
-import { map } from "./iterable.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
 import { Direction, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
+
+export { BlockPermutation, BlockType };
 
 export class Block extends Wrapper<MC.Block> {
     /** Clone an existing instance. */
@@ -105,108 +108,6 @@ export class Block extends Wrapper<MC.Block> {
         const rawSt = this.raw.getItemStack(amount, withData);
         return rawSt ? new ItemStack(rawSt) : undefined;
     }
-}
-
-export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
-    public get type(): BlockType {
-        return new BlockType(this.raw.type);
-    }
-
-    public get states(): BlockStates {
-        return new BlockStates(this.raw.getAllStates());
-    }
-}
-
-export type BlockStateValue = boolean|number|string;
-
-/** A read-only Map type that represents block permutation states. */
-export class BlockStates extends Wrapper<Record<string, BlockStateValue>> implements Iterable<[string, BlockStateValue]> {
-    public constructor(states: Record<string, BlockStateValue>) {
-        super(states);
-    }
-
-    public get size(): number {
-        return Object.keys(this.raw).length;
-    }
-
-    public [Symbol.iterator](): IterableIterator<[string, BlockStateValue]> {
-        return this.entries();
-    }
-
-    public *entries(): IterableIterator<[string, BlockStateValue]> {
-        for (const key in this.raw) {
-            yield [key, this.raw[key]!];
-        }
-    }
-
-    public forEach(f: (value: BlockStateValue, key: string, map: BlockStates) => void, thisArg?: any): void {
-        const boundF = f.bind(thisArg);
-        for (const [key, value] of this) {
-            boundF(value, key, this);
-        }
-    }
-
-    public get(key: string): BlockStateValue|undefined {
-        return this.raw[key];
-    }
-
-    public has(key: string): boolean {
-        return key in this.raw;
-    }
-
-    public *keys(): IterableIterator<string> {
-        for (const key in this.raw) {
-            yield key;
-        }
-    }
-
-    public *values(): IterableIterator<BlockStateValue> {
-        for (const key in this.raw) {
-            yield this.raw[key]!;
-        }
-    }
-}
-
-export class BlockType extends Wrapper<MC.BlockType> {
-    /** Package private */
-    public constructor(rawBlockType: MC.BlockType);
-
-    /** Construct a block type. */
-    public constructor(typeId: string);
-
-    public constructor(arg0: MC.BlockType|string) {
-        if (arg0 instanceof MC.BlockType) {
-            super(arg0);
-        }
-        else {
-            super((() => {
-                const rawBt = MC.BlockTypes.get(arg0);
-                if (rawBt) {
-                    return rawBt;
-                }
-                else {
-                    throw new Error(`No such block ID exists: ${arg0}`);
-                }
-            })());
-        }
-    }
-
-    public get canBeWaterlogged(): boolean {
-        return this.raw.canBeWaterlogged;
-    }
-
-    public get id(): string {
-        return this.raw.id;
-    }
-
-    public static getAllBlockTypes(): IterableIterator<BlockType> {
-        // Create an iterable object that progressively constructs
-        // BlockType.
-        return map(MC.BlockTypes.getAll(), raw => {
-            return new BlockType(raw);
-        });
-    }
-
 }
 
 export interface BlockRaycastHit {

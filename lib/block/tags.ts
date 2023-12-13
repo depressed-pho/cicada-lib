@@ -1,22 +1,22 @@
 import * as MC from "@minecraft/server";
 
-/** A read-only set of item tags. It is mostly compatible with the Set
+/** A read-only set of block permutation tags. It is mostly compatible with the Set
  * interface but no mutations can be performed.
  */
-export class ItemTags implements Iterable<string> {
-    readonly #stack: MC.ItemStack;
+export class BlockTags implements Iterable<string> {
+    readonly #perm: MC.BlockPermutation;
 
     /// Package private.
-    public constructor(rawStack: MC.ItemStack) {
-        this.#stack = rawStack;
+    public constructor(rawPerm: MC.BlockPermutation) {
+        this.#perm = rawPerm;
     }
 
     public get size(): number {
-        return this.#stack.getTags().length;
+        return this.#perm.getTags().length;
     }
 
     public get [Symbol.toStringTag](): string {
-        return "ItemTags";
+        return "BlockTags";
     }
 
     public [Symbol.iterator](): IterableIterator<string> {
@@ -29,7 +29,7 @@ export class ItemTags implements Iterable<string> {
         }
     }
 
-    public forEach(f: (value: string, value2: string, set: ItemTags) => void, thisArg?: any): void {
+    public forEach(f: (value: string, value2: string, set: BlockTags) => void, thisArg?: any): void {
         const boundF = f.bind(thisArg);
         for (const tag of this) {
             boundF(tag, tag, this);
@@ -37,7 +37,7 @@ export class ItemTags implements Iterable<string> {
     }
 
     public has(tag: string): boolean {
-        return this.#stack.hasTag(tag);
+        return this.#perm.hasTag(tag);
     }
 
     public keys(): IterableIterator<string> {
@@ -45,6 +45,6 @@ export class ItemTags implements Iterable<string> {
     }
 
     public values(): IterableIterator<string> {
-        return this.#stack.getTags()[Symbol.iterator]();
+        return this.#perm.getTags()[Symbol.iterator]();
     }
 }
