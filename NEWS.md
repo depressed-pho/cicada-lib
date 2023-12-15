@@ -1,9 +1,15 @@
 # Release notes
 
-## 2.1.0 -- not released yet
+## 3.0.0 -- not released yet
 
 * Updated for Minecraft Bedrock 1.20.50 (@minecraft/server 1.8.0-beta).
 * Switched to the official TypeScript type declarations.
+* Breaking changes:
+  * The constructor of `Thread` no longer takes an async generator
+    function. It is now an abstract class that expects subclasses to
+    override `run()`.
+  * Threads no longer start automatically. In order to start them, call
+    `start()`.
 * New properties:
   * `Block.prototype.getItemStack`
   * `Block.prototype.type` setter

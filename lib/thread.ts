@@ -1,15 +1,28 @@
-export class Thread {
-    readonly #task: AsyncGenerator;
+export abstract class Thread {
+    #task?: AsyncGenerator;
     readonly id: number;
     name: string;
-    #result: Promise<IteratorResult<unknown>>;
+    #result?: Promise<IteratorResult<unknown>>;
     #isCancelRequested: boolean;
     #cancel: () => void;
 
     /** The ID of the next thread to be created. */
     static #nextThreadID: number = 0;
 
-    public constructor(task: (cancelled: Promise<never>) => AsyncGenerator, name?: string) {
+    public constructor(name?: string) {
+        this.id                 = Thread.#nextThreadID++;
+        this.name               = name != null ? name : `thread-${this.id}`;
+        this.#isCancelRequested = false;
+        // This will be clobbered when the thread starts running.
+        this.#cancel            = () => {};
+    }
+
+    /** An abstract method that will be invoked to run the task of the
+     * thread.
+     */
+    protected abstract run(cancelled: Promise<never>): AsyncGenerator;
+
+    public start() {
         // One of the two mechanisms to cancel a thread. The promise is
         // passed to the async generator function and will never be
         // resolved. When the a cancellation is requested, the promise will
@@ -22,11 +35,7 @@ export class Thread {
         // runtime will think its rejection is accidentally unhandled.
         cancelled.catch(() => {});
 
-        this.#task              = task(cancelled);
-        this.id                 = Thread.#nextThreadID++;
-        this.name               = name != null ? name : `thread-${this.id}`;
-        this.#isCancelRequested = false;
-        this.#cancel            = () => {}; // This will soon be clobbered.
+        this.#task = this.run(cancelled);
 
         /* Since this.#task is an async generator and we haven't called its
          * .next() even once, the generator isn't yet running even
@@ -56,8 +65,8 @@ export class Thread {
              * Promise.race() with the cancellation promise in order to
              * respond to requests in a timely manner. */
             const cont = this.#isCancelRequested
-                ? this.#task.throw(new ThreadCancellationRequested())
-                : this.#task.next();
+                ? this.#task!.throw(new ThreadCancellationRequested())
+                : this.#task!.next();
 
             return cont.then(res => this.#onSuspended(res),
                              e   => this.#onError(e));
