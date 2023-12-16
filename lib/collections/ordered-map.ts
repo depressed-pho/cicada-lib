@@ -1,4 +1,4 @@
-import { ReversibleIterable, ReversibleIterableIterator, reversible } from "./iterable.js";
+import { ReversibleIterable, ReversibleIterableIterator, reversible } from "../iterable.js";
 import { Queue } from "./queue.js";
 import { CompareFn, OrdSet } from "./ordered-set.js";
 import * as S from "./ordered-set.js";

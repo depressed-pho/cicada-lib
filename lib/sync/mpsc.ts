@@ -1,4 +1,4 @@
-import { Queue } from "../queue.js";
+import { Queue } from "../collections/queue.js";
 import { Notify } from "./notify.js";
 
 export class ChannelBase<T> {

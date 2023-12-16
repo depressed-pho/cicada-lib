@@ -1,4 +1,4 @@
-import { ReversibleIterable, ReversibleIterableIterator, reversible } from "./iterable.js";
+import { ReversibleIterable, ReversibleIterableIterator, reversible } from "../iterable.js";
 import { Queue } from "./queue.js";
 
 /** Positivity denotes `a` is greater than `b`.

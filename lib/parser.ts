@@ -1,4 +1,4 @@
-import { Queue } from "./queue.js";
+import { Queue } from "./collections/queue.js";
 import { UniString } from "./unicode.js";
 
 /// Always-backtracking monadic parser. Mostly a port of

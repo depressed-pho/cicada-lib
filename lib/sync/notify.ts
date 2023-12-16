@@ -1,4 +1,4 @@
-import { Queue } from "../queue.js";
+import { Queue } from "../collections/queue.js";
 
 /** `Notify` provides a basic mechanism to notify a single thread of an
  * event. `Notify` itself does not carry any data. Instead, it is to be
