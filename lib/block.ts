@@ -82,19 +82,32 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     /// Get another block at a given offset towards a given direction.
-    public offset(dir: Direction, delta = 1): Block|undefined {
-        const loc = this.location;
-        switch (dir) {
-            case Direction.Down:  loc.y -= delta; break;
-            case Direction.East:  loc.x += delta; break;
-            case Direction.North: loc.z -= delta; break;
-            case Direction.South: loc.z += delta; break;
-            case Direction.Up:    loc.y += delta; break;
-            case Direction.West:  loc.x -= delta; break;
+    public offset(dir: Direction, delta?: number): Block|undefined;
+
+    /// Get another block with given offsets for each axis.
+    public offset(x: number, y: number, z: number): Block|undefined;
+
+    public offset(...args: any[]): Block|undefined {
+        switch (args.length) {
+            case 1:
+            case 2:
+                const d = args[1] ?? 1;
+                switch (args[0]) {
+                    case Direction.Down:  return this.offset( 0, -d,  0);
+                    case Direction.East:  return this.offset( d,  0,  0);
+                    case Direction.North: return this.offset( 0,  0, -d);
+                    case Direction.South: return this.offset( 0,  0,  d);
+                    case Direction.Up:    return this.offset( 0,  d,  0);
+                    case Direction.West:  return this.offset(-d,  0,  0);
+                    default:
+                        throw new TypeError(`Invalid direction: ${args[0]}`);
+                }
+            case 3:
+                return this.dimension.getBlock(
+                    this.location.offset(args[0], args[1], args[2]));
             default:
-                throw new TypeError(`Invalid direction: ${dir}`);
+                throw new Error("impossible");
         }
-        return this.dimension.getBlock(loc);
     }
 
     /** Package private */
