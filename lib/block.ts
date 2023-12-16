@@ -44,6 +44,10 @@ export class Block extends Wrapper<MC.Block> {
         return new BlockPermutation(this.raw.permutation);
     }
 
+    public set permutation(newPerm: BlockPermutation) {
+        this.raw.setPermutation(newPerm.raw);
+    }
+
     public get type(): BlockType {
         return new BlockType(this.raw.type);
     }
