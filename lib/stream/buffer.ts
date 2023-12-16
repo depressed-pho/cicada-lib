@@ -8,17 +8,17 @@ const GROWTH_FACTOR = 0.5;
 export class Buffer {
     #chunks: Chunk[];
     #length: number;
+    #f64Buf?: [DataView, Uint8Array];
 
     /** Construct an empty `Buffer` object. If an argument `octets` is
-     * provided, it will be stored in the buffer using {@link
-     * unsafeAppend}.
+     * provided, it will be stored in the buffer using {@link append}.
      */
     public constructor(octets?: Uint8Array) {
         this.#chunks = [];
         this.#length = 0;
 
         if (octets) {
-            this.unsafeAppend(octets);
+            this.append(octets);
         }
     }
 
@@ -120,6 +120,73 @@ export class Buffer {
         this.#length = 0;
     }
 
+    /** Append some data at the end of the buffer. If you are willing to
+     * relinquish the ownership of your buffer, use {@link unsafeAppend}
+     * instead because it's faster.
+     */
+    public append(octets: Buffer|Uint8Array): void {
+        if (octets instanceof Buffer) {
+            for (const chunk of octets.unsafeChunks()) {
+                this.append(chunk);
+            }
+            return;
+        }
+
+        if (this.#chunks.length == 0) {
+            // We don't even have any chunks yet.
+            this.#chunks.push(Chunk.copyFrom(octets));
+            this.#length += octets.byteLength;
+            return;
+        }
+
+        // Find the last non-empty chunk.
+        let i = this.#chunks.length - 1;
+        for (; i >= 0; i--) {
+            if (this.#chunks[i]!.length > 0) {
+                break;
+            }
+        }
+
+        if (i < 0) {
+            // No non-empty chunks were found. Check the first one.
+            i = 0;
+        }
+        const lastChunk = this.#chunks[i]!;
+
+        if (lastChunk.unused >= octets.byteLength) {
+            // The last non-empty chunk can completely absorb the data.
+            lastChunk.append(octets);
+        }
+        else if (lastChunk.unused > 0) {
+            // The last chunk can partially absorb the data.
+            let offset  = lastChunk.unused;
+            let remains = Math.max(0, octets.byteLength - offset);
+            lastChunk.append(octets.subarray(0, offset));
+
+            // See if subsequent chunks can absorb the remains.
+            for (let j = i; j < this.#chunks.length && remains > 0; j++) {
+                const chunk = this.#chunks[j]!;
+                if (chunk.unused > 0) {
+                    const numOctetsToCopy = Math.min(chunk.unused, remains);
+                    chunk.append(octets.subarray(offset, offset + numOctetsToCopy));
+                    offset  += numOctetsToCopy;
+                    remains -= numOctetsToCopy;
+                }
+            }
+
+            // If we still don't have the requested space, create a new
+            // chunk.
+            if (remains > 0) {
+                this.#chunks.push(Chunk.copyFrom(octets.subarray(offset)));
+            }
+        }
+        else {
+            // The last non-empty chunk has no space at all.
+            this.#chunks.push(Chunk.copyFrom(octets));
+        }
+        this.#length += octets.byteLength;
+    }
+
     /** Append some data at the end of the buffer. The buffer takes the
      * ownership of the data. Do not mutate it afterwards.
      */
@@ -166,9 +233,10 @@ export class Buffer {
             for (let j = i; j < this.#chunks.length && remains > 0; j++) {
                 const chunk = this.#chunks[j]!;
                 if (chunk.unused > 0) {
-                    chunk.append(octets.subarray(offset));
-                    offset  += chunk.unused;
-                    remains -= Math.max(0, octets.byteLength - offset);
+                    const numOctetsToCopy = Math.min(chunk.unused, remains);
+                    chunk.append(octets.subarray(offset, offset + numOctetsToCopy));
+                    offset  += numOctetsToCopy;
+                    remains -= numOctetsToCopy;
                 }
             }
 
@@ -476,5 +544,15 @@ export class Buffer {
                 this.appendUint16( n         & 0xFFFF);
             }
         }
+    }
+
+    public appendFloat64(n: number, littleEndian = false): void {
+        if (!this.#f64Buf) {
+            const buf = new ArrayBuffer(8);
+            this.#f64Buf = [new DataView(buf), new Uint8Array(buf)];
+        }
+
+        this.#f64Buf[0].setFloat64(0, n, littleEndian);
+        this.append(this.#f64Buf[1]);
     }
 }

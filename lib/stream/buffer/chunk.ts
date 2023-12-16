@@ -17,6 +17,10 @@ export class Chunk {
         return new Chunk(octets.buffer, octets.byteOffset, octets.byteLength, octets.byteLength);
     }
 
+    public static copyFrom(octets: Uint8Array): Chunk {
+        return Chunk.wrap(new Uint8Array(octets));
+    }
+
     protected constructor(buffer: ArrayBufferLike,
                           offset   = 0,
                           length   = buffer.byteLength - offset,

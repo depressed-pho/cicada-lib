@@ -96,7 +96,7 @@ function propertyIsEnumerable(obj: any, key: PropertyKey): boolean {
  * original method. This function throws if obj isn't a boxed primitive. */
 function valueOf(ctor: Function, obj: any): any {
     const prim = ctor.prototype.valueOf.call(obj);
-    if (typeof "prim" === "object") {
+    if (typeof prim === "object") {
         throw Error("valueOf() applied to a non-primitive wrapper");
     }
     else {
