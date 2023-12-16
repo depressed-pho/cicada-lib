@@ -1,11 +1,6 @@
 import { CombineFn } from "./ordered-map.js";
+import { EqualFn, HashFn } from "./hash-set.js";
 import { Hasher } from "../hasher.js";
-
-/** Used to test the equality of two values. */
-export type EqualFn<T> = (a: T, b: T) => boolean;
-
-/** Used to hash a value. */
-export type HashFn<T> = (hasher: Hasher, value: T) => void;
 
 /** Unordered finite map, similar to the built-in `Map` but can have
  * user-supplied hash function and equality. The type `K` can be anything
@@ -55,6 +50,16 @@ export class HashMap<K, V> implements Map<K, V> {
                 if (typeof args[0] === "function") {
                     this.#eq   = args[0];
                     this.#hash = defaultHash<K>;
+                }
+                else if (args[0] instanceof HashMap) {
+                    // Special case: we can safely clone the map.
+                    this.#eq            = args[0].#eq;
+                    this.#hash          = args[0].#hash;
+                    this.#buckets       = args[0].#buckets.map(b => b.clone());
+                    this.#numDoubled    = args[0].#numDoubled;
+                    this.#bucketToSplit = args[0].#bucketToSplit;
+                    this.#size          = args[0].#size;
+                    this.#maxLoadFactor = args[0].#maxLoadFactor;
                 }
                 else {
                     this.#eq   = defaultEq<K>;
@@ -205,6 +210,9 @@ export class HashMap<K, V> implements Map<K, V> {
      * `combineFn(oldValue, newValue, newKey)`.
      */
     public "set"(key: K, value: V, combineFn?: CombineFn<K, V>): this {
+        if (key === undefined)
+            throw new TypeError("`undefined' is not a valid key of HashMap");
+
         if (this.#bucketFor(key).set(key, value, this.#eq, combineFn)) {
             // The bucket increased its size. Maybe we should grow?
             this.#size++;
@@ -311,10 +319,16 @@ function defaultHash<K>(hasher: Hasher, k: K) {
 }
 
 class Bucket<K, V> implements Iterable<[K, V]> {
-    readonly #entries: [K, V][];
+    #entries: [K, V][];
 
     public constructor() {
         this.#entries = [];
+    }
+
+    public clone(): Bucket<K, V> {
+        const ret = new Bucket<K, V>();
+        ret.#entries = this.#entries.slice();
+        return ret;
     }
 
     public "get"(key: K, eq: EqualFn<K>): V|undefined {
