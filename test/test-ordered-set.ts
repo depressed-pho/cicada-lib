@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { OrdSet } from "../lib/ordered-set.js";
+import { OrdSet } from "../lib/collections/ordered-set.js";
 
 describe("OrdSet", () => {
     describe("Query", () => {

@@ -1,7 +1,7 @@
 import "mocha";
 import { expect } from "chai";
-import { OrdMap } from "../lib/ordered-map.js";
-import { OrdSet } from "../lib/ordered-set.js";
+import { OrdMap } from "../lib/collections/ordered-map.js";
+import { OrdSet } from "../lib/collections/ordered-set.js";
 
 describe("OrdMap", () => {
     describe("Query", () => {
@@ -110,6 +110,13 @@ describe("OrdMap", () => {
         });
     });
     describe("deletion and update", () => {
+        describe(".prototype.clear", () => {
+            it("deletes all keys", () => {
+                const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+                m.clear();
+                expect(m.size).to.equal(0);
+            });
+        });
         describe(".prototype.delete", () => {
             it("deletes a key if it exists", () => {
                 const m = new OrdMap([["foo", 1], ["bar", 2], ["baz", 3]]);

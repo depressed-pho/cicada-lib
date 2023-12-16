@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { Queue } from "../lib/queue.js";
+import { Queue } from "../lib/collections/queue.js";
 
 describe("Queue", () => {
     describe("Construction", () => {

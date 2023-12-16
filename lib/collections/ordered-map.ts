@@ -94,6 +94,11 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
         return size(this.#root);
     }
 
+    /** O(1). Remove all elements from the map. */
+    public clear() {
+        this.#root = null;
+    }
+
     /** O(log n). Lookup the value at a key in the map, or return
      * `undefined` if no corresponding value exists.
      */
