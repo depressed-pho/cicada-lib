@@ -29,4 +29,8 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
 
         return this.#type;
     }
+
+    public equals(other: BlockPermutation): boolean {
+        return this.raw.matches(other.raw.type.id, other.raw.getAllStates());
+    }
 }

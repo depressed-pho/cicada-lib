@@ -39,8 +39,7 @@ export abstract class Thread {
 
         /* Since this.#task is an async generator and we haven't called its
          * .next() even once, the generator isn't yet running even
-         * asynchronously. Schedule its execution before returning from the
-         * constructor.
+         * asynchronously. Schedule its execution now.
          *
          * And when the promise is fulfilled or rejected, we should
          * continue the execution of the task until it finishes or raises

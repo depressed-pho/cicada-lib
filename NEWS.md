@@ -13,6 +13,7 @@
 * New properties:
   * `Block.prototype.getItemStack`
   * `Block.prototype.type` setter
+  * `BlockPermutation.prototype.equals`
   * `BlockPermutation.prototype.tags`
   * `Dimension.prototype.spawnItem`
   * `ItemStack.prototype.tags`
