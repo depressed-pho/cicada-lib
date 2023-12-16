@@ -32,6 +32,10 @@ export class Block extends Wrapper<MC.Block> {
         return new Dimension(this.raw.dimension);
     }
 
+    public get isValid(): boolean {
+        return this.raw.isValid();
+    }
+
     public get isWaterlogged(): boolean {
         return this.raw.isWaterlogged;
     }

@@ -12,6 +12,7 @@
     `start()`.
 * New properties:
   * `Block.prototype.getItemStack`
+  * `Block.prototype.isValid`
   * `Block.prototype.type` setter
   * `BlockPermutation.prototype.equals`
   * `BlockPermutation.prototype.tags`
