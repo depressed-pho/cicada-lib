@@ -10,6 +10,8 @@ import { Direction, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { BlockPermutation, BlockType };
+export { BlockStateValue, BlockStates } from "./block/states.js";
+export { BlockTags } from "./block/tags.js";
 
 export class Block extends Wrapper<MC.Block> {
     /** Clone an existing instance. */
