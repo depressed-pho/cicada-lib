@@ -47,8 +47,24 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         this.raw.setLore(lore);
     }
 
+    get maxAmount(): number {
+        return this.raw.maxAmount;
+    }
+
     get enchantments(): ItemEnchantments {
         return new ItemEnchantments(
             this.raw.getComponent("minecraft:enchantable"));
+    }
+
+    public clone(): ItemStack {
+        return new ItemStack(this.raw.clone());
+    }
+
+    /** Return whether this item stack can be stacked with the given
+     * `itemStack`. The amount of each item stack is not taken into
+     * consideration.
+     */
+    public isStackableWith(stack: ItemStack): boolean {
+        return this.raw.isStackableWith(stack.raw);
     }
 }
