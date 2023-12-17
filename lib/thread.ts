@@ -41,7 +41,7 @@ export abstract class Thread {
         const self = this;
         this.#task = (async function* () {
             yield;
-            self.run(cancelled);
+            yield* self.run(cancelled);
         })();
 
         /* Since this.#task is an async generator and we haven't called its
