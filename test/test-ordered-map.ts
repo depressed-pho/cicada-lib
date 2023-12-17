@@ -466,11 +466,11 @@ describe("OrdMap", () => {
             it("deletes the minimal element", () => {
                 const m1 = new OrdMap([[1, "foo"], [2, "bar"], [3, "baz"]]);
                 const m2 = new OrdMap();
-                m1.deleteMin();
-                m2.deleteMin();
+                expect(m1.deleteMin()).to.deep.equal([1, "foo"]);
                 expect(Array.from(m1)).to.deep.equal([
                     [2, "bar"], [3, "baz"]
                 ]);
+                expect(m2.deleteMin()).to.be.undefined;
                 expect(Array.from(m2)).to.deep.equal([]);
             });
         });
@@ -478,11 +478,11 @@ describe("OrdMap", () => {
             it("deletes the maximal element", () => {
                 const m1 = new OrdMap([[1, "foo"], [2, "bar"], [3, "baz"]]);
                 const m2 = new OrdMap();
-                m1.deleteMax();
-                m2.deleteMax();
+                expect(m1.deleteMax()).to.deep.equal([3, "baz"]);
                 expect(Array.from(m1)).to.deep.equal([
                     [1, "foo"], [2, "bar"],
                 ]);
+                expect(m2.deleteMax()).to.be.undefined;
                 expect(Array.from(m2)).to.deep.equal([]);
             });
         });

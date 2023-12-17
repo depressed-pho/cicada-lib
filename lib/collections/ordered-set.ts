@@ -325,18 +325,34 @@ export class OrdSet<T> implements ReversibleIterable<T> {
         return lookupMax(this.#root);
     }
 
-    /** O(log n). Delete the minimal element. Do nothing if the set is
-     * empty.
+    /** O(log n). Delete the minimal element and return the deleted element
+     * if any. Do nothing if the set is empty.
      */
-    public deleteMin(): void {
-        this.#root = deleteMin(this.#root);
+    public deleteMin(): T|undefined {
+        const view = minView(this.#root);
+        if (view) {
+            const [elem, rest] = view;
+            this.#root = rest;
+            return elem;
+        }
+        else {
+            return undefined;
+        }
     }
 
-    /** O(log n). Delete the maximal element. Do nothing if the set is
-     * empty.
+    /** O(log n). Delete the maximal element and return the deleted element
+     * if any. Do nothing if the set is empty.
      */
-    public deleteMax(): void {
-        this.#root = deleteMax(this.#root);
+    public deleteMax(): T|undefined {
+        const view = maxView(this.#root);
+        if (view) {
+            const [elem, rest] = view;
+            this.#root = rest;
+            return elem;
+        }
+        else {
+            return undefined;
+        }
     }
 
     /** O(log n). Retrieve the minimal element of the set, and the set
@@ -912,30 +928,6 @@ function lookupMax<T>(tree: Tree<T>): T|undefined {
             return tree.elem;
         else
             return lookupMax(tree.right);
-    }
-}
-
-function deleteMin<T>(tree: Tree<T>): Tree<T> {
-    if (!tree) {
-        return tree;
-    }
-    else {
-        if (!tree.left)
-            return tree.right;
-        else
-            return balanceR(tree.elem, deleteMin(tree.left), tree.right);
-    }
-}
-
-function deleteMax<T>(tree: Tree<T>): Tree<T> {
-    if (!tree) {
-        return tree;
-    }
-    else {
-        if (!tree.right)
-            return tree.left;
-        else
-            return balanceL(tree.elem, tree.left, deleteMax(tree.right));
     }
 }
 

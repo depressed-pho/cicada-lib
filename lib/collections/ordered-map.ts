@@ -475,18 +475,34 @@ export class OrdMap<K, V> implements ReversibleIterable<[K, V]> {
         return lookupMax(this.#root);
     }
 
-    /** O(log n). Delete the minimal key. Do nothing if the map is
-     * empty.
+    /** O(log n). Delete the minimal key and return the deleted entry if
+     * any. Do nothing if the map is empty.
      */
-    public deleteMin(): void {
-        this.#root = deleteMin(this.#root);
+    public deleteMin(): [K, V]|undefined {
+        const view = minView(this.#root);
+        if (view) {
+            const [k, v, rest] = view;
+            this.#root = rest;
+            return [k, v];
+        }
+        else {
+            return undefined;
+        }
     }
 
-    /** O(log n). Delete the maximal key. Do nothing if the map is
-     * empty.
+    /** O(log n). Delete the maximal key and return the deleted entry if
+     * any. Do nothing if the map is empty.
      */
-    public deleteMax(): void {
-        this.#root = deleteMax(this.#root);
+    public deleteMax(): [K, V]|undefined {
+        const view = maxView(this.#root);
+        if (view) {
+            const [k, v, rest] = view;
+            this.#root = rest;
+            return [k, v];
+        }
+        else {
+            return undefined;
+        }
     }
 
     /** O(log n). Retrieve the minimal element of the map, and the map
@@ -1189,30 +1205,6 @@ function lookupMax<K, V>(tree: Tree<K, V>): [K, V]|undefined {
             return [tree.key, tree.value];
         else
             return lookupMax(tree.right);
-    }
-}
-
-function deleteMin<K, V>(tree: Tree<K, V>): Tree<K, V> {
-    if (!tree) {
-        return tree;
-    }
-    else {
-        if (!tree.left)
-            return tree.right;
-        else
-            return balanceR(tree.key, tree.value, deleteMin(tree.left), tree.right);
-    }
-}
-
-function deleteMax<K, V>(tree: Tree<K, V>): Tree<K, V> {
-    if (!tree) {
-        return tree;
-    }
-    else {
-        if (!tree.right)
-            return tree.left;
-        else
-            return balanceL(tree.key, tree.value, tree.left, deleteMax(tree.right));
     }
 }
 

@@ -297,9 +297,9 @@ describe("OrdSet", () => {
             it("deletes the minimal element", () => {
                 const s1 = new OrdSet([1, 2, 3]);
                 const s2 = new OrdSet();
-                s1.deleteMin();
-                s2.deleteMin();
+                expect(s1.deleteMin()).to.equal(1);;
                 expect(Array.from(s1)).to.deep.equal([2, 3]);
+                expect(s2.deleteMin()).to.be.undefined;
                 expect(Array.from(s2)).to.deep.equal([]);
             });
         });
@@ -307,9 +307,9 @@ describe("OrdSet", () => {
             it("deletes the maximal element", () => {
                 const s1 = new OrdSet([1, 2, 3]);
                 const s2 = new OrdSet();
-                s1.deleteMax();
-                s2.deleteMax();
+                expect(s1.deleteMax()).to.equal(3);
                 expect(Array.from(s1)).to.deep.equal([1, 2]);
+                expect(s2.deleteMax()).to.be.undefined;
                 expect(Array.from(s2)).to.deep.equal([]);
             });
         });
