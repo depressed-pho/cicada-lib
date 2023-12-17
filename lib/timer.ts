@@ -5,12 +5,13 @@ export class Timer {
         this.startedAt = Date.now();
     }
 
-    public get elapsed(): number {
+    /// Return the elapsed time in milliseconds.
+    public get elapsedMs(): number {
         return Date.now() - this.startedAt;
     }
 
     public toString(): string {
-        let ms = this.elapsed;
+        let ms = this.elapsedMs;
         if (ms < 1000) {
             return `${ms}ms`;
         }
