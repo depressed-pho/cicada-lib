@@ -8,7 +8,7 @@ import * as MC from "@minecraft/server";
 
 export { BlockPistonState };
 
-// FIXME: Remove this later.
+// FIXME: Remove this when the API is updated to 1.9.0.
 enum BlockPistonState {
     Expanded = 'Expanded',
     Expanding = 'Expanding',

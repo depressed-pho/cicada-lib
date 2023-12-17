@@ -52,7 +52,7 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
     }
 
     get enchantments(): ItemEnchantments {
-        // FIXME: Remove this glue code when the API is updated.
+        // FIXME: Remove this glue code when the API is updated to 1.9.0.
         if (1) {
             // @ts-ignore
             const comp = this.raw.getComponent("minecraft:enchantments");

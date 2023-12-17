@@ -69,7 +69,7 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
 
     public get(type: EnchantmentType|string): Enchantment|undefined {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated.
+            // FIXME: Remove this glue code when the API is updated to 1.9.0.
             if ("enchantments" in this.raw) {
                 // @ts-ignore
                 const raw = this.raw.enchantments.getEnchantment(type);
@@ -93,7 +93,7 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
                     : false;
             }
             else {
-                // FIXME: Remove this glue code when the API is updated.
+                // FIXME: Remove this glue code when the API is updated to 1.9.0.
                 if ("enchantments" in this.raw) {
                     // @ts-ignore
                     return this.raw.enchantments.hasEnchantment(ench);
