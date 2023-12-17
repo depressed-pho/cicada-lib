@@ -35,7 +35,14 @@ export abstract class Thread {
         // runtime will think its rejection is accidentally unhandled.
         cancelled.catch(() => {});
 
-        this.#task = this.run(cancelled);
+        // This method might be called in the context of before events,
+        // which means we might be in a read-only mode. The task should
+        // yield at least once so that it can mutate the world state.
+        const self = this;
+        this.#task = (async function* () {
+            yield;
+            self.run(cancelled);
+        })();
 
         /* Since this.#task is an async generator and we haven't called its
          * .next() even once, the generator isn't yet running even
