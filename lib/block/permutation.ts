@@ -1,3 +1,4 @@
+import { ItemStack } from "../item/stack.js";
 import { BlockStates } from "./states.js";
 import { BlockTags } from "./tags.js";
 import { BlockType } from "./type.js";
@@ -32,5 +33,10 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
 
     public equals(other: BlockPermutation): boolean {
         return this.raw.matches(other.raw.type.id, other.raw.getAllStates());
+    }
+
+    public getItemStack(amount?: number): ItemStack|undefined {
+        const rawStack = this.raw.getItemStack(amount);
+        return rawStack ? new ItemStack(rawStack) : undefined;
     }
 }

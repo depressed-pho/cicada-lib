@@ -48,9 +48,8 @@ export abstract class Thread {
          * .next() even once, the generator isn't yet running even
          * asynchronously. Schedule its execution now.
          *
-         * And when the promise is fulfilled or rejected, we should
-         * continue the execution of the task until it finishes or raises
-         * an error.
+         * And when the promise is fulfilled, we should continue the
+         * execution of the task until it finishes or raises an error.
          */
         this.#result = this.#task.next()
             .then(res => this.#onSuspended(res),
