@@ -25,6 +25,10 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         return this.raw.isSneaking;
     }
 
+    public get isValid(): boolean {
+        return this.raw.isValid();
+    }
+
     public get location(): Location {
         return new Location(this.raw.location);
     }
