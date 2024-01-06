@@ -19,6 +19,7 @@
   * `Dimension.prototype.spawnItem`
   * `ItemStack.prototype.tags`
   * `World.prototype.getDimension`
+  * `World.prototype.playSound`
 * Added `lib/hasher.ts`
 * Added `lib/sync/mpsc.ts`
 * Added `lib/sync/notify.ts`
