@@ -10,6 +10,8 @@
     override `run()`.
   * Threads no longer start automatically. In order to start them, call
     `start()`.
+  * The setter `Block.prototype.type` no longer accepts `string`. Use the
+    `Block.prototype.typeId` setter for that.
 * Non-breaking changes:
   * The constructor of `ItemStack` now accepts optional block states. This
     only works for items that have corresponding blocks.
