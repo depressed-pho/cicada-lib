@@ -17,7 +17,9 @@
   * `BlockPermutation.prototype.equals`
   * `BlockPermutation.prototype.tags`
   * `Dimension.prototype.spawnItem`
+  * `Entity.prototype.matches`
   * `ItemStack.prototype.tags`
+  * `Player.prototype.gameMode`
   * `World.prototype.getDimension`
   * `World.prototype.playSound`
 * Added `lib/hasher.ts`

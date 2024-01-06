@@ -5,10 +5,11 @@ import { EntityTags } from "./entity/tags.js";
 import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
 import { Wrapper } from "./wrapper.js";
-import { BlockRaycastOptions, EntityDamageSource, Vector2, Vector3 } from "@minecraft/server";
+import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
+         Vector2, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
-export { BlockRaycastOptions, EntityDamageSource };
+export { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions };
 
 export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     #tags?: EntityTags;
@@ -47,10 +48,6 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         return this.#tags;
     }
 
-    public kill(): void {
-        this.raw.kill();
-    }
-
     public getBlockFromViewDirection(options?: BlockRaycastOptions): BlockRaycastHit | undefined {
         let rawHit = this.raw.getBlockFromViewDirection(options);
         return rawHit
@@ -60,6 +57,14 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
                 faceLocation: rawHit.faceLocation
               }
             : undefined;
+    }
+
+    public kill(): void {
+        this.raw.kill();
+    }
+
+    public matches(options: EntityQueryOptions): boolean {
+        return this.raw.matches(options);
     }
 
     public teleport(location: Vector3, opts?: TeleportOptions): void {
