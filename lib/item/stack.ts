@@ -1,23 +1,69 @@
+import { BlockStateValue } from "../block.js";
 import { Wrapper } from "../wrapper.js";
 import { ItemEnchantments } from "./enchantment.js";
 import { ItemTags } from "./tags.js";
+import { ItemType } from "./type.js";
 import * as MC from "@minecraft/server";
 
 export class ItemStack extends Wrapper<MC.ItemStack> {
     #tags?: ItemTags;
+    #type?: ItemType;
 
     /** Package private: user code should not use this. */
     public constructor(rawItemStack: MC.ItemStack);
 
     /** Construct an item stack. */
-    public constructor(itemType: MC.ItemType|string, amount?: number);
+    public constructor(itemType: ItemType|string, amount?: number);
 
-    public constructor(arg0: MC.ItemStack|MC.ItemType|string, ...rest: any[]) {
-        if (arg0 instanceof MC.ItemStack) {
-            super(arg0);
-        }
-        else {
-            super(new MC.ItemStack(arg0, ...rest));
+    /** Construct an item stack with block states. This only works for
+     * items that have corresponding blocks such as `minecraft:sapling`.
+     */
+    public constructor(itemType: ItemType|string, states: Record<string, BlockStateValue>, amount?: number);
+
+    public constructor(...args: any[]) {
+        switch (args.length) {
+            case 1:
+                if (args[0] instanceof MC.ItemStack) {
+                    super(args[0]);
+                }
+                else if (args[0] instanceof ItemType) {
+                    super(new MC.ItemStack(args[0].raw));
+                    this.#type = args[0];
+                }
+                else {
+                    super(new MC.ItemStack(args[0]));
+                }
+                break;
+
+            case 2:
+                if (typeof args[1] === "number") {
+                    if (args[0] instanceof ItemType) {
+                        super(new MC.ItemStack(args[0].raw, args[1]));
+                        this.#type = args[0];
+                    }
+                    else {
+                        super(new MC.ItemStack(args[0], args[1]));
+                    }
+                }
+                else {
+                    const typeId   = args[0] instanceof ItemType ? args[0].id : args[0];
+                    const rawPerm  = MC.BlockPermutation.resolve(typeId, args[1]);
+                    const rawStack = rawPerm.getItemStack();
+                    if (rawStack)
+                        super(rawStack);
+                    else
+                        throw new Error("No item stack is available for the given ID and states");
+                }
+                break;
+
+            case 3:
+                const typeId   = args[0] instanceof ItemType ? args[0].id : args[0];
+                const rawPerm  = MC.BlockPermutation.resolve(typeId, args[1]);
+                const rawStack = rawPerm.getItemStack(args[2]);
+                if (rawStack)
+                    super(rawStack);
+                else
+                    throw new Error("No item stack is available for the given ID and states");
         }
     }
 
@@ -34,6 +80,13 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
             this.#tags = new ItemTags(this.raw);
 
         return this.#tags;
+    }
+
+    get type(): ItemType {
+        if (!this.#type)
+            this.#type = new ItemType(this.raw.type);
+
+        return this.#type;
     }
 
     get typeId(): string {

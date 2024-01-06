@@ -14,15 +14,11 @@ export class BlockType extends Wrapper<MC.BlockType> {
             super(arg0);
         }
         else {
-            super((() => {
-                const rawBt = MC.BlockTypes.get(arg0);
-                if (rawBt) {
-                    return rawBt;
-                }
-                else {
-                    throw new Error(`No such block ID exists: ${arg0}`);
-                }
-            })());
+            const rawBt = MC.BlockTypes.get(arg0);
+            if (rawBt)
+                super(rawBt);
+            else
+                throw new Error(`No such block ID exists: ${arg0}`);
         }
     }
 
@@ -34,9 +30,8 @@ export class BlockType extends Wrapper<MC.BlockType> {
         return this.raw.id;
     }
 
-    public static getAllBlockTypes(): IterableIterator<BlockType> {
-        // Create an iterable object that progressively constructs
-        // BlockType.
+    /** Obtain all available block types registered within the world. */
+    public static getAll(): IterableIterator<BlockType> {
         return map(MC.BlockTypes.getAll(), raw => {
             return new BlockType(raw);
         });

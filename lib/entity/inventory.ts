@@ -8,14 +8,10 @@ export class EntityInventory extends Container {
     /** The constructor is public only because of a language
      * limitation. User code must never call it directly. */
     public constructor(rawInventory: MC.EntityInventoryComponent) {
-        super((() => {
-            if (rawInventory.container) {
-                return rawInventory.container;
-            }
-            else {
-                throw new Error(`This entity does not have a valid container`);
-            }
-        })());
+        if (rawInventory.container)
+            super(rawInventory.container);
+        else
+            throw new Error(`This entity does not have a valid container`);
 
         this.#inventory = rawInventory;
     }

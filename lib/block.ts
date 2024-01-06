@@ -58,12 +58,16 @@ export class Block extends Wrapper<MC.Block> {
         return new BlockType(this.raw.type);
     }
 
-    public set type(type: BlockType | string) {
-        this.raw.setType(type);
+    public set type(blockType: BlockType) {
+        this.raw.setType(blockType);
     }
 
     public get typeId(): string {
         return this.raw.typeId;
+    }
+
+    public set typeId(typeId: string) {
+        this.raw.setType(typeId);
     }
 
     public get x(): number {
