@@ -94,6 +94,14 @@ describe("HashMap", () => {
                 expect(m.has("qux")).to.be.false;
             });
         });
+        describe(".prototype.deleteAny", () => {
+            it("deletes a single entry if any", () => {
+                const m = new HashMap([["foo", 1], ["bar", 2], ["baz", 3]]);
+
+                expect(m.deleteAny()).to.be.an("array").and.has.lengthOf(2);
+                expect(m.size).to.equal(2);
+            });
+        });
     });
     describe("Iteration", () => {
         describe(".prototype.keys", () => {

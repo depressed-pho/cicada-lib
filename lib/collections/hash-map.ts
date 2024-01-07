@@ -13,7 +13,7 @@ import { Hasher } from "../hasher.js";
 export class HashMap<K, V> implements Map<K, V> {
     readonly #eq: EqualFn<K>;
     readonly #hash: HashFn<K>;
-    // Initially we have only 1 bucket.
+    // Initially we have only 1 bucket. Invariant: this array is always non-empty.
     #buckets: Bucket<K, V>[];
     // The number of times we have doubled the number of buckets.
     #numDoubled: number;
@@ -154,17 +154,28 @@ export class HashMap<K, V> implements Map<K, V> {
         if (this.#bucketFor(key).delete(key, this.#eq)) {
             // The bucket decreased its size. Maybe we should shrink?
             this.#size--;
-            while (this.#buckets.length > 1 &&
-                   (this.#size / (this.#buckets.length - 1)) <= this.#maxLoadFactor) {
-                // Shrinking would not make the load factor exceed its
-                // limit. Do it.
-                this.#shrink();
-            }
+            this.#maybeShrink();
             return true;
         }
         else {
             return false;
         }
+    }
+
+    /** Delete a single key/value pair in the map and return it if any. Do
+     * nothing if the map is empty.
+     */
+    public deleteAny(): [K, V]|undefined {
+        for (const bucket of this.#buckets) {
+            const pair = bucket.deleteAny();
+            if (pair) {
+                // The bucket decreased its size. Maybe we should shrink?
+                this.#size--;
+                this.#maybeShrink();
+                return pair;
+            }
+        }
+        return undefined;
     }
 
     /** Iterate over key/value pairs in the map. */
@@ -285,6 +296,15 @@ export class HashMap<K, V> implements Map<K, V> {
         }
     }
 
+    #maybeShrink() {
+        while (this.#buckets.length > 1 &&
+            (this.#size / (this.#buckets.length - 1)) <= this.#maxLoadFactor) {
+            // Shrinking would not make the load factor exceed its
+            // limit. Do it.
+            this.#shrink();
+        }
+    }
+
     #shrink() {
         let numBuckets0 = 1;
         for (let i = 0; i < this.#numDoubled; i++) {
@@ -377,6 +397,10 @@ class Bucket<K, V> implements Iterable<[K, V]> {
             }
         }
         return false;
+    }
+
+    public deleteAny(): [K, V]|undefined {
+        return this.#entries.pop();
     }
 
     public [Symbol.iterator](): IterableIterator<[K, V]> {

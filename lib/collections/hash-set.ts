@@ -17,7 +17,7 @@ export type HashFn<T> = (hasher: Hasher, value: T) => void;
 export class HashSet<T> implements Set<T> {
     readonly #eq: EqualFn<T>;
     readonly #hash: HashFn<T>;
-    // Initially we have only 1 bucket.
+    // Initially we have only 1 bucket. Invariant: this array is always non-empty.
     #buckets: Bucket<T>[];
     // The number of times we have doubled the number of buckets.
     #numDoubled: number;
@@ -175,17 +175,28 @@ export class HashSet<T> implements Set<T> {
         if (this.#bucketFor(element).delete(element, this.#eq)) {
             // The bucket decreased its size. Maybe we should shrink?
             this.#size--;
-            while (this.#buckets.length > 1 &&
-                   (this.#size / (this.#buckets.length - 1)) <= this.#maxLoadFactor) {
-                // Shrinking would not make the load factor exceed its
-                // limit. Do it.
-                this.#shrink();
-            }
+            this.#maybeShrink();
             return true;
         }
         else {
             return false;
         }
+    }
+
+    /** Delete a single element in the set and return it if any. Do nothing
+     * if the set is empty.
+     */
+    public deleteAny(): T|undefined {
+        for (const bucket of this.#buckets) {
+            const elem = bucket.deleteAny();
+            if (elem) {
+                // The bucket decreased its size. Maybe we should shrink?
+                this.#size--;
+                this.#maybeShrink();
+                return elem;
+            }
+        }
+        return undefined;
     }
 
     /** Return a new set consisting of elements of `this` not existing in
@@ -363,6 +374,15 @@ export class HashSet<T> implements Set<T> {
         }
     }
 
+    #maybeShrink() {
+        while (this.#buckets.length > 1 &&
+            (this.#size / (this.#buckets.length - 1)) <= this.#maxLoadFactor) {
+            // Shrinking would not make the load factor exceed its
+            // limit. Do it.
+            this.#shrink();
+        }
+    }
+
     #shrink() {
         let numBuckets0 = 1;
         for (let i = 0; i < this.#numDoubled; i++) {
@@ -443,6 +463,10 @@ class Bucket<T> implements Iterable<T> {
             }
         }
         return false;
+    }
+
+    public deleteAny(): T|undefined {
+        return this.#entries.pop();
     }
 
     public [Symbol.iterator](): IterableIterator<T> {

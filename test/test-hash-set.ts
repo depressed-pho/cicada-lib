@@ -56,6 +56,13 @@ describe("HashSet", () => {
         });
     });
     describe("deletion", () => {
+        describe(".prototype.clear", () => {
+            it("deletes all elements", () => {
+                const s = new HashSet(["foo", "bar", "baz"]);
+                s.clear();
+                expect(s.size).to.equal(0);
+            });
+        });
         describe(".prototype.delete", () => {
             it("deletes an element if it exists", () => {
                 const s = new HashSet(["foo", "bar", "baz"]);
@@ -65,6 +72,14 @@ describe("HashSet", () => {
 
                 expect(s.delete("qux")).to.be.false;
                 expect(s.has("qux")).to.be.false;
+            });
+        });
+        describe(".prototype.deleteAny", () => {
+            it("deletes a single element if any", () => {
+                const s = new HashSet(["foo", "bar", "baz"]);
+
+                expect(s.deleteAny()).to.be.a("string");
+                expect(s.size).to.equal(2);
             });
         });
     });
