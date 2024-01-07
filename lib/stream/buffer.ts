@@ -547,12 +547,23 @@ export class Buffer {
     }
 
     public appendFloat64(n: number, littleEndian = false): void {
-        if (!this.#f64Buf) {
-            const buf = new ArrayBuffer(8);
-            this.#f64Buf = [new DataView(buf), new Uint8Array(buf)];
+        const i     = this.#reserve(8);
+        const chunk = this.#chunks[i]!;
+        if (chunk.unused >= 8) {
+            // Sweet. We can write it in a contiguous buffer.
+            chunk.dView.setFloat64(chunk.length, n, littleEndian);
+            chunk.length += 8;
+            this.#length += 8;
         }
+        else {
+            // Damn, we must do a partial write.
+            if (!this.#f64Buf) {
+                const buf = new ArrayBuffer(8);
+                this.#f64Buf = [new DataView(buf), new Uint8Array(buf)];
+            }
 
-        this.#f64Buf[0].setFloat64(0, n, littleEndian);
-        this.append(this.#f64Buf[1]);
+            this.#f64Buf[0].setFloat64(0, n, littleEndian);
+            this.append(this.#f64Buf[1]);
+        }
     }
 }
