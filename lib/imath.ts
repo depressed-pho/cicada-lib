@@ -15,3 +15,14 @@ export function umul32(x: number, y: number): number {
 export function urotl32(x: number, r: number): number {
     return x >>> (32 - r | 0) | x << r;
 }
+
+/** Round a number up to the next power of 2. */
+export function nextPowerOf2(x: number): number {
+    if (x < 1)
+        throw RangeError("The argument must not be lower than 1");
+
+    let ret = 1;
+    while (ret < x)
+        ret <<= 1;
+    return ret;
+}

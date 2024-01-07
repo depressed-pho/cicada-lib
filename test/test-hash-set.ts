@@ -21,8 +21,10 @@ describe("HashSet", () => {
     });
     describe("construction", () => {
         describe("new with an equality", () => {
-            it("creates an empty set with a custom equality", () => {
-                const s = new HashSet((a: any, b: any) => a.id === b.id);
+            it("creates an empty set with a custom equality and a hash function", () => {
+                const eq = (a: any, b: any) => a.id === b.id;
+                const h  = (hasher: any, a: any) => hasher.update(a.id);
+                const s  = new HashSet(eq, h);
                 expect(s.size).to.equal(0);
 
                 s.add({id: 0, str: "foo"});

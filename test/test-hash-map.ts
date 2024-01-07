@@ -29,8 +29,10 @@ describe("HashMap", () => {
     });
     describe("construction", () => {
         describe("new with an equality", () => {
-            it("creates an empty map with a custom equality", () => {
-                const m = new HashMap((a: any, b: any) => a.id === b.id);
+            it("creates an empty map with a custom equality and a hash function", () => {
+                const eq = (a: any, b: any) => a.id === b.id;
+                const h  = (hasher: any, a: any) => hasher.update(a.id);
+                const m  = new HashMap(eq, h);
                 expect(m.size).to.equal(0);
 
                 m.set({id: 0, str: "foo"}, "foobar");

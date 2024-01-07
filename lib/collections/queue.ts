@@ -1,9 +1,4 @@
-type List<T> = null | Cell<T>;
-
-interface Cell<T> {
-    readonly elem: T;
-    readonly next: List<T>;
-}
+import { SList } from "./single-list.js";
 
 /** An immutable list-like data structure with amortised O(1) for both
  * `cons` and `snoc` operations.
@@ -13,10 +8,10 @@ export class Queue<T> implements Iterable<T> {
     // singleton. And when the suffix is empty, the prefix is either empty
     // or a singleton.
     readonly length: number;
-    readonly #prefix: List<T>;
-    readonly #suffix: List<T>; // in reverse order
+    readonly #prefix: SList<T>;
+    readonly #suffix: SList<T>; // in reverse order
 
-    private constructor(length: number, prefix: List<T>, suffix: List<T>) {
+    private constructor(length: number, prefix: SList<T>, suffix: SList<T>) {
         this.length  = length;
         this.#prefix = prefix;
         this.#suffix = suffix;
@@ -34,14 +29,14 @@ export class Queue<T> implements Iterable<T> {
 
     /** O(1). Create a singleton queue. */
     public static singleton<T>(v: T): Queue<T> {
-        return new Queue(1, {elem: v, next: null}, null);
+        return new Queue(1, {value: v, next: null}, null);
     }
 
     /** O(n). Turn an iterable object into a queue. */
     public static "from"<T>(values: Iterable<T>): Queue<T> {
-        let suffix: List<T> = null;
+        let suffix: SList<T> = null;
         for (const v of values) {
-            suffix = {elem: v, next: suffix};
+            suffix = {value: v, next: suffix};
         }
         return this.#balanceSuffix(suffix);
     }
@@ -62,13 +57,13 @@ export class Queue<T> implements Iterable<T> {
                 // A special case where the prefix is a singleton and the
                 // suffix is empty. We can cheaply create a queue with two
                 // singletons.
-                return new Queue(this.length + 1, {elem: v, next: null}, this.#prefix);
+                return new Queue(this.length + 1, {value: v, next: null}, this.#prefix);
             }
         }
         else {
             // The suffix isn't empty. We can prepend it to the prefix
             // without violating the invariant.
-            return new Queue(this.length + 1, {elem: v, next: this.#prefix}, this.#suffix);
+            return new Queue(this.length + 1, {value: v, next: this.#prefix}, this.#suffix);
         }
     }
 
@@ -81,12 +76,12 @@ export class Queue<T> implements Iterable<T> {
             else {
                 // A special case where the prefix is empty and the suffix is a
                 // singleton.
-                return this.#suffix.elem;
+                return this.#suffix.value;
             }
         }
         else {
             // The prefix isn't empty. Taking its head is trivial.
-            return this.#prefix.elem;
+            return this.#prefix.value;
         }
     }
 
@@ -101,18 +96,18 @@ export class Queue<T> implements Iterable<T> {
             else {
                 // A special case where the prefix is empty and the suffix
                 // is a singleton.
-                return [this.#suffix.elem, Queue.empty];
+                return [this.#suffix.value, Queue.empty];
             }
         }
         else if (!this.#prefix.next) {
             // The prefix is a singleton. Taking its head is trivial but we
             // have to rebalance the queue.
-            return [this.#prefix.elem, Queue.#balanceSuffix(this.#suffix)];
+            return [this.#prefix.value, Queue.#balanceSuffix(this.#suffix)];
         }
         else {
             // The prefix has two or more elements. Splitting it is
             // trivial.
-            return [this.#prefix.elem, new Queue(this.length - 1, this.#prefix.next, this.#suffix)];
+            return [this.#prefix.value, new Queue(this.length - 1, this.#prefix.next, this.#suffix)];
         }
     }
 
@@ -127,13 +122,13 @@ export class Queue<T> implements Iterable<T> {
                 // A special case where the prefix is empty and the suffix
                 // is a singleton. We can cheaply create a queue with two
                 // singletons.
-                return new Queue(this.length + 1, this.#suffix, {elem: v, next: null});
+                return new Queue(this.length + 1, this.#suffix, {value: v, next: null});
             }
         }
         else {
             // The prefix isn't empty. We can append it to the suffix
             // without violating the invariant.
-            return new Queue(this.length + 1, this.#prefix, {elem: v, next: this.#suffix});
+            return new Queue(this.length + 1, this.#prefix, {value: v, next: this.#suffix});
         }
     }
 
@@ -146,12 +141,12 @@ export class Queue<T> implements Iterable<T> {
             else {
                 // A special case where the suffix is empty and the prefix is a
                 // singleton.
-                return this.#prefix.elem;
+                return this.#prefix.value;
             }
         }
         else {
             // The suffix isn't empty. Taking its last is trivial.
-            return this.#suffix.elem;
+            return this.#suffix.value;
         }
     }
 
@@ -166,28 +161,28 @@ export class Queue<T> implements Iterable<T> {
             else {
                 // A special case where the prefix is a singleton and the
                 // suffix is empty.
-                return [Queue.empty, this.#prefix.elem];
+                return [Queue.empty, this.#prefix.value];
             }
         }
         else if (!this.#suffix.next) {
             // The suffix is a singleton. Taking its last is trivial but we
             // have to rebalance the queue.
-            return [Queue.#balancePrefix(this.#prefix), this.#suffix.elem];
+            return [Queue.#balancePrefix(this.#prefix), this.#suffix.value];
         }
         else {
             // The suffix has two or more elements. Splitting it is
             // trivial.
-            return [new Queue(this.length - 1, this.#prefix, this.#suffix.next), this.#suffix.elem];
+            return [new Queue(this.length - 1, this.#prefix, this.#suffix.next), this.#suffix.value];
         }
     }
 
     /** O(n). Iterate over elements in the queue. */
     public *[Symbol.iterator](): IterableIterator<T> {
         for (let cell = this.#prefix; cell; cell = cell.next) {
-            yield cell.elem;
+            yield cell.value;
         }
         for (let cell = Queue.#reverse(this.#suffix); cell; cell = cell.next) {
-            yield cell.elem;
+            yield cell.value;
         }
     }
 
@@ -229,15 +224,15 @@ export class Queue<T> implements Iterable<T> {
             const pLen = Queue.#length(this.#prefix);
             if (n < pLen) {
                 // We can completely ignore the suffix.
-                let taken: List<T> = null; // in reverse order
+                let taken: SList<T> = null; // in reverse order
                 for (let i = 0, cell = this.#prefix; i < n && cell; i++, cell = cell.next!) {
-                    taken = {elem: cell.elem, next: taken};
+                    taken = {value: cell.value, next: taken};
                 }
                 return Queue.#balanceSuffix(taken);
             }
             else if (n > pLen) {
                 const sLen = Queue.#length(this.#suffix);
-                let taken: List<T> = this.#suffix; // in reverse order
+                let taken: SList<T> = this.#suffix; // in reverse order
                 for (let i = 0; i < sLen - (n - pLen); i++) {
                     taken = taken!.next;
                 }
@@ -263,7 +258,7 @@ export class Queue<T> implements Iterable<T> {
         else {
             const pLen = Queue.#length(this.#prefix);
             if (n < pLen) {
-                let rem: List<T> = this.#prefix;
+                let rem: SList<T> = this.#prefix;
                 for (let i = 0; i < n; i++) {
                     rem = rem!.next;
                 }
@@ -272,9 +267,9 @@ export class Queue<T> implements Iterable<T> {
             else if (n > pLen) {
                 // We can completely ignore the prefix.
                 const sLen = Queue.#length(this.#suffix);
-                let rem: List<T> = null; // in reverse order
+                let rem: SList<T> = null; // in reverse order
                 for (let i = 0, cell = this.#suffix; i < sLen - (n - pLen) && cell; i++, cell = cell.next!) {
-                    rem = {elem: cell.elem, next: rem};
+                    rem = {value: cell.value, next: rem};
                 }
                 return Queue.#balancePrefix(rem);
             }
@@ -314,11 +309,11 @@ export class Queue<T> implements Iterable<T> {
      * predicate.
      */
     public filter(p: (v: T) => boolean): Queue<T> {
-        function go(list: List<T>): List<T> {
-            let acc: List<T> = null;
+        function go(list: SList<T>): SList<T> {
+            let acc: SList<T> = null;
             for (let cell = list; cell; cell = cell.next) {
-                if (p(cell.elem)) {
-                    acc = {elem: cell.elem, next: acc};
+                if (p(cell.value)) {
+                    acc = {value: cell.value, next: acc};
                 }
             }
             return acc; // The result is in reverse order.
@@ -334,14 +329,14 @@ export class Queue<T> implements Iterable<T> {
      * contains those that don't.
      */
     public partition(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
-        function go(list: List<T>): [List<T>, List<T>] {
-            let accT: List<T> = null;
-            let accF: List<T> = null;
+        function go(list: SList<T>): [SList<T>, SList<T>] {
+            let accT: SList<T> = null;
+            let accF: SList<T> = null;
             for (let cell = list; cell; cell = cell.next) {
-                if (p(cell.elem))
-                    accT = {elem: cell.elem, next: accT};
+                if (p(cell.value))
+                    accT = {value: cell.value, next: accT};
                 else
-                    accF = {elem: cell.elem, next: accF};
+                    accF = {value: cell.value, next: accF};
             }
             return [accT, accF]; // The results are in reverse order.
         }
@@ -370,11 +365,11 @@ export class Queue<T> implements Iterable<T> {
      * second is the remainder of the queue.
      */
     public spanl(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
-        let fst: List<T> = null; // in reverse order
-        let snd: List<T> = null;
+        let fst: SList<T> = null; // in reverse order
+        let snd: SList<T> = null;
         for (let cell = this.#prefix; cell; cell = cell.next) {
-            if (p(cell.elem)) {
-                fst = {elem: cell.elem, next: fst};
+            if (p(cell.value)) {
+                fst = {value: cell.value, next: fst};
             }
             else {
                 snd = cell;
@@ -389,8 +384,8 @@ export class Queue<T> implements Iterable<T> {
                 Queue.#link(snd, this.#suffix)
             ];
         for (let cell = Queue.#reverse(this.#suffix); cell; cell = cell.next) {
-            if (p(cell.elem)) {
-                fst = {elem: cell.elem, next: fst};
+            if (p(cell.value)) {
+                fst = {value: cell.value, next: fst};
             }
             else {
                 snd = cell;
@@ -418,11 +413,11 @@ export class Queue<T> implements Iterable<T> {
      * second is the remainder of the queue.
      */
     public spanr(p: (v: T) => boolean): [Queue<T>, Queue<T>] {
-        let fst: List<T> = null;
-        let snd: List<T> = null; // in reverse order
+        let fst: SList<T> = null;
+        let snd: SList<T> = null; // in reverse order
         for (let cell = this.#suffix; cell; cell = cell.next) {
-            if (p(cell.elem)) {
-                fst = {elem: cell.elem, next: fst};
+            if (p(cell.value)) {
+                fst = {value: cell.value, next: fst};
             }
             else {
                 snd = cell;
@@ -437,8 +432,8 @@ export class Queue<T> implements Iterable<T> {
                 Queue.#link(this.#prefix, snd)
             ];
         for (let cell = Queue.#reverse(this.#prefix); cell; cell = cell.next) {
-            if (p(cell.elem)) {
-                fst = {elem: cell.elem, next: fst};
+            if (p(cell.value)) {
+                fst = {value: cell.value, next: fst};
             }
             else {
                 snd = cell;
@@ -451,14 +446,14 @@ export class Queue<T> implements Iterable<T> {
         ];
     }
 
-    static #link<T>(prefix: List<T>, suffix: List<T>): Queue<T> {
+    static #link<T>(prefix: SList<T>, suffix: SList<T>): Queue<T> {
         return !prefix ? this.#balanceSuffix(suffix)
              : !suffix ? this.#balancePrefix(prefix)
              :           new Queue(this.#length(prefix) + this.#length(suffix),
                                    prefix, suffix);
     }
 
-    static #linkRev<T>(revPrefix: List<T>, revSuffix: List<T>): Queue<T> {
+    static #linkRev<T>(revPrefix: SList<T>, revSuffix: SList<T>): Queue<T> {
         return !revPrefix ? this.#balancePrefix(revSuffix)
              : !revSuffix ? this.#balanceSuffix(revPrefix)
              :              new Queue(this.#length(revPrefix) + this.#length(revSuffix),
@@ -466,7 +461,7 @@ export class Queue<T> implements Iterable<T> {
                                       this.#reverse(revSuffix));
     }
 
-    static #balancePrefix<T>(prefix: List<T>): Queue<T> {
+    static #balancePrefix<T>(prefix: SList<T>): Queue<T> {
         if (!prefix) {
             // It's an empty list.
             return this.empty;
@@ -479,8 +474,8 @@ export class Queue<T> implements Iterable<T> {
             // The queue has exactly two elements.
             return new Queue(
                 2,
-                {elem: prefix.elem     , next: null},
-                {elem: prefix.next.elem, next: null});
+                {value: prefix.value     , next: null},
+                {value: prefix.next.value, next: null});
         }
         else {
             // There's more. Move half of elements to suffix.
@@ -490,7 +485,7 @@ export class Queue<T> implements Iterable<T> {
         }
     }
 
-    static #balanceSuffix<T>(suffix: List<T>): Queue<T> {
+    static #balanceSuffix<T>(suffix: SList<T>): Queue<T> {
         if (!suffix) {
             // It's an empty list.
             return this.empty;
@@ -503,8 +498,8 @@ export class Queue<T> implements Iterable<T> {
             // The queue has exactly two elements.
             return new Queue(
                 2,
-                {elem: suffix.next.elem, next: null},
-                {elem: suffix.elem     , next: null});
+                {value: suffix.next.value, next: null},
+                {value: suffix.value     , next: null});
         }
         else {
             // There's more. Move half of elements to prefix.
@@ -514,7 +509,7 @@ export class Queue<T> implements Iterable<T> {
         }
     }
 
-    static #length<T>(list: List<T>): number {
+    static #length<T>(list: SList<T>): number {
         let n = 0;
         for (let cell = list; cell; cell = cell.next) {
             n++;
@@ -522,66 +517,66 @@ export class Queue<T> implements Iterable<T> {
         return n;
     }
 
-    static #splitAt<T>(pos: number, list: List<T>): [List<T>, List<T>] {
-        let fst: List<T> = null; // in reverse order
-        let snd: List<T> = null;
+    static #splitAt<T>(pos: number, list: SList<T>): [SList<T>, SList<T>] {
+        let fst: SList<T> = null; // in reverse order
+        let snd: SList<T> = null;
         for (let i = 0, cell = list; i < pos && cell; i++, cell = cell.next) {
-            fst = {elem: cell.elem, next: fst};
+            fst = {value: cell.value, next: fst};
             snd = cell.next;
         }
         return [this.#reverse(fst), snd];
     }
 
-    static #concat<T>(a: List<T>, b: List<T>): List<T> {
+    static #concat<T>(a: SList<T>, b: SList<T>): SList<T> {
         return this.#reverse(this.#reverse(a), b);
     }
 
-    static #reverse<T>(list: List<T>, suffix?: List<T>): List<T> {
+    static #reverse<T>(list: SList<T>, suffix?: SList<T>): SList<T> {
         if (!list) {
             // It's an empty list.
             return suffix ?? null;
         }
         else if (!list.next) {
             // It's a singleton. Reversing it is a no-op.
-            return {elem: list.elem, next: suffix ?? null};
+            return {value: list.value, next: suffix ?? null};
         }
         else {
-            let acc: List<T> = suffix ?? null;
-            for (let cell: List<T> = list; cell; cell = cell.next) {
-                acc = {elem: cell.elem, next: acc};
+            let acc: SList<T> = suffix ?? null;
+            for (let cell: SList<T> = list; cell; cell = cell.next) {
+                acc = {value: cell.value, next: acc};
             }
             return acc;
         }
     }
 
-    static #foldl<A, T>(f: (acc: A, v: T) => A, init: A, list: List<T>): A {
+    static #foldl<A, T>(f: (acc: A, v: T) => A, init: A, list: SList<T>): A {
         let acc = init;
         for (let cell = list; cell; cell = cell.next) {
-            acc = f(acc, cell.elem);
+            acc = f(acc, cell.value);
         }
         return acc;
     }
 
-    static #foldr<T, A>(f: (v: T, acc: A) => A, init: A, list: List<T>): A {
+    static #foldr<T, A>(f: (v: T, acc: A) => A, init: A, list: SList<T>): A {
         let acc = init;
         for (let cell = this.#reverse(list); cell; cell = cell.next) {
-            acc = f(cell.elem, acc);
+            acc = f(cell.value, acc);
         }
         return acc;
     }
 
-    static #any<T>(p: (v: T) => boolean, list: List<T>): boolean {
+    static #any<T>(p: (v: T) => boolean, list: SList<T>): boolean {
         for (let cell = list; cell; cell = cell.next) {
-            if (p(cell.elem)) {
+            if (p(cell.value)) {
                 return true;
             }
         }
         return false;
     }
 
-    static #all<T>(p: (v: T) => boolean, list: List<T>): boolean {
+    static #all<T>(p: (v: T) => boolean, list: SList<T>): boolean {
         for (let cell = list; cell; cell = cell.next) {
-            if (!p(cell.elem)) {
+            if (!p(cell.value)) {
                 return false;
             }
         }

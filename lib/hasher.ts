@@ -3,7 +3,8 @@ import { XXH32 } from "./xxhash.js";
 
 /** Universal hasher of ECMAScript values. This uses 32-bit xxHash as the
  * underlying hash function so the output is always a 32-bit integer. Note
- * that this hasher is not stable across versions. Do not serialise it.
+ * that this hasher is not stable across versions. Do not serialise hashes
+ * it generates.
  */
 export class Hasher extends XXH32 {
     readonly #buffer: Buffer;

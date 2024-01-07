@@ -22,11 +22,17 @@ export class XXH32 {
         this.#buf    = new Uint8Array(16);
         this.#bufLen = 0;
         this.#total  = 0;
+        this.reset();
+    }
 
-        this.#acc[0] = seed + PRIME32_1 + PRIME32_2;
-        this.#acc[1] = seed + PRIME32_2;
-        this.#acc[2] = seed;
-        this.#acc[3] = seed - PRIME32_1;
+    /// Reset the hasher to its initial state.
+    public reset(): void {
+        this.#acc[0] = this.#seed + PRIME32_1 + PRIME32_2;
+        this.#acc[1] = this.#seed + PRIME32_2;
+        this.#acc[2] = this.#seed;
+        this.#acc[3] = this.#seed - PRIME32_1;
+        this.#bufLen = 0;
+        this.#total  = 0;
     }
 
     /// Feed the next chunk of octets for digestion.

@@ -1,4 +1,6 @@
+import { SList } from "./single-list.js";
 import { Hasher } from "../hasher.js";
+import { map } from "../iterable.js";
 
 /** Used to test the equality of two values. */
 export type EqualFn<T> = (a: T, b: T) => boolean;
@@ -11,39 +13,45 @@ export type HashFn<T> = (hasher: Hasher, value: T) => void;
  * inhabited by `undefined`. Any attempts on inserting `undefined` as an
  * element will result in a `TypeError`.
  *
- * This implementation is based on the following paper:
- * https://www.csd.uoc.gr/~hy460/pdf/Dynamic%20Hash%20Tables.pdf
+ * This implementation does not maintain a hash table on its own. It
+ * instead relies on the standard `Map` class internally.
  */
 export class HashSet<T> implements Set<T> {
     readonly #eq: EqualFn<T>;
     readonly #hash: HashFn<T>;
-    // Initially we have only 1 bucket. Invariant: this array is always non-empty.
-    #buckets: Bucket<T>[];
-    // The number of times we have doubled the number of buckets.
-    #numDoubled: number;
-    // The index of the next bucket to split.
-    #bucketToSplit: number;
+    readonly #hasher: Hasher;
+    readonly #buckets: Map<number, Bucket<T>>;
     // The number of elements in the set.
     #size: number;
-    // The maximum load factor: we split a bucket when we are going to
-    // exceed this.
-    #maxLoadFactor: number;
 
-    /** Create an empty set. If an equality is provided, the elements will
-     * be compared using the given function instead of the language
-     * built-in `===` operator. */
-    public constructor(equalFn?: EqualFn<T>, hashFn?: HashFn<T>, maxLoadFactor?: number);
+    /** Create an empty map with the default equality (the language
+     * built-in `===` operator) and the default hash function which works
+     * for any primitive values and plain objects.
+     */
+    public constructor();
 
-    /** Create a set from an iterator of elements. */
-    public constructor(elements: Iterable<T>, equalFn?: EqualFn<T>,
-                       hashFn?: HashFn<T>, maxLoadFactor?: number);
+    /** Create an empty set with a custom equality and a hash function.
+     *
+     * There is a law that the functions must follow. For any elements e1
+     * and e2, if `equalFn(e1, e2)` then `hashFn(e1) === hashFn(e2)`.
+     */
+    public constructor(equalFn: EqualFn<T>, hashFn: HashFn<T>);
+
+    /** Create a set from an iterator of elements with the default equality
+     * and the default hash function, or if `entries` is an instance of
+     * `HashSet`, the same equality and the hash function will be used.
+     */
+    public constructor(elements: Iterable<T>);
+
+    /** Create a set from an iterator of elements with a custom equality
+     * and a hash function.
+     */
+    public constructor(elements: Iterable<T>, equalFn: EqualFn<T>, hashFn: HashFn<T>);
 
     public constructor(...args: any[]) {
-        this.#buckets       = [new Bucket()];
-        this.#numDoubled    = 0;
-        this.#bucketToSplit = 0;
-        this.#size          = 0;
-        this.#maxLoadFactor = 1.0;
+        this.#hasher  = new Hasher();
+        this.#buckets = new Map();
+        this.#size    = 0;
 
         switch (args.length) {
             case 0:
@@ -51,19 +59,13 @@ export class HashSet<T> implements Set<T> {
                 this.#hash = defaultHash<T>;
                 break;
             case 1:
-                if (typeof args[0] === "function") {
-                    this.#eq   = args[0];
-                    this.#hash = defaultHash<T>;
-                }
-                else if (args[0] instanceof HashSet) {
-                    // Special case: we can safely clone the map.
-                    this.#eq            = args[0].#eq;
-                    this.#hash          = args[0].#hash;
-                    this.#buckets       = args[0].#buckets.map(b => b.clone());
-                    this.#numDoubled    = args[0].#numDoubled;
-                    this.#bucketToSplit = args[0].#bucketToSplit;
-                    this.#size          = args[0].#size;
-                    this.#maxLoadFactor = args[0].#maxLoadFactor;
+                if (args[0] instanceof HashSet) {
+                    // Special case: we can safely clone the set.
+                    this.#eq      = args[0].#eq;
+                    this.#hash    = args[0].#hash;
+                    this.#buckets = new Map(map(args[0].#buckets,
+                                                ([hash, bucket]) => [hash, bucket.clone()]));
+                    this.#size    = args[0].#size;
                 }
                 else {
                     this.#eq   = defaultEq<T>;
@@ -74,42 +76,14 @@ export class HashSet<T> implements Set<T> {
                 }
                 break;
             case 2:
-                if (typeof args[0] === "function") {
-                    this.#eq   = args[0];
-                    this.#hash = args[1];
-                }
-                else {
-                    this.#eq   = args[1];
-                    this.#hash = defaultHash<T>;
-                    for (const e of args[0]) {
-                        this.add(e);
-                    }
-                }
+                this.#eq   = args[0];
+                this.#hash = args[1];
                 break;
             case 3:
-                if (typeof args[0] === "function") {
-                    if (args[2] <= 0) {
-                        throw new RangeError(`maxLoadFactor must be a positive number: args[2]`);
-                    }
-                    this.#eq            = args[0];
-                    this.#hash          = args[1];
-                    this.#maxLoadFactor = args[2];
-                }
-                else {
-                    this.#eq            = args[1];
-                    this.#hash          = args[2];
-                    for (const e of args[0]) {
-                        this.add(e);
-                    }
-                }
-                break;
-            case 4:
-                if (args[3] <= 0) {
-                    throw new RangeError(`maxLoadFactor must be a positive number: args[3]`);
-                }
-                this.#eq            = args[1];
-                this.#hash          = args[2];
-                this.#maxLoadFactor = args[3];
+                // We cannot clone the set even if the Iterable is actually
+                // a HashSet, because hash functions may not be the same.
+                this.#eq   = args[1];
+                this.#hash = args[2];
                 for (const e of args[0]) {
                     this.add(e);
                 }
@@ -122,16 +96,6 @@ export class HashSet<T> implements Set<T> {
     /** The number of elements in the set. */
     public get size(): number {
         return this.#size;
-    }
-
-    /** The current load factor of the hash set. */
-    public get loadFactor(): number {
-        return this.#size / this.#buckets.length;
-    }
-
-    /** The maximum load factor of the hash set. */
-    public get maxLoadFactor(): number {
-        return this.#maxLoadFactor;
     }
 
     /** This is identical to {@link values}. */
@@ -150,49 +114,53 @@ export class HashSet<T> implements Set<T> {
         if (element === undefined)
             throw new TypeError("`undefined' is not a valid element of HashSet");
 
-        if (this.#bucketFor(element).add(element, this.#eq)) {
-            // The bucket increased its size. Maybe we should grow?
-            this.#size++;
-            while (this.loadFactor > this.#maxLoadFactor) {
-                this.#grow();
-            }
+        const hash   = this.#hashFor(element);
+        const bucket = this.#buckets.get(hash);
+        if (bucket) {
+            if (bucket.add(element, this.#eq))
+                this.#size++;
         }
+        else {
+            this.#buckets.set(hash, new Bucket<T>(element));
+            this.#size++;
+        }
+
         return this;
     }
 
     /** Remove all elements from the set. */
     public clear() {
-        this.#buckets       = [new Bucket()];
-        this.#numDoubled    = 0;
-        this.#bucketToSplit = 0;
-        this.#size          = 0;
+        this.#buckets.clear();
+        this.#size = 0;
     }
 
     /** Delete an element from the set. Return `true` iff the element was
      * present.
      */
     public "delete"(element: T): boolean {
-        if (this.#bucketFor(element).delete(element, this.#eq)) {
-            // The bucket decreased its size. Maybe we should shrink?
-            this.#size--;
-            this.#maybeShrink();
-            return true;
+        const hash   = this.#hashFor(element);
+        const bucket = this.#buckets.get(hash);
+        if (bucket) {
+            if (bucket.delete(element, this.#eq)) {
+                if (bucket.isEmpty)
+                    this.#buckets.delete(hash);
+                this.#size--;
+                return true;
+            }
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
     /** Delete a single element in the set and return it if any. Do nothing
      * if the set is empty.
      */
     public deleteAny(): T|undefined {
-        for (const bucket of this.#buckets) {
+        for (const [hash, bucket] of this.#buckets) {
             const elem = bucket.deleteAny();
             if (elem) {
-                // The bucket decreased its size. Maybe we should shrink?
+                if (bucket.isEmpty)
+                    this.#buckets.delete(hash);
                 this.#size--;
-                this.#maybeShrink();
                 return elem;
             }
         }
@@ -203,37 +171,41 @@ export class HashSet<T> implements Set<T> {
      * the set `s`.
      */
     public difference(s: HashSet<T>): HashSet<T> {
-        // NOTE: If two sets have identical equality, hash function, and
-        // the number of buckets, maybe we can optimize this a bit by
-        // directly working on buckets from the two sets. I don't think
-        // it's worth it though.
-        const ret = new HashSet<T>(this.#eq, this.#hash, this.#maxLoadFactor);
-        for (const e of this.values()) {
-            if (!s.has(e)) ret.add(e);
+        // NOTE: If two sets have an identical equality and a hash
+        // function, maybe we can optimize this a bit by directly working
+        // on buckets from the two sets. I don't think it's worth it
+        // though.
+        const ret = new HashSet<T>(this.#eq, this.#hash);
+        for (const elem of this.values()) {
+            if (!s.has(elem)) ret.add(elem);
         }
         return ret;
     }
 
     /** Iterate over elements in the set. */
     public *entries(): IterableIterator<[T, T]> {
-        for (const bucket of this.#buckets) {
-            for (const e of bucket) {
-                yield [e, e];
+        for (const bucket of this.#buckets.values()) {
+            for (const elem of bucket) {
+                yield [elem, elem];
             }
         }
     }
 
-    /** Apply the given function to each element in the map. */
+    /** Apply the given function to each element in the set. */
     public forEach(f: (value: T, key: T, set: Set<T>) => any, thisArg?: any) {
         const boundF = f.bind(thisArg);
-        for (const e of this) {
-            boundF(e, e, this);
+        for (const bucket of this.#buckets.values()) {
+            for (const elem of bucket) {
+                boundF(elem, elem, this);
+            }
         }
     }
 
     /** See if an element is in the set. */
     public has(element: T): boolean {
-        return this.#bucketFor(element).has(element, this.#eq);
+        const hash   = this.#hashFor(element);
+        const bucket = this.#buckets.get(hash);
+        return bucket ? bucket.has(element, this.#eq) : false;
     }
 
     /** Return a new set consisting of elements of `this` that are also
@@ -241,9 +213,9 @@ export class HashSet<T> implements Set<T> {
      */
     public intersection(s: HashSet<T>): HashSet<T> {
         // See a comment in difference().
-        const ret = new HashSet<T>(this.#eq, this.#hash, this.#maxLoadFactor);
-        for (const e of this.values()) {
-            if (s.has(e)) ret.add(e);
+        const ret = new HashSet<T>(this.#eq, this.#hash);
+        for (const elem of this.values()) {
+            if (s.has(elem)) ret.add(elem);
         }
         return ret;
     }
@@ -253,8 +225,8 @@ export class HashSet<T> implements Set<T> {
      */
     public isDisjointFrom(s: HashSet<T>): boolean {
         // See a comment in difference().
-        for (const e of this.values()) {
-            if (s.has(e)) return false;
+        for (const elem of this.values()) {
+            if (s.has(elem)) return false;
         }
         return true;
     }
@@ -264,8 +236,8 @@ export class HashSet<T> implements Set<T> {
      */
     public isSubsetOf(s: HashSet<T>): boolean {
         // See a comment in difference().
-        for (const e of this.values()) {
-            if (!s.has(e)) return false;
+        for (const elem of this.values()) {
+            if (!s.has(elem)) return false;
         }
         return true;
     }
@@ -275,8 +247,8 @@ export class HashSet<T> implements Set<T> {
      */
     public isSupersetOf(s: HashSet<T>): boolean {
         // See a comment in difference().
-        for (const e of s.values()) {
-            if (!this.has(e)) return false;
+        for (const elem of s.values()) {
+            if (!this.has(elem)) return false;
         }
         return true;
     }
@@ -304,9 +276,9 @@ export class HashSet<T> implements Set<T> {
     public union(s: HashSet<T>): HashSet<T> {
         // See a comment in difference().
         const ret = new HashSet<T>(this);
-        for (const e of s.values()) {
-            if (!ret.has(e)) {
-                ret.add(e);
+        for (const elem of s.values()) {
+            if (!ret.has(elem)) {
+                ret.add(elem);
             }
         }
         return ret;
@@ -314,98 +286,16 @@ export class HashSet<T> implements Set<T> {
 
     /** Iterate over elements in the set. */
     public *values(): IterableIterator<T> {
-        for (const bucket of this.#buckets) {
+        for (const bucket of this.#buckets.values()) {
             yield* bucket;
         }
     }
 
-    #bucketFor(element: T): Bucket<T> {
-        let numBuckets0 = 1;
-        for (let i = 0; i < this.#numDoubled; i++) {
-            numBuckets0 <<= 1;
-        }
-
-        const hash = this.#hashFor(element);
-        let   idx  = hash % numBuckets0;
-        if (idx < this.#bucketToSplit) {
-            // This bucket has already been split. Recompute the index with
-            // the doubled number.
-            idx = hash % (numBuckets0 << 1);
-        }
-
-        return this.#buckets[idx]!;
-    }
-
     #hashFor(element: T): number {
-        const hasher = new Hasher();
-        this.#hash(hasher, element);
-        return hasher.final();
-    }
-
-    #grow() {
-        let numBuckets0 = 1;
-        for (let i = 0; i < this.#numDoubled; i++) {
-            numBuckets0 <<= 1;
-        }
-        const numBuckets1 = numBuckets0 << 1;
-
-        const toSplit = this.#buckets[this.#bucketToSplit]!;
-        const newIdx  = this.#buckets.length;
-
-        const bucket0 = new Bucket<T>();
-        const bucket1 = new Bucket<T>();
-        for (const element of toSplit) {
-            if (this.#hashFor(element) % numBuckets1 === newIdx)
-                // This one should be relocated to the new bucket because
-                // its hash value has changed.
-                bucket1.unsafeAdd(element);
-            else
-                // This one should stay in the old bucket because its hash
-                // value has not changed.
-                bucket0.unsafeAdd(element);
-        }
-        this.#buckets[this.#bucketToSplit] = bucket0;
-        this.#buckets.push(bucket1);
-
-        this.#bucketToSplit++;
-        if (this.#bucketToSplit >= numBuckets0) {
-            this.#numDoubled++;
-            this.#bucketToSplit = 0;
-        }
-    }
-
-    #maybeShrink() {
-        while (this.#buckets.length > 1 &&
-            (this.#size / (this.#buckets.length - 1)) <= this.#maxLoadFactor) {
-            // Shrinking would not make the load factor exceed its
-            // limit. Do it.
-            this.#shrink();
-        }
-    }
-
-    #shrink() {
-        let numBuckets0 = 1;
-        for (let i = 0; i < this.#numDoubled; i++) {
-            numBuckets0 <<= 1;
-        }
-        const numBuckets1 = numBuckets0 >> 1;
-
-        if (this.#bucketToSplit === 0) {
-            if (this.#numDoubled === 0)
-                throw new Error("Internal error: the table cannot shrink any further");
-            this.#bucketToSplit = numBuckets1;
-            this.#numDoubled--;
-        }
-        this.#bucketToSplit--;
-
-        const mergeTo   = this.#buckets[this.#bucketToSplit]!;
-        const mergeFrom = this.#buckets.pop()!;
-        for (const pair of mergeFrom) {
-            // We can safely do this because it had a different hash value
-            // under the old hash. The elements have definitely no
-            // duplicates.
-            mergeTo.unsafeAdd(pair);
-        }
+        this.#hash(this.#hasher, element);
+        const hash = this.#hasher.final();
+        this.#hasher.reset();
+        return hash;
     }
 }
 
@@ -418,47 +308,61 @@ function defaultHash<K>(hasher: Hasher, k: K) {
 }
 
 class Bucket<T> implements Iterable<T> {
-    #entries: T[];
+    #entries: SList<T>;
 
-    public constructor() {
-        this.#entries = [];
+    public constructor(elem?: T);
+    public constructor(...args: any[]) {
+        this.#entries =
+            args.length === 0
+            ? null
+            : {value: args[0], next: null};
+    }
+
+    public get isEmpty(): boolean {
+        return this.#entries == null;
     }
 
     /** Return `true` iff the size of the bucket increased. */
-    public "add"(element: T, eq: EqualFn<T>): boolean {
-        for (const e of this.#entries) {
-            if (eq(e, element))
+    public "add"(elem: T, eq: EqualFn<T>): boolean {
+        for (let cell = this.#entries; cell; cell = cell.next) {
+            if (eq(cell.value, elem))
                 return false;
         }
-
-        this.unsafeAdd(element);
+        this.#entries = {value: elem, next: this.#entries};
         return true;
     }
 
     public clone(): Bucket<T> {
         const ret = new Bucket<T>();
-        ret.#entries = this.#entries.slice();
+        // Can't just copy this.#entries because it's mutable (and we
+        // actually mutate it).
+        for (let cell = this.#entries, prev = null; cell; cell = cell.next) {
+            const cloned: SList<T> = {value: cell.value, next: null};
+            if (prev)
+                prev.next = cloned;
+            else
+                ret.#entries = cloned;
+            prev = cloned;
+        }
         return ret;
     }
 
-    public has(element: T, eq: EqualFn<T>): boolean {
-        for (const e of this.#entries) {
-            if (eq(e, element))
+    public has(elem: T, eq: EqualFn<T>): boolean {
+        for (let cell = this.#entries; cell; cell = cell.next) {
+            if (eq(cell.value, elem))
                 return true;
         }
         return false;
     }
 
-    public unsafeAdd(element: T) {
-        this.#entries.push(element);
-    }
-
     /** Return `true` iff the element was present. */
-    public "delete"(element: T, eq: EqualFn<T>): boolean {
-        for (let i = 0; i < this.#entries.length; i++) {
-            if (eq(this.#entries[i]!, element)) {
-                // THINKME: Maybe we should implement a singly-linked list?
-                this.#entries.splice(i, 1);
+    public "delete"(elem: T, eq: EqualFn<T>): boolean {
+        for (let cell = this.#entries, prev = null; cell; prev = cell, cell = cell.next) {
+            if (eq(cell.value, elem)) {
+                if (prev)
+                    prev.next = cell.next;
+                else
+                    this.#entries = cell.next;
                 return true;
             }
         }
@@ -466,10 +370,17 @@ class Bucket<T> implements Iterable<T> {
     }
 
     public deleteAny(): T|undefined {
-        return this.#entries.pop();
+        if (this.#entries) {
+            const elem = this.#entries.value;
+            this.#entries = this.#entries.next;
+            return elem;
+        }
+        return undefined;
     }
 
-    public [Symbol.iterator](): IterableIterator<T> {
-        return this.#entries[Symbol.iterator]();
+    public *[Symbol.iterator](): IterableIterator<T> {
+        for (let cell = this.#entries; cell; cell = cell.next) {
+            yield cell.value;
+        }
     }
 }
