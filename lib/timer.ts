@@ -1,13 +1,18 @@
 export class Timer {
-    public readonly startedAt: number;
+    #startedAt: number;
 
     public constructor() {
-        this.startedAt = Date.now();
+        this.#startedAt = Date.now();
     }
 
     /// Return the elapsed time in milliseconds.
     public get elapsedMs(): number {
-        return Date.now() - this.startedAt;
+        return Date.now() - this.#startedAt;
+    }
+
+    public reset(): this {
+        this.#startedAt = Date.now();
+        return this;
     }
 
     public toString(): string {
