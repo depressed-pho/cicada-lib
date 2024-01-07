@@ -14,6 +14,9 @@ export { BlockStateValue, BlockStates } from "./block/states.js";
 export { BlockTags } from "./block/tags.js";
 
 export class Block extends Wrapper<MC.Block> {
+    #dimension?: Dimension;
+    #location?: Location;
+
     /** Clone an existing instance. */
     public constructor(block: Block);
 
@@ -31,7 +34,10 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     public get dimension(): Dimension {
-        return new Dimension(this.raw.dimension);
+        if (!this.#dimension)
+            this.#dimension = new Dimension(this.raw.dimension);
+
+        return this.#dimension;
     }
 
     public get isValid(): boolean {
@@ -43,10 +49,14 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     public get location(): Location {
-        return new Location(this.raw.location);
+        if (!this.#location)
+            this.#location = new Location(this.raw.location);
+
+        return this.#location;
     }
 
     public get permutation(): BlockPermutation {
+        // Can't cache the permutation because it might be stale.
         return new BlockPermutation(this.raw.permutation);
     }
 
@@ -55,6 +65,7 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     public get type(): BlockType {
+        // Can't cache the block type because it might be stale.
         return new BlockType(this.raw.type);
     }
 
