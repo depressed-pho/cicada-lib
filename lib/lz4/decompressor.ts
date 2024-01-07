@@ -97,7 +97,7 @@ class LZ4Decompressor<OutputT, InputT> {
             // Use the last 64 KiB of the dictionary.
             const dict = this.#opts.resolveDictionary(desc.dictionaryID);
             if (dict) {
-                initialDict.unsafeAppend(dict.subarray(-0xFFFF));
+                initialDict.append(dict.subarray(-0xFFFF));
             }
             else {
                 throw new Error(`Dictionary ${desc.dictionaryID.toString(16)} is not available`);
@@ -105,7 +105,7 @@ class LZ4Decompressor<OutputT, InputT> {
         }
 
         this.#dictionary.clear();
-        this.#dictionary.unsafeAppend(initialDict);
+        this.#dictionary.append(initialDict);
 
         const contentHash = desc.contentChecksum ? new XXH32() : undefined;
         let   contentSize = 0;
@@ -131,7 +131,7 @@ class LZ4Decompressor<OutputT, InputT> {
                     // The next block will refer to the predefined
                     // dictionary again.
                     this.#dictionary.clear();
-                    this.#dictionary.unsafeAppend(initialDict);
+                    this.#dictionary.append(initialDict);
                 }
             }
             else {
@@ -141,7 +141,7 @@ class LZ4Decompressor<OutputT, InputT> {
                         throw new PrematureEOF(`Got an EOF before reading ${realBlockSize} octets of uncompressed block`);
                     }
 
-                    yield* this.#output.unsafeWrite(chunk);
+                    yield* this.#output.write(chunk);
                     contentSize += chunk.length;
                     remaining   -= chunk.length;
 
@@ -215,7 +215,7 @@ class LZ4Decompressor<OutputT, InputT> {
             blockSize   -= literalLen;
             contentSize += literalLen;
 
-            yield* this.#output.unsafeWrite(literal);
+            yield* this.#output.write(literal);
             this.#populateDict(literal);
             blockHash?.update(literal);
             contentHash?.update(literal);
@@ -268,8 +268,8 @@ class LZ4Decompressor<OutputT, InputT> {
                 matchLen    -= actualLen;
                 contentSize += actualLen;
 
-                yield* this.#output.unsafeWrite(matched);
-                copied.unsafeAppend(matched);
+                yield* this.#output.write(matched);
+                copied.append(matched);
                 contentHash?.update(matched);
             }
             this.#populateDict(copied);
@@ -280,7 +280,7 @@ class LZ4Decompressor<OutputT, InputT> {
 
     #populateDict(octets: Buffer): void {
         // Keep the last 64 KiB of uncompressed data.
-        this.#dictionary.unsafeAppend(octets.unsafeSubarray(-0xFFFF));
+        this.#dictionary.append(octets.unsafeSubarray(-0xFFFF));
         this.#dictionary.drop(this.#dictionary.length - 0xFFFF);
     }
 }

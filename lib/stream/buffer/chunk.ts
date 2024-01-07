@@ -5,7 +5,7 @@ export class Chunk {
     #length:   number;
     #capacity: number;
 
-    // These are invalidated when the chunk is resized.
+    // These are invalidated when #offset or #capacity changes.
     #dView:  DataView|null;
     #u8View: Uint8Array|null;
 
@@ -41,7 +41,6 @@ export class Chunk {
         if (len >= 0 && len <= this.#capacity) {
             if (this.#length != len) {
                 this.#length = len;
-                this.#invalidateViews();
             }
         }
         else {
@@ -104,13 +103,11 @@ export class Chunk {
 
     public clear(): void {
         this.#length = 0;
-        this.#invalidateViews();
     }
 
     public append(octets: Uint8Array): void {
         this.u8View.set(octets, this.#length);
         this.#length += octets.byteLength;
-        this.#invalidateViews();
     }
 
     public take(length: number): Chunk {

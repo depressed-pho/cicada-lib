@@ -3,9 +3,9 @@ import { Buffer } from "./buffer.js";
 export abstract class OutputStream<OutputT, InputT> {
     #onYield?: (input: InputT) => void;
 
-    /** Write some data to the stream. The stream takes the ownership of
-     * the data. Do not mutate it afterwards. */
-    public abstract unsafeWrite(data: Buffer|Uint8Array): Generator<OutputT, void, InputT>;
+    /** Write some data to the stream. The stream does not take the
+     * ownership of the data. */
+    public abstract write(data: Buffer|Uint8Array): Generator<OutputT, void, InputT>;
 
     /** Write an unsigned 8-bit integer to the stream. */
     public abstract writeUint8(n: number): Generator<OutputT, void, InputT>;
@@ -55,16 +55,8 @@ export class BufferOutputStream<InputT> extends OutputStream<void, InputT> {
         this.data = new Buffer();
     }
 
-    public *unsafeWrite(data: Buffer|Uint8Array): Generator<void, void, InputT> {
-        // We are probably going to do a lot of small writes. Allocate some
-        // extra space.
-        if (data instanceof Buffer) {
-            this.data.reserve(data.length);
-        }
-        else {
-            this.data.reserve(data.byteLength);
-        }
-        this.data.unsafeAppend(data);
+    public *write(data: Buffer|Uint8Array): Generator<void, void, InputT> {
+        this.data.append(data);
     }
 
     public *writeUint8(n: number): Generator<void, void, InputT> {
@@ -109,8 +101,8 @@ export class PushOutputStream<InputT> extends OutputStream<Uint8Array, InputT> {
         }
     }
 
-    public *unsafeWrite(data: Buffer|Uint8Array): Generator<Uint8Array, void, InputT> {
-        this.#buf.unsafeAppend(data);
+    public *write(data: Buffer|Uint8Array): Generator<Uint8Array, void, InputT> {
+        this.#buf.append(data);
         yield* this.#maybeFlush();
     }
 

@@ -98,7 +98,7 @@ class LZ4Compressor<OutputT, InputT> {
         if (input.length >= 0xFFFF) {
             // The input is going to completely wash our dictionary
             // away. Take the last 64 KiB of the input.
-            this.#dictionary.unsafeAppend(input.unsafeSubarray(-0xFFFF));
+            this.#dictionary.append(input.unsafeSubarray(-0xFFFF));
 
             // And every offset in the dictionary hash table is now
             // invalid. Need to rebuild it entirely.
@@ -106,7 +106,7 @@ class LZ4Compressor<OutputT, InputT> {
         }
         else if (this.#dictionary.length + input.length > 0xFFFF) {
             // Some part of our existing dictionary is going away.
-            this.#dictionary.unsafeAppend(input.unsafeSubarray(-0xFFFF));
+            this.#dictionary.append(input.unsafeSubarray(-0xFFFF));
             this.#dictionary.drop(this.#dictionary.length - 0xFFFF);
 
             // This means every offset in it is now invalid.
@@ -116,7 +116,7 @@ class LZ4Compressor<OutputT, InputT> {
             // Our dictionary is only growing. Offsets aren't going to be
             // invalidated.
             const oldDictSize = this.#dictionary.length;
-            this.#dictionary.unsafeAppend(input);
+            this.#dictionary.append(input);
 
             // But since the last 3 octets of the dictionary hasn't been
             // hashed, we now need to do it.
@@ -186,7 +186,7 @@ class LZ4Compressor<OutputT, InputT> {
                 // Damn, it made no sense to compress it. Write an
                 // uncompressed block and discard the other one.
                 yield* this.#output.writeUint32(rawBlock.length | 0x80, true);
-                yield* this.#output.unsafeWrite(rawBlock);
+                yield* this.#output.write(rawBlock);
                 if (this.#opts.blockChecksums) {
                     yield* this.#output.writeUint32(xxHash32(rawBlock), true);
                 }
@@ -194,7 +194,7 @@ class LZ4Compressor<OutputT, InputT> {
             else {
                 // It actually compressed.
                 yield* this.#output.writeUint32(compBlock.length, true);
-                yield* this.#output.unsafeWrite(compBlock);
+                yield* this.#output.write(compBlock);
                 if (this.#opts.blockChecksums) {
                     yield* this.#output.writeUint32(xxHash32(compBlock), true);
                 }
@@ -233,7 +233,7 @@ class LZ4Compressor<OutputT, InputT> {
         for (let remaining = this.#opts.maximumBlockSize; remaining > 0; ) {
             const chunk = yield* this.#input.readSome(remaining);
             if (chunk) {
-                rawBlock.unsafeAppend(chunk);
+                rawBlock.append(chunk);
             }
             else {
                 break;
@@ -396,6 +396,6 @@ class LZ4Compressor<OutputT, InputT> {
         }
 
         // Write the literal.
-        compBlock.unsafeAppend(literal);
+        compBlock.append(literal);
     }
 }

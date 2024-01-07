@@ -72,7 +72,7 @@ export function *writeFrameDescriptor<OutputT, InputT>(
 
     // HC
     const digest = xxHash32(buf);
-    yield* output.unsafeWrite(buf);
+    yield* output.write(buf);
     yield* output.writeUint8((digest >> 8) & 0xFF);
 }
 

@@ -1,6 +1,8 @@
 import { Chunk } from "./buffer/chunk.js";
 
-const MIN_GROWTH    = 1024;
+// IMPLEMENTATION NOTE: Never ever allocate chunks that are smaller than
+// MIN_GROWTH. It induces a SEVERE performance issue.
+const MIN_GROWTH    = 512;
 const GROWTH_FACTOR = 0.5;
 
 /** `Buffer` is a mutable, resizable sequence of octets. This is not a
@@ -8,7 +10,6 @@ const GROWTH_FACTOR = 0.5;
 export class Buffer {
     #chunks: Chunk[];
     #length: number;
-    #f64Buf?: [DataView, Uint8Array];
 
     /** Construct an empty `Buffer` object. If an argument `octets` is
      * provided, it will be stored in the buffer using {@link append}.
@@ -37,14 +38,19 @@ export class Buffer {
         return Math.max(length, MIN_GROWTH, Math.trunc(this.length * GROWTH_FACTOR));
     }
 
-    #reserve(length: number): number {
+    // Allocate some extra space of at least `length` octets in the buffer
+    // if it doesn't already have one, and returns the chunk to write
+    // data. The chunk is guaranteed to have unused space of at least the
+    // given length.
+    #reserve(length: number): Chunk {
         if (this.#chunks.length == 0) {
             // We don't even have any chunks yet.
             this.#chunks.push(Chunk.allocate(this.#growth(length)));
-            return 0;
+            return this.#chunks[0]!;
         }
 
-        // Find the last non-empty chunk.
+        // Find the last non-empty chunk, because skipping empty chunks
+        // wastes space.
         let i = this.#chunks.length - 1;
         for (; i >= 0; i--) {
             if (this.#chunks[i]!.length > 0) {
@@ -56,34 +62,26 @@ export class Buffer {
             // No non-empty chunks were found. Check the first one.
             i = 0;
         }
-        const lastChunk = this.#chunks[i]!;
 
-        if (lastChunk.unused >= length) {
-            // The last non-empty chunk already has the requested space.
-            return i;
-        }
-        else if (lastChunk.unused > 0) {
-            // The last non-empty chunk partially has space. See if
-            // subsequent chunks have the requested space in total.
-            length -= lastChunk.unused;
-            for (let j = i; j < this.#chunks.length && length > 0; j++) {
-                length -= this.#chunks[j]!.unused;
-            }
-
-            // If we still don't have the requested space, create a new
-            // chunk.
-            if (length > 0) {
-                this.#chunks.push(Chunk.allocate(this.#growth(length)));
-                return this.#chunks.length - 1;
-            }
-            else {
-                return i;
-            }
+        if (this.#chunks[i]!.unused >= length) {
+            // The last non-empty chunk has the requested space.
+            return this.#chunks[i]!;
         }
         else {
-            // The last non-empty chunk has no space at all.
+            // The last non-empty chunk doesn't have the requested space so
+            // we give up on it and try to find a chunk that has
+            // space. This is going to waste some space but speed is more
+            // important than that.
+            for (; i < this.#chunks.length; i++) {
+                if (this.#chunks[i]!.unused >= length)
+                    // This chunk has enough unused space, and subsequent
+                    // chunks are all empty. We can write some data on it.
+                    return this.#chunks[i]!;
+            }
+
+            // Couldn't find a chunk to write. Allocate new one.
             this.#chunks.push(Chunk.allocate(this.#growth(length)));
-            return this.#chunks.length - 1;
+            return this.#chunks[this.#chunks.length - 1]!;
         }
     }
 
@@ -120,9 +118,7 @@ export class Buffer {
         this.#length = 0;
     }
 
-    /** Append some data at the end of the buffer. If you are willing to
-     * relinquish the ownership of your buffer, use {@link unsafeAppend}
-     * instead because it's faster.
+    /** Append some data at the end of the buffer.
      */
     public append(octets: Buffer|Uint8Array): void {
         if (octets instanceof Buffer) {
@@ -132,124 +128,8 @@ export class Buffer {
             return;
         }
 
-        if (this.#chunks.length == 0) {
-            // We don't even have any chunks yet.
-            this.#chunks.push(Chunk.copyFrom(octets));
-            this.#length += octets.byteLength;
-            return;
-        }
-
-        // Find the last non-empty chunk.
-        let i = this.#chunks.length - 1;
-        for (; i >= 0; i--) {
-            if (this.#chunks[i]!.length > 0) {
-                break;
-            }
-        }
-
-        if (i < 0) {
-            // No non-empty chunks were found. Check the first one.
-            i = 0;
-        }
-        const lastChunk = this.#chunks[i]!;
-
-        if (lastChunk.unused >= octets.byteLength) {
-            // The last non-empty chunk can completely absorb the data.
-            lastChunk.append(octets);
-        }
-        else if (lastChunk.unused > 0) {
-            // The last chunk can partially absorb the data.
-            let offset  = lastChunk.unused;
-            let remains = Math.max(0, octets.byteLength - offset);
-            lastChunk.append(octets.subarray(0, offset));
-
-            // See if subsequent chunks can absorb the remains.
-            for (let j = i; j < this.#chunks.length && remains > 0; j++) {
-                const chunk = this.#chunks[j]!;
-                if (chunk.unused > 0) {
-                    const numOctetsToCopy = Math.min(chunk.unused, remains);
-                    chunk.append(octets.subarray(offset, offset + numOctetsToCopy));
-                    offset  += numOctetsToCopy;
-                    remains -= numOctetsToCopy;
-                }
-            }
-
-            // If we still don't have the requested space, create a new
-            // chunk.
-            if (remains > 0) {
-                this.#chunks.push(Chunk.copyFrom(octets.subarray(offset)));
-            }
-        }
-        else {
-            // The last non-empty chunk has no space at all.
-            this.#chunks.push(Chunk.copyFrom(octets));
-        }
-        this.#length += octets.byteLength;
-    }
-
-    /** Append some data at the end of the buffer. The buffer takes the
-     * ownership of the data. Do not mutate it afterwards.
-     */
-    public unsafeAppend(octets: Buffer|Uint8Array): void {
-        if (octets instanceof Buffer) {
-            for (const chunk of octets.unsafeChunks()) {
-                this.unsafeAppend(chunk);
-            }
-            return;
-        }
-
-        if (this.#chunks.length == 0) {
-            // We don't even have any chunks yet.
-            this.#chunks.push(Chunk.wrap(octets));
-            this.#length += octets.byteLength;
-            return;
-        }
-
-        // Find the last non-empty chunk.
-        let i = this.#chunks.length - 1;
-        for (; i >= 0; i--) {
-            if (this.#chunks[i]!.length > 0) {
-                break;
-            }
-        }
-
-        if (i < 0) {
-            // No non-empty chunks were found. Check the first one.
-            i = 0;
-        }
-        const lastChunk = this.#chunks[i]!;
-
-        if (lastChunk.unused >= octets.byteLength) {
-            // The last non-empty chunk can completely absorb the data.
-            lastChunk.append(octets);
-        }
-        else if (lastChunk.unused > 0) {
-            // The last chunk can partially absorb the data.
-            let offset  = lastChunk.unused;
-            let remains = Math.max(0, octets.byteLength - offset);
-            lastChunk.append(octets.subarray(0, offset));
-
-            // See if subsequent chunks can absorb the remains.
-            for (let j = i; j < this.#chunks.length && remains > 0; j++) {
-                const chunk = this.#chunks[j]!;
-                if (chunk.unused > 0) {
-                    const numOctetsToCopy = Math.min(chunk.unused, remains);
-                    chunk.append(octets.subarray(offset, offset + numOctetsToCopy));
-                    offset  += numOctetsToCopy;
-                    remains -= numOctetsToCopy;
-                }
-            }
-
-            // If we still don't have the requested space, create a new
-            // chunk.
-            if (remains > 0) {
-                this.#chunks.push(Chunk.wrap(octets.subarray(offset)));
-            }
-        }
-        else {
-            // The last non-empty chunk has no space at all.
-            this.#chunks.push(Chunk.wrap(octets));
-        }
+        const chunk = this.#reserve(octets.byteLength);
+        chunk.append(octets);
         this.#length += octets.byteLength;
     }
 
@@ -383,8 +263,7 @@ export class Buffer {
     }
 
     public appendUint8(n: number): void {
-        const i     = this.#reserve(1);
-        const chunk = this.#chunks[i]!;
+        const chunk = this.#reserve(1);
         chunk.dView.setUint8(chunk.length, n);
         chunk.length++;
         this.#length++;
@@ -445,25 +324,10 @@ export class Buffer {
     }
 
     public appendUint16(n: number, littleEndian = false): void {
-        const i     = this.#reserve(2);
-        const chunk = this.#chunks[i]!;
-        if (chunk.unused >= 2) {
-            // Sweet. We can write it to a contiguous buffer.
-            chunk.dView.setUint16(chunk.length, n, littleEndian);
-            chunk.length += 2;
-            this.#length += 2;
-        }
-        else {
-            // Damn, we must do a partial write.
-            if (littleEndian) {
-                this.appendUint8( n        & 0xFF);
-                this.appendUint8((n >>> 8) & 0xFF);
-            }
-            else {
-                this.appendUint8((n >>> 8) & 0xFF);
-                this.appendUint8( n        & 0xFF);
-            }
-        }
+        const chunk = this.#reserve(2);
+        chunk.dView.setUint16(chunk.length, n, littleEndian);
+        chunk.length += 2;
+        this.#length += 2;
     }
 
     public getUint32(offset: number, littleEndian = false): number {
@@ -525,45 +389,16 @@ export class Buffer {
     }
 
     public appendUint32(n: number, littleEndian = false): void {
-        const i     = this.#reserve(4);
-        const chunk = this.#chunks[i]!;
-        if (chunk.unused >= 4) {
-            // Sweet. We can write it in a contiguous buffer.
-            chunk.dView.setUint32(chunk.length, n, littleEndian);
-            chunk.length += 4;
-            this.#length += 4;
-        }
-        else {
-            // Damn, we must do a partial write.
-            if (littleEndian) {
-                this.appendUint16( n         & 0xFFFF);
-                this.appendUint16((n >>> 16) & 0xFFFF);
-            }
-            else {
-                this.appendUint16((n >>> 16) & 0xFFFF);
-                this.appendUint16( n         & 0xFFFF);
-            }
-        }
+        const chunk = this.#reserve(4);
+        chunk.dView.setUint32(chunk.length, n, littleEndian);
+        chunk.length += 4;
+        this.#length += 4;
     }
 
     public appendFloat64(n: number, littleEndian = false): void {
-        const i     = this.#reserve(8);
-        const chunk = this.#chunks[i]!;
-        if (chunk.unused >= 8) {
-            // Sweet. We can write it in a contiguous buffer.
-            chunk.dView.setFloat64(chunk.length, n, littleEndian);
-            chunk.length += 8;
-            this.#length += 8;
-        }
-        else {
-            // Damn, we must do a partial write.
-            if (!this.#f64Buf) {
-                const buf = new ArrayBuffer(8);
-                this.#f64Buf = [new DataView(buf), new Uint8Array(buf)];
-            }
-
-            this.#f64Buf[0].setFloat64(0, n, littleEndian);
-            this.append(this.#f64Buf[1]);
-        }
+        const chunk = this.#reserve(8);
+        chunk.dView.setFloat64(chunk.length, n, littleEndian);
+        chunk.length += 8;
+        this.#length += 8;
     }
 }

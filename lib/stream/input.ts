@@ -36,8 +36,8 @@ export abstract class InputStream<OutputT, InputT> {
     public abstract skip(length: number): Generator<OutputT, void, InputT>;
 
     /** Called when the control was suspended outside of the methods in
-     * this stream and was resumed with some data. The stream takes the
-     * ownership of the data. Do not mutate it afterwards.
+     * this stream and was resumed with some data. The stream does not take
+     * the ownership of the data.
      */
     public abstract gotData(input?: InputT): void;
 
@@ -196,9 +196,9 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
     public gotData(input?: Uint8Array): void {
         if (input) {
             if (this.#isClosed) {
-                throw new Error("Cannot push data after sinaling EOF");
+                throw new Error("Cannot push data after signaling EOF");
             }
-            this.#buf.unsafeAppend(input);
+            this.#buf.append(input);
         }
     }
 
