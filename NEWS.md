@@ -25,6 +25,7 @@
   * `Entity.prototype.matches`
   * `ItemStack.prototype.tags`
   * `Player.prototype.gameMode`
+  * `Player.prototype.getSession`
   * `Timer.prototype.reset`
   * `World.prototype.getDimension`
   * `World.prototype.playSound`

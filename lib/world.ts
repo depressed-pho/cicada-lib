@@ -1,7 +1,7 @@
 import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
-import { Player, PlayerSpawnAfterEvent } from "./player.js"
+import { IPlayerSession, Player, PlayerSpawnAfterEvent, sessionManager } from "./player.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
 import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
@@ -64,6 +64,31 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
 
     public playSound(soundId: string, location: Vector3, soundOptions?: WorldSoundOptions): void {
         this.raw.playSound(soundId, location, soundOptions);
+    }
+
+    /** Call this if you want to use the player session manager. This has
+     * to be called before any player joins. `sessionClass` is your session
+     * class which will be constructed whenever a player joins, and will be
+     * destroyed when they leave. The class has to have a constructor
+     * taking a single argument of type `Player`, and must implement the
+     * interface `IPlayerSession`.
+     */
+    public usePlayerSessions<T extends IPlayerSession>(
+        sessionClass: new (player: Player) => T) {
+
+        if (this.#isReady)
+            throw new Error(
+                "The world is already up and running. It's too late to configure player sessions.");
+
+        sessionManager.class = sessionClass;
+
+        this.afterEvents.playerSpawn.subscribe(ev => {
+            if (ev.initialSpawn)
+                sessionManager.create(ev.player);
+        });
+        this.beforeEvents.playerLeave.subscribe(ev => {
+            sessionManager.destroy(ev.player.id);
+        });
     }
 
     #glueEvents(): void {
