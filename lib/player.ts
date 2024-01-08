@@ -133,10 +133,15 @@ export class SessionManager {
 
     public "get"(playerId: string): IPlayerSession {
         const session = this.#sessions.get(playerId);
-        if (session)
+        if (session) {
             return session;
-        else
-            throw new Error(`Session not found for player ${playerId}`);
+        }
+        else {
+            if (this.#ctor)
+                throw new Error(`Session not found for player ${playerId}`);
+            else
+                throw new Error("The session manager hasn't been configured");
+        }
     }
 }
 /** Package private: user code should not use this. */
