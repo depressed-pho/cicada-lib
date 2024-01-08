@@ -24,7 +24,7 @@ export type DynamicPropertyTypeMap = {
  * World.
  */
 export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDynamicProperties>>>(base: T) {
-    return class HasDynamicProperties extends base {
+    abstract class HasDynamicProperties extends base {
         public getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
 
         public getDynamicProperty<Ty extends keyof DynamicPropertyTypeMap>(
@@ -66,5 +66,6 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
                                   value: boolean|number|string|Vector3|undefined): void {
             this.raw.setDynamicProperty(identifier, value);
         }
-    };
+    }
+    return HasDynamicProperties;
 }

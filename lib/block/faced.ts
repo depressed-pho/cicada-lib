@@ -6,7 +6,7 @@ export { Direction };
 
 /** A mixin for blocks that have a state `facing_direction`. */
 export function Faced<T extends Constructor<Block>>(base: T) {
-    return class Faced extends base {
+    abstract class Faced extends base {
         public get facingDirection(): Direction {
             // See https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockstateslist
             const rawDir = this.permutation.states.get("facing_direction");
@@ -30,4 +30,5 @@ export function Faced<T extends Constructor<Block>>(base: T) {
             }
         }
     };
+    return Faced;
 }

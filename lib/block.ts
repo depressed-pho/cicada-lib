@@ -151,7 +151,7 @@ export interface BlockEvent {
 }
 
 function IsBlockEvent<T extends Constructor<Wrapper<MC.BlockEvent>>>(base: T) {
-    return class IsBlockEvent extends base {
+    abstract class IsBlockEvent extends base {
         public get block(): Block {
             return new Block(this.raw.block);
         }
@@ -159,7 +159,8 @@ function IsBlockEvent<T extends Constructor<Wrapper<MC.BlockEvent>>>(base: T) {
         public dimension(): Dimension {
             return new Dimension(this.raw.dimension);
         }
-    };
+    }
+    return IsBlockEvent;
 }
 
 export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerBreakBlockBeforeEvent>) {
