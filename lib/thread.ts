@@ -22,11 +22,15 @@ export abstract class Thread {
      */
     protected abstract run(cancelled: Promise<never>): AsyncGenerator;
 
-    public start() {
+    /** Start the thread. It doesn't start on its own just by constructing
+     * an instance, because that means `run()` would be invoked even before
+     * constructors of subclasses complete.
+     */
+    public start(): this {
         // One of the two mechanisms to cancel a thread. The promise is
         // passed to the async generator function and will never be
-        // resolved. When the a cancellation is requested, the promise will
-        // be rejected.
+        // resolved. When a cancellation is requested, the promise will be
+        // rejected.
         const cancelled = new Promise<never>((_resolve, reject) => {
             this.#cancel = reject;
         });
@@ -54,6 +58,8 @@ export abstract class Thread {
         this.#result = this.#task.next()
             .then(res => this.#onSuspended(res),
                   e   => this.#onError(e));
+
+        return this;
     }
 
     #onSuspended(res: IteratorResult<unknown>): Promise<IteratorResult<unknown>> {
