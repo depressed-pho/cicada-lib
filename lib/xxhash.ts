@@ -76,10 +76,10 @@ export class XXH32 {
     }
 
     #consumeStripe(stripe: Uint8Array, offset: number): void {
-        const view = new DataView(stripe.buffer, stripe.byteOffset + offset, 16);
-
-        for (let lane_i = 0, lane_off = 0; lane_i < 4; lane_i++, lane_off += 4) {
-            const lane = view.getUint32(lane_off, true);
+        for (let lane_i = 0, lane_off = offset; lane_i < 4; lane_i++, lane_off += 4) {
+            const lane_lo = stripe[lane_off + 1]! << 8 | stripe[lane_off + 0]!;
+            const lane_hi = stripe[lane_off + 3]! << 8 | stripe[lane_off + 2]!;
+            const lane    = lane_hi << 16 | lane_lo;
             this.#acc[lane_i] =
                 umul32(
                     urotl32(
@@ -103,17 +103,18 @@ export class XXH32 {
         acc += this.#total & 0xFFFFFFFF;
 
         // Consume the remaining input.
-        const view = new DataView(this.#buf.buffer, 0, this.#bufLen);
-        let offset = 0;
-        for (; offset + 4 <= view.byteLength; offset += 4) {
-            const lane = view.getUint32(offset, true);
+        let lane_off = 0;
+        for (; lane_off + 4 <= this.#bufLen; lane_off += 4) {
+            const lane_lo = this.#buf[lane_off + 1]! << 8 | this.#buf[lane_off + 0]!;
+            const lane_hi = this.#buf[lane_off + 3]! << 8 | this.#buf[lane_off + 2]!;
+            const lane    = lane_hi << 16 | lane_lo;
             acc =
                 umul32(
                     urotl32(
                         umul32(lane, PRIME32_3) + acc | 0, 17), PRIME32_4);
         }
-        for (; offset < view.byteLength; offset++) {
-            const lane = view.getUint8(offset);
+        for (; lane_off < this.#bufLen; lane_off++) {
+            const lane = this.#buf[lane_off]!;
             acc =
                 umul32(
                     urotl32(
