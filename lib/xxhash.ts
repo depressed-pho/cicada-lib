@@ -43,7 +43,15 @@ export class XXH32 {
 
     public update(arg: any): void {
         if (typeof arg === "number") {
-            this.#updateWithOctet(arg);
+            this.#buf[this.#bufLen] = arg;
+            this.#bufLen++;
+            this.#total++;
+
+            if (this.#bufLen >= 16) {
+                // We now have a stripe. Consume it.
+                this.#consumeStripe(this.#buf, 0);
+                this.#bufLen = 0;
+            }
         }
         else if (arg instanceof Buffer) {
             for (const chunk of arg.unsafeChunks()) {
@@ -52,18 +60,6 @@ export class XXH32 {
         }
         else {
             this.#update(arg);
-        }
-    }
-
-    #updateWithOctet(octet: number): void {
-        this.#buf[this.#bufLen] = octet;
-        this.#bufLen++;
-        this.#total++;
-
-        if (this.#bufLen >= 16) {
-            // We now have a stripe. Consume it.
-            this.#consumeStripe(this.#buf, 0);
-            this.#bufLen = 0;
         }
     }
 
