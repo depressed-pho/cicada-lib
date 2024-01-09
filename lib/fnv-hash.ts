@@ -25,7 +25,7 @@ export class FNV1a32 {
 
     public update(arg: any): void {
         if (typeof arg === "number") {
-            this.#acc ^= arg;
+            this.#acc ^= arg & 0xFF;
             this.#acc  = umul32(this.#acc, FNV32_PRIME);
         }
         else if (arg instanceof Buffer) {

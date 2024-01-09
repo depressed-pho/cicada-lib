@@ -35,15 +35,35 @@ export class XXH32 {
         this.#total  = 0;
     }
 
+    /// Feed the next octet for digestion.
+    public update(octet: number): void;
+
     /// Feed the next chunk of octets for digestion.
-    public update(octets: Buffer|Uint8Array): void {
-        if (octets instanceof Buffer) {
-            for (const chunk of octets.unsafeChunks()) {
+    public update(octets: Buffer|Uint8Array): void;
+
+    public update(arg: any): void {
+        if (typeof arg === "number") {
+            this.#updateWithOctet(arg);
+        }
+        else if (arg instanceof Buffer) {
+            for (const chunk of arg.unsafeChunks()) {
                 this.#update(chunk);
             }
         }
         else {
-            this.#update(octets);
+            this.#update(arg);
+        }
+    }
+
+    #updateWithOctet(octet: number): void {
+        this.#buf[this.#bufLen] = octet;
+        this.#bufLen++;
+        this.#total++;
+
+        if (this.#bufLen >= 16) {
+            // We now have a stripe. Consume it.
+            this.#consumeStripe(this.#buf, 0);
+            this.#bufLen = 0;
         }
     }
 

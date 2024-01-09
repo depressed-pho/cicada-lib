@@ -20,6 +20,11 @@ describe("class XXH32", () => {
         x.update(strToOctets("abcdefghijklmnopqrst_bcdefghijklmnop*****"));
         expect(x.final()).to.equal(0xCCB6773A);
     });
+    it("can also consume a single octet at a time", () => {
+        const x = new XXH32();
+        x.update(0x61);
+        expect(x.final()).to.equal(0x550d7456);
+    });
 });
 
 describe("function xxHash32()", () => {
