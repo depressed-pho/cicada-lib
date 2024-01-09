@@ -17,33 +17,33 @@ export class Hasher extends XXH32 {
     public override update(value: any): void {
         switch (typeof value) {
             case "undefined":
-                this.#updateWithUint8(0x00);
+                super.update(0x00);
                 break;
             case "boolean":
-                this.#updateWithUint8(0x01);
-                this.#updateWithUint8(value ? 1 : 0);
+                super.update(0x01);
+                super.update(value ? 0x01 : 0x00);
                 break;
             case "number":
-                this.#updateWithUint8(0x02);
+                super.update(0x02);
                 this.#updateWithNumber(value);
                 break;
             case "bigint":
                 // Is there anything we can do better than this?
-                this.#updateWithUint8(0x03);
+                super.update(0x03);
                 this.#updateWithString(value.toString(36));
                 break;
             case "string":
-                this.#updateWithUint8(0x04);
+                super.update(0x04);
                 this.#updateWithString(value);
                 break;
             case "symbol":
-                this.#updateWithUint8(0x05);
+                super.update(0x05);
                 this.#updateWithString(value.toString());
                 break;
             case "function":
                 throw new TypeError("Functions cannot be hashed");
             case "object":
-                this.#updateWithUint8(0xFF);
+                super.update(0xFF);
                 this.#updateWithObject(value);
                 break;
             default:
@@ -51,27 +51,56 @@ export class Hasher extends XXH32 {
         }
     }
 
-    #updateWithUint8(u8: number) {
-        this.#buffer.clear();
-        this.#buffer.appendUint8(u8);
-        super.update(this.#buffer);
-    }
-
     #updateWithUint16(u16: number) {
-        this.#buffer.clear();
-        this.#buffer.appendUint16(u16);
-        super.update(this.#buffer);
+        super.update((u16 >> 8) & 0xFF);
+        super.update( u16       & 0xFF);
     }
 
     #updateWithUint32(u32: number) {
-        this.#buffer.clear();
-        this.#buffer.appendUint32(u32);
-        super.update(this.#buffer);
+        super.update((u32 >> 24) & 0xFF);
+        super.update((u32 >> 16) & 0xFF);
+        super.update((u32 >>  8) & 0xFF);
+        super.update( u32        & 0xFF);
     }
 
     #updateWithNumber(num: number) {
+        if (Number.isInteger(num)) {
+            if (num >= -0x80 && num <= 0x7F) {
+                super.update(0x00); // sint8
+                super.update(num & 0xFF);
+                return;
+            }
+            else if (num >= 0 && num <= 0xFF) {
+                super.update(0x01); // uint8
+                super.update(num & 0xFF);
+                return;
+            }
+            else if (num >= -0x8000 && num <= 0x7FFF) {
+                super.update(0x02); // sint16
+                this.#updateWithUint16(num & 0xFFFF);
+                return;
+            }
+            else if (num >= 0x0000 && num <= 0xFFFF) {
+                super.update(0x03); // uint16
+                this.#updateWithUint16(num & 0xFFFF);
+                return;
+            }
+            else if (num >= -0x80000000 && num <= 0x7FFFFFFF) {
+                super.update(0x04); // sint32
+                this.#updateWithUint32(num & 0xFFFFFFFF);
+                return;
+            }
+            else if (num >= 0x00000000 && num <= 0xFFFFFFFF) {
+                super.update(0x05); // uint32
+                this.#updateWithUint32(num & 0xFFFFFFFF);
+                return;
+            }
+        }
+
+        // The last resort: feed it as float64.
         this.#buffer.clear();
         this.#buffer.appendFloat64(num);
+        super.update(0x06);
         super.update(this.#buffer);
     }
 
@@ -84,14 +113,14 @@ export class Hasher extends XXH32 {
 
     #updateWithObject(obj: any) {
         if (Array.isArray(obj)) {
-            this.#updateWithUint8(0x00);
+            super.update(0x00);
             this.#updateWithUint32(obj.length);
             for (const elem of obj) {
                 this.update(elem);
             }
         }
         else if (ArrayBuffer.isView(obj)) {
-            this.#updateWithUint8(0x01);
+            super.update(0x01);
             this.#updateWithUint32(obj.byteLength);
             if (obj instanceof Uint8Array)
                 super.update(obj);
@@ -99,7 +128,7 @@ export class Hasher extends XXH32 {
                 super.update(new Uint8Array(obj.buffer, obj.byteOffset));
         }
         else if (obj instanceof ArrayBuffer || obj instanceof SharedArrayBuffer) {
-            this.#updateWithUint8(0x01);
+            super.update(0x01);
             this.#updateWithUint32(obj.byteLength);
             super.update(new Uint8Array(obj));
         }
@@ -110,11 +139,11 @@ export class Hasher extends XXH32 {
             throw new TypeError("The hash value of a Map cannot be computed because it's unordered");
         }
         else if (obj instanceof RegExp) {
-            this.#updateWithUint8(0x02);
+            super.update(0x02);
             this.#updateWithString(obj.toString());
         }
         else if (obj instanceof Date) {
-            this.#updateWithUint8(0x03);
+            super.update(0x03);
             this.#updateWithNumber(obj.valueOf());
         }
         else if (obj instanceof Promise) {
@@ -127,11 +156,11 @@ export class Hasher extends XXH32 {
             throw new TypeError("The hash value of a WeakRef cannot be computed");
         }
         else if (Hasher.#maybeUnbox(obj) !== undefined) {
-            this.#updateWithUint8(0x04);
+            super.update(0x04);
             this.update(Hasher.#maybeUnbox(obj));
         }
         else {
-            this.#updateWithUint8(0xFF);
+            super.update(0xFF);
 
             const ownProps = Object.entries(Object.getOwnPropertyDescriptors(obj));
             this.#updateWithUint32(ownProps.length);
