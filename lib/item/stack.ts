@@ -104,6 +104,10 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         return this.raw.maxAmount;
     }
 
+    /** Obtain the set of enchantments applied to this item stack. This
+     * function returns an empty set of enchantments if the item cannot be
+     * enchanted.
+     */
     get enchantments(): ItemEnchantments {
         // FIXME: Remove this glue code when the API is updated to 1.9.0.
         if (1) {
