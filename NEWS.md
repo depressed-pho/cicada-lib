@@ -17,7 +17,11 @@
     only works for items that have corresponding blocks.
 * New properties:
   * `Block.prototype.getItemStack`
+  * `Block.prototype.isAir`
+  * `Block.prototype.isLiquid`
+  * `Block.prototype.isSolid`
   * `Block.prototype.isValid`
+  * `Block.prototype.isWaterlogged`
   * `Block.prototype.typeId` setter
   * `BlockPermutation.prototype.equals`
   * `BlockPermutation.prototype.tags`

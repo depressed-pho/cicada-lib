@@ -40,6 +40,18 @@ export class Block extends Wrapper<MC.Block> {
         return this.#dimension;
     }
 
+    public get isAir(): boolean {
+        return this.raw.isAir;
+    }
+
+    public get isLiquid(): boolean {
+        return this.raw.isLiquid;
+    }
+
+    public get isSolid(): boolean {
+        return this.raw.isSolid;
+    }
+
     public get isValid(): boolean {
         return this.raw.isValid();
     }
