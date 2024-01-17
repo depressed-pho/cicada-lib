@@ -80,14 +80,14 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
             throw new Error(
                 "The world is already up and running. It's too late to configure player sessions.");
 
-        SessionManager.instance.class = sessionClass;
+        SessionManager.class = sessionClass;
 
         this.afterEvents.playerSpawn.subscribe(ev => {
             if (ev.initialSpawn)
-                SessionManager.instance.create(ev.player);
+                SessionManager.create(ev.player);
         });
         this.beforeEvents.playerLeave.subscribe(ev => {
-            SessionManager.instance.destroy(ev.player.id);
+            SessionManager.destroy(ev.player.id);
         });
     }
 

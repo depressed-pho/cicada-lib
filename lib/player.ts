@@ -84,7 +84,7 @@ export class Player extends Entity implements IPreferencesContainer {
      * World.prototype.usePlayerSessions}.
      */
     public getSession<T extends IPlayerSession>(): T {
-        return SessionManager.instance.get(this.id) as T;
+        return SessionManager.get(this.id) as T;
     }
 
     public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
@@ -94,23 +94,17 @@ export class Player extends Entity implements IPreferencesContainer {
 
 /** Package private: user code should not use this. */
 export class SessionManager {
-    static readonly instance = new SessionManager();
+    static readonly #sessions: Map<string, IPlayerSession> = new Map(); // playerId => IPlayerSession
+    static #ctor?: new (player: Player) => IPlayerSession;
 
-    readonly #sessions: Map<string, IPlayerSession>; // playerId => IPlayerSession
-    #ctor?: new (player: Player) => IPlayerSession;
-
-    private constructor() {
-        this.#sessions = new Map();
-    }
-
-    public set "class"(ctor: new (player: Player) => IPlayerSession) {
+    public static set "class"(ctor: new (player: Player) => IPlayerSession) {
         if (this.#ctor)
             throw new Error("A session class cannot be changed once it's set");
         else
             this.#ctor = ctor;
     }
 
-    public create(player: Player): IPlayerSession {
+    public static create(player: Player): IPlayerSession {
         if (!this.#ctor)
             throw new Error("No session classes have been set");
 
@@ -122,7 +116,7 @@ export class SessionManager {
         return session;
     }
 
-    public destroy(playerId: string) {
+    public static destroy(playerId: string) {
         const session = this.#sessions.get(playerId);
         if (session) {
             this.#sessions.delete(playerId);
@@ -133,7 +127,7 @@ export class SessionManager {
         }
     }
 
-    public "get"(playerId: string): IPlayerSession {
+    public static "get"(playerId: string): IPlayerSession {
         const session = this.#sessions.get(playerId);
         if (session) {
             return session;
