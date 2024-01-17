@@ -1,7 +1,7 @@
 import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
-import { IPlayerSession, Player, PlayerSpawnAfterEvent, sessionManager } from "./player.js";
+import { IPlayerSession, Player, PlayerSpawnAfterEvent, SessionManager } from "./player.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
 import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
@@ -80,14 +80,14 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
             throw new Error(
                 "The world is already up and running. It's too late to configure player sessions.");
 
-        sessionManager.class = sessionClass;
+        SessionManager.instance.class = sessionClass;
 
         this.afterEvents.playerSpawn.subscribe(ev => {
             if (ev.initialSpawn)
-                sessionManager.create(ev.player);
+                SessionManager.instance.create(ev.player);
         });
         this.beforeEvents.playerLeave.subscribe(ev => {
-            sessionManager.destroy(ev.player.id);
+            SessionManager.instance.destroy(ev.player.id);
         });
     }
 

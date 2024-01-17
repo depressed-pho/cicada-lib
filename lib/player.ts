@@ -84,7 +84,7 @@ export class Player extends Entity implements IPreferencesContainer {
      * World.prototype.usePlayerSessions}.
      */
     public getSession<T extends IPlayerSession>(): T {
-        return sessionManager.get(this.id);
+        return SessionManager.instance.get(this.id) as T;
     }
 
     public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
@@ -94,6 +94,8 @@ export class Player extends Entity implements IPreferencesContainer {
 
 /** Package private: user code should not use this. */
 export class SessionManager {
+    static readonly instance = new SessionManager();
+
     readonly #sessions: Map<string, IPlayerSession>; // playerId => IPlayerSession
     #ctor?: new (player: Player) => IPlayerSession;
 
@@ -144,9 +146,6 @@ export class SessionManager {
         }
     }
 }
-/** Package private: user code should not use this. */
-// @ts-expect-error: Intentionally calling a private constructor.
-export const sessionManager = new SessionManager();
 
 export interface PlayerLeaveBeforeEvent {
     readonly player: Player;
