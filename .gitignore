@@ -4,6 +4,9 @@
 # npm
 node_modules
 
+# tsimp
+.tsimp
+
 # Built files
 dist
 

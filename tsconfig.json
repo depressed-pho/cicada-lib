@@ -15,6 +15,11 @@
         "noUnusedParameters": true,
         "strict": true,
         "target": "ES2022",
+        "lib": [
+            "ES2022",
+            "ESNext.Decorators",
+            "DOM"
+        ],
         "baseUrl": ".",
         "types": [
             "chai",
@@ -22,5 +27,8 @@
             "@minecraft/server-ui",
             "mocha"
         ]
+    },
+    "ts-node": {
+        "esm": true
     }
 }

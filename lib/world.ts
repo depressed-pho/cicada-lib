@@ -1,3 +1,5 @@
+import { CommandRegistry, CommandTokenisationError, CommandParsingError,
+         tokeniseCommandLine } from "./command.js";
 import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
@@ -33,6 +35,11 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.afterEvents     = new WorldAfterEvents(this.raw.afterEvents);
         this.beforeEvents    = new WorldBeforeEvents(this.raw.beforeEvents);
         this.#glueEvents();
+
+        // Listen to chatSend before events if there is at least one custom
+        // command registered (via @command).
+        if (!CommandRegistry.empty)
+            this.#listenToCustomCommands();
     }
 
     public getDimension(identifier: string): Dimension {
@@ -142,6 +149,48 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                 this.#pendingEvents.push(() => {
                     this.afterEvents.playerLeave.signal(ev);
                 });
+            }
+        });
+    }
+
+    #listenToCustomCommands() {
+        this.beforeEvents.chatSend.subscribe(ev => {
+            // NOTE: Maybe the prefix should be customisable but Bedrock
+            // should really support custom commands natively in the first
+            // place.
+            if (ev.message.startsWith(";")) {
+                try {
+                    const tokens = tokeniseCommandLine(ev.message, 1);
+                    if (tokens.length > 1) {
+                        CommandRegistry.get(
+                            tokens[0]!, tokens.slice(1),
+                            cmd => {
+                                ev.cancel();
+                                cmd.run(ev.sender);
+                            },
+                            // Don't cancel the event when there is no such
+                            // command.
+                            () => void 0);
+                    }
+                }
+                catch (e) {
+                    if (e instanceof CommandTokenisationError) {
+                        // Tokenisation errors should be ignored because it
+                        // may be for a different addon.
+                    }
+                    else if (e instanceof CommandParsingError) {
+                        // We know the user attempted to run one of our
+                        // commands but it was malformed.
+                        ev.cancel();
+                        ev.sender.console.error(e.message);
+                    }
+                    else {
+                        // We know the user attempted to run one of our
+                        // commands but it somehow failed.
+                        ev.cancel();
+                        ev.sender.console.error(e);
+                    }
+                }
             }
         });
     }

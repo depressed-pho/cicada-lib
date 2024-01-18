@@ -7,7 +7,8 @@ import { Dimension } from "../dimension.js";
 import { Entity, ItemUseAfterEvent, EntityDieAfterEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
 import { ItemStack } from "../item/stack.js";
-import { Player, PlayerLeaveBeforeEvent, PlayerSpawnAfterEvent } from "../player.js"
+import { ChatSendBeforeEvent, Player,
+         PlayerLeaveBeforeEvent, PlayerSpawnAfterEvent } from "../player.js"
 import { Wrapper } from "../wrapper.js";
 import * as MC from "@minecraft/server";
 
@@ -81,12 +82,16 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
 }
 
 export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
+    public readonly chatSend: IEventSignal<ChatSendBeforeEvent>;
     public readonly playerBreakBlock: IEventSignal<PlayerBreakBlockBeforeEvent>;
     public readonly playerLeave: IEventSignal<PlayerLeaveBeforeEvent>;
 
     /// Package private
     public constructor(rawEvents: MC.WorldBeforeEvents) {
         super(rawEvents);
+        this.chatSend = new GluedEventSignalWithoutOptions(
+            this.raw.chatSend,
+            (rawEv: MC.ChatSendBeforeEvent) => new ChatSendBeforeEvent(rawEv));
         this.playerBreakBlock = new GluedEventSignalWithoutOptions(
             this.raw.playerBreakBlock,
             (rawEv: MC.PlayerBreakBlockBeforeEvent) => new PlayerBreakBlockBeforeEvent(rawEv));

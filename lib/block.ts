@@ -176,11 +176,6 @@ function IsBlockEvent<T extends Constructor<Wrapper<MC.BlockEvent>>>(base: T) {
 }
 
 export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerBreakBlockBeforeEvent>) {
-    /// Package private
-    public constructor(rawEv: MC.PlayerBreakBlockBeforeEvent) {
-        super(rawEv);
-    }
-
     public cancel() {
         this.raw.cancel = true;
     }

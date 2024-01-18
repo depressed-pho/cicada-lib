@@ -1,6 +1,8 @@
 import { Entity } from "./entity.js";
 import { EntityInventory } from "./entity/inventory.js";
+import { map } from "./iterable.js";
 import { PlayerConsole } from "./player/console.js";
+import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { RawMessage } from "@minecraft/server";
 import { IPreferencesContainer } from "./preferences.js";
@@ -138,6 +140,27 @@ export class SessionManager {
             else
                 throw new Error("The session manager hasn't been configured");
         }
+    }
+}
+
+export class ChatSendBeforeEvent extends Wrapper<MC.ChatSendBeforeEvent> {
+    public cancel() {
+        this.raw.cancel = true;
+    }
+
+    public get message(): string {
+        return this.raw.message;
+    }
+
+    public get sender(): Player {
+        return new Player(this.raw.sender);
+    }
+
+    public get targets(): IterableIterator<Player>|undefined {
+        if (this.raw.targets)
+            return map(this.raw.targets, raw => new Player(raw));
+        else
+            return undefined;
     }
 }
 
