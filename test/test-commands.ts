@@ -46,6 +46,7 @@ describe("tokeniseCommandLine", () => {
     it("can parse basic argument lists", () => {
         expect(tokeniseCommandLine("foo")).to.deep.equal(["foo"]);
         expect(tokeniseCommandLine("foo bar")).to.deep.equal(["foo", "bar"]);
+        expect(tokeniseCommandLine(";foo bar", 1)).to.deep.equal(["foo", "bar"]);
     });
     it("skips non-quoted white spaces", () => {
         expect(tokeniseCommandLine(" foo  bar   ")).to.deep.equal(["foo", "bar"]);

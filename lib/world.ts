@@ -36,10 +36,12 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.beforeEvents    = new WorldBeforeEvents(this.raw.beforeEvents);
         this.#glueEvents();
 
-        // Listen to chatSend before events if there is at least one custom
-        // command registered (via @command).
-        if (!CommandRegistry.empty)
-            this.#listenToCustomCommands();
+        this.afterEvents.worldInitialize.subscribe(() => {
+            // Listen to chatSend before events if there is at least one
+            // custom command registered (via @command).
+            if (!CommandRegistry.empty)
+                this.#listenToCustomCommands();
+        });
     }
 
     public getDimension(identifier: string): Dimension {
@@ -169,14 +171,14 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                                 cmd.run(ev.sender);
                             },
                             // Don't cancel the event when there is no such
-                            // command.
+                            // command. It might be for a different addon.
                             () => void 0);
                     }
                 }
                 catch (e) {
                     if (e instanceof CommandTokenisationError) {
                         // Tokenisation errors should be ignored because it
-                        // may be for a different addon.
+                        // might be for a different addon.
                     }
                     else if (e instanceof CommandParsingError) {
                         // We know the user attempted to run one of our
