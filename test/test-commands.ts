@@ -24,14 +24,14 @@ class CommandFoo {
             // ...
         }
         else {
-            throw new TypeError(`${this.subcommand} has a wrong type`);
+            throw new TypeError(`run(): ${this.subcommand} has a wrong type`);
         }
     }
 }
 
 function runCommand(line: string) {
     const tokens = tokeniseCommandLine(line);
-    if (tokens.length > 1) {
+    if (tokens.length >= 1) {
         CommandRegistry.get(
             tokens[0]!, tokens.slice(1),
             cmd => { cmd.run(undefined as any as Player) },
@@ -44,6 +44,7 @@ function runCommand(line: string) {
 
 describe("tokeniseCommandLine", () => {
     it("can parse basic argument lists", () => {
+        expect(tokeniseCommandLine("foo")).to.deep.equal(["foo"]);
         expect(tokeniseCommandLine("foo bar")).to.deep.equal(["foo", "bar"]);
     });
     it("skips non-quoted white spaces", () => {
@@ -92,5 +93,8 @@ describe("@subcommand", () => {
         expect(() => runCommand("foo aab")).to.not.throw();
         expect(() => runCommand("foo aac")).to.not.throw();
         expect(() => runCommand("foo aa" )).to.throw(CommandParsingError);
+    });
+    it("throws an error if no subcommands are given", () => {
+        expect(() => runCommand("foo")).to.throw(CommandParsingError);
     });
 });

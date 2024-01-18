@@ -161,7 +161,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
             if (ev.message.startsWith(";")) {
                 try {
                     const tokens = tokeniseCommandLine(ev.message, 1);
-                    if (tokens.length > 1) {
+                    if (tokens.length >= 1) {
                         CommandRegistry.get(
                             tokens[0]!, tokens.slice(1),
                             cmd => {
@@ -183,6 +183,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                         // commands but it was malformed.
                         ev.cancel();
                         ev.sender.console.error(e.message);
+                        // FIXME: Show usage
                     }
                     else {
                         // We know the user attempted to run one of our

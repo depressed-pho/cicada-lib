@@ -44,11 +44,18 @@ type PositionalArgumentParser<Field> =
 
 // FieldPopulator is an existential type and this is how we encode it in
 // TypeScript.
-type FieldPopulator<Class> = (run: <Field>(setter: Setter<Class, Field>,
-                                           parser: ArgumentParser<Field>) => void) => void;
-function mkFieldPopulator<Class, Field>(setter: Setter<Class, Field>,
+interface FieldPopulator<Class> {
+    readonly name: string;
+    populate(run: <Field>(setter: Setter<Class, Field>,
+                          parser: ArgumentParser<Field>) => void): void;
+}
+function mkFieldPopulator<Class, Field>(name: string,
+                                        setter: Setter<Class, Field>,
                                         parser: ArgumentParser<Field>): FieldPopulator<Class> {
-    return (run) => run(setter, parser);
+    return {
+        name,
+        populate: (run) => run(setter, parser)
+    };
 }
 
 // Embedded in user-supplied classes by field decorators such as @flag,
@@ -60,12 +67,13 @@ class CommandParser<Class> {
         this.#posArgs = [];
     }
 
-    public subcommand<Field>(setter: Setter<Class, Field>,
+    public subcommand<Field>(name: string,
+                             setter: Setter<Class, Field>,
                              ctors: (new (args: string[]) => Field)[]): void {
         // FIXME: Verify that there are no subcommands prior to positional
         // arguments, or throw an error.
         this.#posArgs.push(
-            mkFieldPopulator(setter, new SubcommandParser(ctors)));
+            mkFieldPopulator(name, setter, new SubcommandParser(ctors)));
     }
 
     public parse(args: string[], ctor: new () => Class): Class {
@@ -78,11 +86,10 @@ class CommandParser<Class> {
             // It looks like a positional argument but is it really
             // so?
             const posArg = this.#posArgs[posArgIdx];
-            if (!posArg) {
-                throw new CommandParsingError(
-                    `Positional argument #{pos} not defined`);
-            }
-            posArg((setter, parser) => {
+            if (!posArg)
+                throw new CommandParsingError(`Unparsable argument: ${args[i]!}`);
+
+            posArg.populate((setter, parser) => {
                 if (parser instanceof SubcommandParser) {
                     // Encountering a subcommand causes a total state
                     // transition. The subcommand is expected to absorb
@@ -96,7 +103,13 @@ class CommandParser<Class> {
                         `Internal error: unknown positional argument type: ${parser}`);
                 }
             });
+            posArgIdx++;
         }
+
+        // FIXME: handle optional positional arguments
+        if (posArgIdx < this.#posArgs.length)
+            throw new CommandParsingError(
+                `Argument <${this.#posArgs[posArgIdx]!.name}> is required but is missing`);
 
         return into;
     }
@@ -107,6 +120,7 @@ class SubcommandParser<Field> {
 
     public constructor(ctors: (new (args: string[]) => Field)[]) {
         this.#subcmds = new OrdMap();
+
         for (const ctor of ctors) {
             const subcmd =
                 ctor[Symbol.metadata]?.[subcommandDefinition] as SubcommandDefinition<Field>|undefined;
@@ -201,7 +215,8 @@ export function subcommand<Class extends {}, Field>(arg: any) {
             const cmdParser =
                 (context.metadata[commandParser] as CommandParser<Class>|undefined) ??= new CommandParser();
 
-            cmdParser.subcommand(context.access.set, arg);
+            const name = String(context.name); // FIXME: Custom argument names
+            cmdParser.subcommand(name, context.access.set, arg);
         };
     }
 }
