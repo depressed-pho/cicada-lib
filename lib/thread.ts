@@ -135,8 +135,4 @@ export abstract class Thread {
     }
 }
 
-export class ThreadCancellationRequested extends Error {
-    public constructor(message?: string, options?: ErrorOptions) {
-        super(message, options);
-    }
-}
+export class ThreadCancellationRequested extends Error {}
