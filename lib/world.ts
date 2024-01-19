@@ -169,7 +169,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         function echo(tokens: string[]): string {
             return render(
                 PP.beside(
-                    PP.darkPurple(PP.text(";")),
+                    PP.darkPurple(PP.text(prefix)),
                     PP.align(
                         prettyPrintCommandLine(tokens))));
         }
