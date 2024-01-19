@@ -18,7 +18,7 @@ export class PlayerConsole extends ConsoleBase {
                 ":",
                 this.indent(),
                 this.format(...args)
-            ].join("");
+            ].join(""); // THINKME: Should we really join it?
 
             this.#player.sendMessage(msg);
         }

@@ -1,5 +1,5 @@
 import { CommandRegistry, CommandTokenisationError, CommandParsingError,
-         tokeniseCommandLine } from "./command.js";
+         prettyPrintCommandLine, tokeniseCommandLine } from "./command.js";
 import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
@@ -9,6 +9,7 @@ import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { IPreferencesContainer } from "./preferences.js";
 import { Vector3, WorldSoundOptions } from "@minecraft/server";
+import * as PP from "./pprint.js";
 import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
@@ -156,18 +157,51 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
     }
 
     #listenToCustomCommands() {
+        const prefix = ";";
+
+        function render(doc: PP.Doc): string {
+            return PP.displayS(PP.renderPretty(1.0, Infinity, doc));
+        }
+
+        // Text that players type won't be echoed back to their chat screen
+        // when the chatSend event is canceled. So we pretty-print their
+        // commands and send them back.
+        function echo(tokens: string[]): string {
+            return render(
+                PP.beside(
+                    PP.darkPurple(PP.text(";")),
+                    PP.align(
+                        prettyPrintCommandLine(tokens))));
+        }
+
         this.beforeEvents.chatSend.subscribe(ev => {
             // NOTE: Maybe the prefix should be customisable but Bedrock
             // should really support custom commands natively in the first
             // place.
-            if (ev.message.startsWith(";")) {
+            if (ev.message.startsWith(prefix)) {
+                let tokens: string[]; // TypeScript cannot infer the type of this. LOL.
                 try {
-                    const tokens = tokeniseCommandLine(ev.message, 1);
+                    tokens = tokeniseCommandLine(ev.message, 1);
+                }
+                catch (e) {
+                    if (e instanceof CommandTokenisationError) {
+                        // Tokenisation errors should be ignored because it
+                        // might be for a different addon.
+                        return;
+                    }
+                    else {
+                        // What's this. Is it an internal error?
+                        throw e;
+                    }
+                }
+
+                try {
                     if (tokens.length >= 1) {
                         CommandRegistry.get(
                             tokens[0]!, tokens.slice(1),
                             cmd => {
                                 ev.cancel();
+                                ev.sender.sendMessage(echo(tokens));
                                 cmd.run(ev.sender);
                             },
                             // Don't cancel the event when there is no such
@@ -176,21 +210,25 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                     }
                 }
                 catch (e) {
-                    if (e instanceof CommandTokenisationError) {
-                        // Tokenisation errors should be ignored because it
-                        // might be for a different addon.
-                    }
-                    else if (e instanceof CommandParsingError) {
+                    if (e instanceof CommandParsingError) {
                         // We know the user attempted to run one of our
                         // commands but it was malformed.
                         ev.cancel();
-                        ev.sender.console.error(e.message);
+                        ev.sender.sendMessage(echo(tokens));
+                        // THINKME: This should be localized.
+                        ev.sender.sendMessage(render(PP.hcat([
+                            PP.bold(PP.red(PP.text("Command error"))),
+                            PP.text(":"),
+                            PP.space,
+                            PP.string(e.message)
+                        ])));
                         // FIXME: Show usage
                     }
                     else {
                         // We know the user attempted to run one of our
                         // commands but it somehow failed.
                         ev.cancel();
+                        ev.sender.sendMessage(echo(tokens));
                         ev.sender.console.error(e);
                     }
                 }

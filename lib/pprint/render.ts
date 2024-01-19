@@ -78,7 +78,7 @@ function dCons(indent: number, doc: Doc, docs: Docs): Docs {
  * of `ribbonFrac * width` characters. The ribbon width is the maximal
  * amount of non-indentation characters on a line. The parameter
  * `ribbonFrac` should be between `0.0` and `1.0`. If it is lower or
- * higher, the ribbon width will be 0 or `width` respectively.
+ * higher, the ribbon width will be clipped to 0 or `width` respectively.
  */
 export function renderPretty(ribbonFrac: number, width: number, d: Doc): SimpleDoc {
     return renderFits(fits1, ribbonFrac, width, d);

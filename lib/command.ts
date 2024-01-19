@@ -1,5 +1,11 @@
 import { OrdMap } from "./collections/ordered-map.js";
 import { Player } from "./player.js";
+import * as PP from "./pprint.js";
+
+/* NOTE: Classes compiled using these decorators have to be targetted to
+ * ES2020 atm, because the version of QuickJS used by MCBE 1.20.51 does not
+ * support class static blocks.
+ */
 
 // We are going to use decorator metadata but it's unlikely that the
 // runtime supports it natively. Here's a polyfill.
@@ -264,7 +270,44 @@ export class CommandRegistry {
     }
 }
 
-/** Package private: user code should not use this */
+/** Package private: user code should not use this. */
+const ANY_SPECIALS    = /[\s\\'"]/;
+const STRONG_SPECIALS = /[\\"]/;
+export function prettyPrintCommandLine(tokens: string[]): PP.Doc {
+    return PP.fillSep(tokens.map((token, idx) => {
+        if (ANY_SPECIALS.test(token)) {
+            // This token contains some special characters. Quote it to not
+            // confuse players seeing it.
+            const docs = [PP.darkGreen(PP.text('"'))];
+            let   pos  = 0;
+            while (pos < token.length) {
+                const strong = token.slice(pos).search(STRONG_SPECIALS);
+                if (strong >= 0) {
+                    // Found a strong special character. Escape it.
+                    if (pos < strong)
+                        docs.push(PP.yellow(PP.string(token.slice(pos, strong))));
+                    docs.push(PP.aqua(PP.text("\\" + token[strong])));
+                    pos = strong + 1;
+                }
+                else {
+                    break;
+                }
+            }
+            if (pos < token.length)
+                docs.push(PP.yellow(PP.string(token.slice(pos))));
+            docs.push(PP.darkGreen(PP.text('"')));
+            return PP.hcat(docs);
+        }
+        else if (idx == 0) {
+            return PP.green(PP.string(token));
+        }
+        else {
+            return PP.string(token);
+        }
+    }));
+}
+
+/** Package private: user code should not use this. */
 export function tokeniseCommandLine(line: string, pos = 0): string[] {
     // An array of complete tokens. An element may be an empty string.
     const tokens: string[] = [];

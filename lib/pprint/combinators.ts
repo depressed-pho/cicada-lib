@@ -430,7 +430,7 @@ export function hang(i: number, d: Doc): Doc {
  * function paste(x: Doc, y: Doc): Doc {
  *     return align(lineCat(x, y));
  * }
- * const test = textCat(text("hi"), paste(text("nice"), text("world"));
+ * const test = spaceCat(text("hi"), paste(text("nice"), text("world"));
  * ``
  *
  * which will be layed out as:
