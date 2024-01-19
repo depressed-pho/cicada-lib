@@ -1,3 +1,24 @@
+export function spawn(gen: (cancelled: Promise<never>) => AsyncGenerator): Thread;
+export function spawn(name: string, gen: (cancelled: Promise<never>) => AsyncGenerator): Thread;
+export function spawn(...args: any[]) {
+    let name: string|undefined;
+    let gen: (cancelled: Promise<never>) => AsyncGenerator;
+    switch (args.length) {
+        case 1:
+            name = undefined;
+            gen  = args[0];
+            break;
+        case 2:
+            name = args[0];
+            gen  = args[1];
+    }
+
+    class T extends Thread {
+        protected readonly run = gen;
+    }
+    return new T(name).start();
+}
+
 export abstract class Thread {
     #task?: AsyncGenerator;
     readonly id: number;
