@@ -4,9 +4,9 @@ import { Block, BlockPermutation, PlayerBreakBlockAfterEvent,
          PlayerPlaceBlockAfterEvent, PlayerBreakBlockBeforeEvent } from "../block.js";
 import { PistonActivateAfterEvent } from "../block/minecraft/piston.js";
 import { Dimension } from "../dimension.js";
-import { Entity, ItemUseAfterEvent, EntityDieAfterEvent, EntityEventOptions,
+import { Entity, EntityDieAfterEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
-import { ItemStack } from "../item/stack.js";
+import { ItemStack, ItemUseAfterEvent, ItemUseBeforeEvent } from "../item.js";
 import { ChatSendBeforeEvent, Player,
          PlayerLeaveBeforeEvent, PlayerSpawnAfterEvent } from "../player.js"
 import { Wrapper } from "../wrapper.js";
@@ -57,7 +57,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
             (rawEv: MC.EntityDieAfterEvent) => {
                 return {
                     damageSource: rawEv.damageSource,
-                    deadEntity:    new Entity(rawEv.deadEntity)
+                    deadEntity:   new Entity(rawEv.deadEntity)
                 };
             },
             entityEventOptionsToRaw);
@@ -66,9 +66,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
             (rawEv: MC.ItemUseAfterEvent) => {
                 return {
                     itemStack: new ItemStack(rawEv.itemStack),
-                    source:    rawEv.source.typeId === "minecraft:player"
-                        ? new Player(rawEv.source as MC.Player)
-                        : new Entity(rawEv.source)
+                    source:    new Player(rawEv.source)
                 };
             });
         this.pistonActivate = new GluedEventSignalWithoutOptions(
@@ -83,6 +81,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
 
 export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
     public readonly chatSend: IEventSignal<ChatSendBeforeEvent>;
+    public readonly itemUse: IEventSignal<ItemUseBeforeEvent>;
     public readonly playerBreakBlock: IEventSignal<PlayerBreakBlockBeforeEvent>;
     public readonly playerLeave: IEventSignal<PlayerLeaveBeforeEvent>;
 
@@ -92,6 +91,9 @@ export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
         this.chatSend = new GluedEventSignalWithoutOptions(
             this.raw.chatSend,
             (rawEv: MC.ChatSendBeforeEvent) => new ChatSendBeforeEvent(rawEv));
+        this.itemUse = new GluedEventSignalWithoutOptions(
+            this.raw.itemUse,
+            (rawEv: MC.ItemUseBeforeEvent) => new ItemUseBeforeEvent(rawEv));
         this.playerBreakBlock = new GluedEventSignalWithoutOptions(
             this.raw.playerBreakBlock,
             (rawEv: MC.PlayerBreakBlockBeforeEvent) => new PlayerBreakBlockBeforeEvent(rawEv));

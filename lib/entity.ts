@@ -2,7 +2,6 @@ import { Block, BlockRaycastHit } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
 import { EntityTags } from "./entity/tags.js";
-import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
 import { Wrapper } from "./wrapper.js";
 import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
@@ -122,9 +121,4 @@ export function entityEventOptionsToRaw(opts: EntityEventOptions): MC.EntityEven
         ret.entityTypes = opts.entityTypes;
     }
     return ret;
-}
-
-export interface ItemUseAfterEvent {
-    readonly itemStack: ItemStack;
-    readonly source: Entity;
 }
