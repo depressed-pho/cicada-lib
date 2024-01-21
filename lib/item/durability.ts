@@ -39,4 +39,14 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
         const chance = this.raw.getDamageChance(level);
         return chance / 100.0;
     }
+
+    /** Apply a damage to the tool, taking account of its Unbreaking
+     * level. The damage should usually be 1 for its primary use, and 2 for
+     * non-primary uses (like using pickaxes for digging dirt).
+     */
+    public damage(amount: number): this {
+        if (Math.random() < this.damageChance)
+            this.current = Math.max(0, this.current - amount);
+        return this;
+    }
 }
