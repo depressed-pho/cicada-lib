@@ -166,9 +166,9 @@ export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerB
 
     /** The item stack that is being used to break the block, or undefined
      * if empty hand. Note that the returned object is only a copy of the
-     * item the player is using. It does not keep track of future state
-     * changes, and mutating it will have no effects on the original stack
-     * even after leaving the read-only mode.
+     * item the player is using. It does not reflect future state changes,
+     * and mutating it has no effects on the original stack even after
+     * leaving the read-only mode.
      */
     public get itemStack(): ItemStack|undefined {
         return this.raw.itemStack

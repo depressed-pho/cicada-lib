@@ -63,6 +63,11 @@ export class EntityEquipments extends Wrapper<MC.EntityEquippableComponent> impl
         }
     }
 
+    /** Get the equipped item in the given slot. The returned object is
+     * only a copy of the item in the slot. It does not reflect future
+     * state changes, and mutating it has no effects on the original
+     * item.
+     */
     public "get"(slot: EquipmentSlot): ItemStack|undefined {
         const raw = this.raw.getEquipment(slot);
         return raw ? new ItemStack(raw) : undefined;
