@@ -17,22 +17,6 @@ export class Block extends Wrapper<MC.Block> {
     #dimension?: Dimension;
     #location?: Location;
 
-    /** Clone an existing instance. */
-    public constructor(block: Block);
-
-    /** The signature is public only because of a language limitation. User
-     * code must never use it directly. */
-    public constructor(rawBlock: MC.Block);
-
-    public constructor(arg: Block|MC.Block) {
-        if (arg instanceof Block) {
-            super(arg.raw);
-        }
-        else {
-            super(arg);
-        }
-    }
-
     public get dimension(): Dimension {
         if (!this.#dimension)
             this.#dimension = new Dimension(this.raw.dimension);
@@ -180,8 +164,19 @@ export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerB
         this.raw.cancel = true;
     }
 
+    /** The item stack that is being used to break the block, or undefined
+     * if empty hand. Mutating the returned object will actually mutate the
+     * item stack the player is using.
+     */
     public get itemStack(): ItemStack|undefined {
-        return this.raw.itemStack ? new ItemStack(this.raw.itemStack) : undefined;
+        if (this.raw.itemStack) {
+            return new ItemStack(this.raw.itemStack).reference(() => {
+                this.raw.itemStack = this.raw.itemStack!;
+            });
+        }
+        else {
+            return undefined;
+        }
     }
 
     public set itemStack(st: ItemStack|undefined) {
@@ -196,6 +191,7 @@ export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerB
 
 export interface PlayerBreakBlockAfterEvent extends BlockEvent {
     readonly brokenBlockPermutation: BlockPermutation;
+    // FIXME: reference() these two
     readonly itemStackAfterBreak?:   ItemStack;
     readonly itemStackBeforeBreak?:  ItemStack
     readonly player:                 Player;

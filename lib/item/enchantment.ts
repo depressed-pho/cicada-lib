@@ -5,6 +5,17 @@ import * as MC from "@minecraft/server";
 export { EnchantmentType };
 
 export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefined> implements Set<Enchantment> {
+    /// @internal
+    public constructor(enchs: ItemEnchantments);
+    /// @internal
+    public constructor(raw: MC.ItemEnchantableComponent|undefined);
+    public constructor(arg: any) {
+        if (arg instanceof ItemEnchantments)
+            super(arg.raw);
+        else
+            super(arg);
+    }
+
     public get size(): number {
         return this.raw ? this.raw.getEnchantments().length : 0;
     }
@@ -19,6 +30,13 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
 
     public add(ench: Enchantment): this {
         if (this.raw) {
+            // FIXME: Remove this glue code when the API is updated to 1.9.0.
+            if ("enchantments" in this.raw) {
+                // @ts-ignore
+                this.raw.enchantments.addEnchantment(ench);
+                return this;
+            }
+
             this.raw.addEnchantment(ench);
             return this;
         }
@@ -28,6 +46,12 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
     }
 
     public canAdd(ench: Enchantment): boolean {
+        // FIXME: Remove this glue code when the API is updated to 1.9.0.
+        if (this.raw && "enchantments" in this.raw) {
+            // @ts-ignore
+            return this.raw.enchantments.canAddEnchantment(ench);
+        }
+
         return this.raw
             ? this.raw.canAddEnchantment(ench)
             : false;
@@ -41,12 +65,21 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
 
     public delete(ench: Enchantment|EnchantmentType|string): boolean {
         if (this.has(ench)) {
-            if (ench instanceof Enchantment) {
+            // FIXME: Remove this glue code when the API is updated to 1.9.0.
+            if (this.raw && "enchantments" in this.raw) {
+                if (ench instanceof Enchantment)
+                    // @ts-ignore
+                    this.raw.enchantments.removeEnchantment(ench.type);
+                else
+                    // @ts-ignore
+                    this.raw.enchantments.removeEnchantment(ench);
+                return true;
+            }
+
+            if (ench instanceof Enchantment)
                 this.raw!.removeEnchantment(ench.type);
-            }
-            else {
+            else
                 this.raw!.removeEnchantment(ench);
-            }
             return true;
         }
         else {
@@ -118,6 +151,37 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
             }
         }
     }
+
+    /// @internal
+    public reference(onMutate: () => void): ItemEnchantments {
+        return new ItemEnchantmentsRef(this, onMutate);
+    }
+}
+
+class ItemEnchantmentsRef extends ItemEnchantments {
+    readonly #onMutate: () => void;
+
+    public constructor(enchs: ItemEnchantments, onMutate: () => void) {
+        super(enchs);
+        this.#onMutate = onMutate;
+    }
+
+    public override add(ench: Enchantment): this {
+        super.add(ench);
+        this.#onMutate();
+        return this;
+    }
+
+    public override clear(): void {
+        super.clear();
+    }
+
+    public override delete(ench: Enchantment|EnchantmentType|string): boolean {
+        const ret = super.delete(ench);
+        if (ret)
+            this.#onMutate();
+        return ret;
+    }
 }
 
 export class Enchantment implements MC.Enchantment {
@@ -146,6 +210,8 @@ export class Enchantment implements MC.Enchantment {
             }
         }
         else {
+            // MC.Enchantment is just an interface rather than a class,
+            // which complicates things here.
             if (typeof args[0].type === "string") {
                 const type = MC.EnchantmentTypes.get(args[0].type);
                 if (type) {

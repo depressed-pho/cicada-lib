@@ -1,5 +1,6 @@
 import { BlockStateValue } from "../block.js";
 import { Wrapper } from "../wrapper.js";
+import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantment.js";
 import { ItemTags } from "./tags.js";
 import { ItemType } from "./type.js";
@@ -67,58 +68,41 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         }
     }
 
-    get amount(): number {
+    public get amount(): number {
         return this.raw.amount;
     }
-    set amount(n: number) {
+    public set amount(n: number) {
         this.raw.amount = n;
     }
 
     /** Returns the set of tags for this item stack. */
-    get tags(): ItemTags {
+    public get tags(): ItemTags {
         if (!this.#tags)
             this.#tags = new ItemTags(this.raw);
 
         return this.#tags;
     }
 
-    get type(): ItemType {
+    public get type(): ItemType {
         if (!this.#type)
             this.#type = new ItemType(this.raw.type);
 
         return this.#type;
     }
 
-    get typeId(): string {
+    public get typeId(): string {
         return this.raw.typeId;
     }
 
-    get lore(): string[] {
+    public get lore(): string[] {
         return this.raw.getLore();
     }
-    set lore(lore: string[]) {
+    public set lore(lore: string[]) {
         this.raw.setLore(lore);
     }
 
-    get maxAmount(): number {
+    public get maxAmount(): number {
         return this.raw.maxAmount;
-    }
-
-    /** Obtain the set of enchantments applied to this item stack. This
-     * function returns an empty set of enchantments if the item cannot be
-     * enchanted.
-     */
-    get enchantments(): ItemEnchantments {
-        // FIXME: Remove this glue code when the API is updated to 1.9.0.
-        if (1) {
-            // @ts-ignore
-            const comp = this.raw.getComponent("minecraft:enchantments");
-            if (comp)
-                return new ItemEnchantments(comp as any);
-        }
-
-        return new ItemEnchantments(
-            this.raw.getComponent("minecraft:enchantable"));
     }
 
     public clone(): ItemStack {
@@ -131,5 +115,65 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
      */
     public isStackableWith(stack: ItemStack): boolean {
         return this.raw.isStackableWith(stack.raw);
+    }
+
+    // ---------- Components ----------
+
+    /** Obtain durability of this item stack, or `undefined` if it doesn't
+     * take damage.
+     */
+    public get durability(): ItemDurability|undefined {
+        const raw = this.raw.getComponent("minecraft:durability");
+        return raw ? new ItemDurability(raw, this.enchantments) : undefined;
+    }
+
+    /** Obtain the set of enchantments applied to this item stack. This
+     * function returns an empty set of enchantments if the item cannot be
+     * enchanted.
+     */
+    public get enchantments(): ItemEnchantments {
+        // FIXME: Remove this glue code when the API is updated to 1.9.0.
+        if (1) {
+            // @ts-ignore
+            const comp = this.raw.getComponent("minecraft:enchantments");
+            if (comp)
+                return new ItemEnchantments(comp as any);
+        }
+
+        return new ItemEnchantments(
+            this.raw.getComponent("minecraft:enchantable"));
+    }
+
+    /// @internal
+    public reference(onMutate: () => void): ItemStack {
+        return new ItemStackRef(this, onMutate);
+    }
+}
+
+class ItemStackRef extends ItemStack {
+    readonly #onMutate: () => void;
+
+    public constructor(stack: ItemStack, onMutate: () => void) {
+        super(stack.raw);
+        this.#onMutate = onMutate;
+    }
+
+    public override set amount(n: number) {
+        super.amount = n;
+        this.#onMutate();
+    }
+
+    public override set lore(lore: string[]) {
+        super.lore = lore;
+        this.#onMutate();
+    }
+
+    public override get durability(): ItemDurability|undefined {
+        const dur = super.durability;
+        return dur ? dur.reference(this.#onMutate) : undefined;
+    }
+
+    public override get enchantments(): ItemEnchantments {
+        return super.enchantments.reference(this.#onMutate);
     }
 }
