@@ -1,7 +1,7 @@
 import { BlockStateValue } from "../block.js";
 import { Wrapper } from "../wrapper.js";
 import { ItemDurability } from "./durability.js";
-import { ItemEnchantments } from "./enchantment.js";
+import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
 import { ItemType } from "./type.js";
 import * as MC from "@minecraft/server";
@@ -9,6 +9,8 @@ import * as MC from "@minecraft/server";
 export class ItemStack extends Wrapper<MC.ItemStack> {
     #tags?: ItemTags;
     #type?: ItemType;
+    #durability?: ItemDurability|null;
+    #enchantments?: ItemEnchantments;
 
     /** Package private: user code should not use this. */
     public constructor(rawItemStack: MC.ItemStack);
@@ -123,8 +125,11 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
      * take damage.
      */
     public get durability(): ItemDurability|undefined {
-        const raw = this.raw.getComponent("minecraft:durability");
-        return raw ? new ItemDurability(raw, this.enchantments) : undefined;
+        if (this.#durability === undefined) {
+            const raw = this.raw.getComponent("minecraft:durability");
+            this.#durability = raw ? new ItemDurability(raw, this.enchantments) : null;
+        }
+        return this.#durability ? this.#durability : undefined;
     }
 
     /** Obtain the set of enchantments applied to this item stack. This
@@ -132,48 +137,22 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
      * enchanted.
      */
     public get enchantments(): ItemEnchantments {
-        // FIXME: Remove this glue code when the API is updated to 1.9.0.
-        if (1) {
-            // @ts-ignore
-            const comp = this.raw.getComponent("minecraft:enchantments");
-            if (comp)
-                return new ItemEnchantments(comp as any);
+        if (!this.#enchantments) {
+            // FIXME: Remove this glue code when the API is updated to 1.9.0.
+            if (1) {
+                // @ts-ignore
+                const comp = this.raw.getComponent("minecraft:enchantments");
+                if (comp)
+                    this.#enchantments = new ItemEnchantments(comp as any);
+                else
+                    this.#enchantments = new ItemEnchantments(
+                        this.raw.getComponent("minecraft:enchantable"));
+            }
+            else {
+                this.#enchantments = new ItemEnchantments(
+                    this.raw.getComponent("minecraft:enchantable"));
+            }
         }
-
-        return new ItemEnchantments(
-            this.raw.getComponent("minecraft:enchantable"));
-    }
-
-    /// @internal
-    public reference(onMutate: () => void): ItemStack {
-        return new ItemStackRef(this, onMutate);
-    }
-}
-
-class ItemStackRef extends ItemStack {
-    readonly #onMutate: () => void;
-
-    public constructor(stack: ItemStack, onMutate: () => void) {
-        super(stack.raw);
-        this.#onMutate = onMutate;
-    }
-
-    public override set amount(n: number) {
-        super.amount = n;
-        this.#onMutate();
-    }
-
-    public override set lore(lore: string[]) {
-        super.lore = lore;
-        this.#onMutate();
-    }
-
-    public override get durability(): ItemDurability|undefined {
-        const dur = super.durability;
-        return dur ? dur.reference(this.#onMutate) : undefined;
-    }
-
-    public override get enchantments(): ItemEnchantments {
-        return super.enchantments.reference(this.#onMutate);
+        return this.#enchantments;
     }
 }

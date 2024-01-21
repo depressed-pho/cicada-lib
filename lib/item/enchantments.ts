@@ -5,17 +5,6 @@ import * as MC from "@minecraft/server";
 export { EnchantmentType };
 
 export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefined> implements Set<Enchantment> {
-    /// @internal
-    public constructor(enchs: ItemEnchantments);
-    /// @internal
-    public constructor(raw: MC.ItemEnchantableComponent|undefined);
-    public constructor(arg: any) {
-        if (arg instanceof ItemEnchantments)
-            super(arg.raw);
-        else
-            super(arg);
-    }
-
     public get size(): number {
         return this.raw ? this.raw.getEnchantments().length : 0;
     }
@@ -150,37 +139,6 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
                 yield new Enchantment(raw);
             }
         }
-    }
-
-    /// @internal
-    public reference(onMutate: () => void): ItemEnchantments {
-        return new ItemEnchantmentsRef(this, onMutate);
-    }
-}
-
-class ItemEnchantmentsRef extends ItemEnchantments {
-    readonly #onMutate: () => void;
-
-    public constructor(enchs: ItemEnchantments, onMutate: () => void) {
-        super(enchs);
-        this.#onMutate = onMutate;
-    }
-
-    public override add(ench: Enchantment): this {
-        super.add(ench);
-        this.#onMutate();
-        return this;
-    }
-
-    public override clear(): void {
-        super.clear();
-    }
-
-    public override delete(ench: Enchantment|EnchantmentType|string): boolean {
-        const ret = super.delete(ench);
-        if (ret)
-            this.#onMutate();
-        return ret;
     }
 }
 

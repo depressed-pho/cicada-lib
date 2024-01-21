@@ -1,4 +1,5 @@
 import { Entity } from "./entity.js";
+import { EntityEquipments } from "./entity/equipments.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { map } from "./iterable.js";
 import { PlayerConsole } from "./player/console.js";
@@ -44,11 +45,6 @@ export class Player extends Entity implements IPreferencesContainer {
         throw new Error(`Cannot detect the game mode for player ${this.name}`);
     }
 
-    public get inventory(): EntityInventory {
-        return new EntityInventory(
-            this.rawPlayer.getComponent("minecraft:inventory") as MC.EntityInventoryComponent);
-    }
-
     public get name(): string {
         return this.rawPlayer.name;
     }
@@ -91,6 +87,24 @@ export class Player extends Entity implements IPreferencesContainer {
 
     public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
         this.rawPlayer.sendMessage(msg);
+    }
+
+    // --------- Components ---------
+
+    public override get equipments(): EntityEquipments {
+        const eqs = super.equipments;
+        if (!eqs)
+            throw new Error(`This player has mysteriously no equipment slots`);
+
+        return eqs;
+    }
+
+    public override get inventory(): EntityInventory {
+        const inv = super.inventory;
+        if (!inv)
+            throw new Error(`This player has mysteriously no inventories`);
+
+        return inv;
     }
 }
 

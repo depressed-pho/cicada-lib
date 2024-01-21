@@ -1,4 +1,4 @@
-import { ItemEnchantments } from "./enchantment.js";
+import { ItemEnchantments } from "./enchantments.js";
 import { Wrapper } from "../wrapper.js";
 import * as MC from "@minecraft/server";
 
@@ -6,18 +6,9 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
     readonly #enchantments;
 
     /// @internal
-    public constructor(dur: ItemDurability);
-    /// @internal
-    public constructor(raw: MC.ItemDurabilityComponent, enchantments: ItemEnchantments);
-    public constructor(...args: any[]) {
-        if (args.length == 1) {
-            super(args[0].raw);
-            this.#enchantments = args[0].#enchantments;
-        }
-        else {
-            super(args[0]);
-            this.#enchantments = args[1];
-        }
+    public constructor(raw: MC.ItemDurabilityComponent, enchantments: ItemEnchantments) {
+        super(raw);
+        this.#enchantments = enchantments;
     }
 
     /** Return the current durability of the item. */
@@ -47,24 +38,5 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
         const level  = this.#enchantments.get("unbreaking")?.level ?? 0;
         const chance = this.raw.getDamageChance(level);
         return chance / 100.0;
-    }
-
-    /// @internal
-    public reference(onMutate: () => void): ItemDurability {
-        return new ItemDurabilityRef(this, onMutate);
-    }
-}
-
-class ItemDurabilityRef extends ItemDurability {
-    readonly #onMutate: () => void;
-
-    public constructor(dur: ItemDurability, onMutate: () => void) {
-        super(dur);
-        this.#onMutate = onMutate;
-    }
-
-    public override set current(durability: number) {
-        super.current = durability;
-        this.#onMutate();
     }
 }

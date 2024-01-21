@@ -1,6 +1,8 @@
 import { Block, BlockRaycastHit } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
+import { EntityEquipments } from "./entity/equipments.js";
+import { EntityInventory } from "./entity/inventory.js";
 import { EntityTags } from "./entity/tags.js";
 import { Location } from "./location.js";
 import { Wrapper } from "./wrapper.js";
@@ -9,9 +11,13 @@ import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
 import * as MC from "@minecraft/server";
 
 export { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions };
+export { EntityEquipments, EntityInventory };
+export { EquipmentSlot } from "./entity/equipments.js";
 
 export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     #tags?: EntityTags;
+    #inventory?: EntityInventory|null;
+    #equipments?: EntityEquipments|null;
 
     public get dimension(): Dimension {
         return new Dimension(this.raw.dimension);
@@ -90,6 +96,24 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
 
     public triggerEvent(eventName: string): void {
         this.raw.triggerEvent(eventName);
+    }
+
+    // --------- Components ---------
+
+    public get equipments(): EntityEquipments|undefined {
+        if (this.#equipments === undefined) {
+            const raw = this.raw.getComponent("minecraft:equippable");
+            this.#equipments = raw ? new EntityEquipments(raw) : null;
+        }
+        return this.#equipments ? this.#equipments : undefined;
+    }
+
+    public get inventory(): EntityInventory|undefined {
+        if (this.#inventory === undefined) {
+            const raw = this.raw.getComponent("minecraft:inventory");
+            this.#inventory = raw ? new EntityInventory(raw) : null;
+        }
+        return this.#inventory ? this.#inventory : undefined;
     }
 }
 

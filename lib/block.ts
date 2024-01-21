@@ -165,18 +165,15 @@ export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerB
     }
 
     /** The item stack that is being used to break the block, or undefined
-     * if empty hand. Mutating the returned object will actually mutate the
-     * item stack the player is using.
+     * if empty hand. Note that the returned object is only a copy of the
+     * item the player is using. It does not keep track of future state
+     * changes, and mutating it will have no effects on the original stack
+     * even after leaving the read-only mode.
      */
     public get itemStack(): ItemStack|undefined {
-        if (this.raw.itemStack) {
-            return new ItemStack(this.raw.itemStack).reference(() => {
-                this.raw.itemStack = this.raw.itemStack!;
-            });
-        }
-        else {
-            return undefined;
-        }
+        return this.raw.itemStack
+            ? new ItemStack(this.raw.itemStack)
+            : undefined;
     }
 
     public set itemStack(st: ItemStack|undefined) {
@@ -191,7 +188,6 @@ export class PlayerBreakBlockBeforeEvent extends IsBlockEvent(Wrapper<MC.PlayerB
 
 export interface PlayerBreakBlockAfterEvent extends BlockEvent {
     readonly brokenBlockPermutation: BlockPermutation;
-    // FIXME: reference() these two
     readonly itemStackAfterBreak?:   ItemStack;
     readonly itemStackBeforeBreak?:  ItemStack
     readonly player:                 Player;
