@@ -215,10 +215,11 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                         // commands but it was malformed.
                         ev.cancel();
                         ev.sender.sendMessage(echo(tokens));
-                        // THINKME: This should be localized.
+                        // NOTE: Ideally this should be localized but how?
+                        // We must somehow merge lang files, but cicada-lib
+                        // should NOT rely on cicada-build.
                         ev.sender.sendMessage(render(PP.hcat([
-                            PP.bold(PP.red(PP.text("Command error"))),
-                            PP.text(":"),
+                            PP.red(PP.text("Command error:")),
                             PP.space,
                             PP.string(e.message)
                         ])));

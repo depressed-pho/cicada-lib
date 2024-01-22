@@ -318,7 +318,7 @@ export function prettyPrintCommandLine(tokens: string[]): PP.Doc {
                 if (strong >= 0) {
                     // Found a strong special character. Escape it.
                     if (pos < strong)
-                        docs.push(PP.yellow(PP.string(token.slice(pos, strong))));
+                        docs.push(PP.orange(PP.string(token.slice(pos, strong))));
                     docs.push(PP.lightBlue(PP.text("\\" + token[strong])));
                     pos = strong + 1;
                 }
@@ -327,7 +327,7 @@ export function prettyPrintCommandLine(tokens: string[]): PP.Doc {
                 }
             }
             if (pos < token.length)
-                docs.push(PP.yellow(PP.string(token.slice(pos))));
+                docs.push(PP.orange(PP.string(token.slice(pos))));
             docs.push(PP.darkGreen(PP.text('"')));
             return PP.hcat(docs);
         }
@@ -335,7 +335,7 @@ export function prettyPrintCommandLine(tokens: string[]): PP.Doc {
             return PP.green(PP.string(token));
         }
         else {
-            return PP.string(token);
+            return PP.coolLightGray(PP.string(token));
         }
     }));
 }
