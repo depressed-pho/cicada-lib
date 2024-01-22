@@ -12,6 +12,12 @@
     `start()`.
   * The setter `Block.prototype.type` no longer accepts `string`. Use the
     `Block.prototype.typeId` setter for that.
+  * `gold` from `pprint/colours.ts` has been renamed to `orange` to reflect the official name.
+  * `aqua` from `pprint/colours.ts` has been renamed to `lightBlue`.
+  * `lightPurple` from `pprint/colours.ts` has been renamed to `pink`.
+  * `minecoinGold` from `pprint/colours.ts` has been renamed to `gold`.
+  * `strikethrough` from `pprint/styles.ts` has been removed because it's non-functional.
+  * `underline` from `pprint/styles.ts` has been removed because it's non-functional.
 * Non-breaking changes:
   * The constructor of `ItemStack` now accepts optional block states. This
     only works for items that have corresponding blocks.
@@ -34,10 +40,13 @@
   * `Timer.prototype.reset`
   * `World.prototype.getDimension`
   * `World.prototype.playSound`
-* Added `lib/hasher.ts`
-* Added `lib/sync/mpsc.ts`
-* Added `lib/sync/notify.ts`
-* Added `lib/sync/watch.ts`
+* Added `hasher.ts`
+* Added `sync/mpsc.ts`
+* Added `sync/notify.ts`
+* Added `sync/watch.ts`
+* `pprint/colours.ts` now additionally exports `warmLightGray`,
+  `coolLightGray`, `darkBrown`, `darkerRed`, `brown`, `darkGold`, `aqua`,
+  `darkTeal`, and `purple`.
 
 ## 2.0.0 -- 2023-09-17
 

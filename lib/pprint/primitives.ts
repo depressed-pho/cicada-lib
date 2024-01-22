@@ -15,8 +15,6 @@ export enum Tag {
     Colour,
     Obfuscate,
     Bold,
-    Strikethrough,
-    Underline,
     Italicise,
     RestoreFormat
 }
@@ -83,16 +81,6 @@ interface Bold {
     enabled: boolean,
     doc:     Doc
 }
-interface Strikethrough {
-    tag:     Tag.Strikethrough,
-    enabled: boolean,
-    doc:     Doc
-}
-interface Underline {
-    tag:     Tag.Underline,
-    enabled: boolean,
-    doc:     Doc
-}
 interface Italicise {
     tag:     Tag.Italicise,
     enabled: boolean,
@@ -105,8 +93,6 @@ export interface RestoreFormat {
     colour:        Fmt.Colour|null,
     obfuscate:     boolean,
     bold:          boolean,
-    strikethrough: boolean,
-    underline:     boolean,
     italicise:     boolean
 }
 
@@ -117,8 +103,8 @@ export interface RestoreFormat {
 * these possibilities.
 */
 export type Doc = Fail | Empty | Text | Line | FlatAlt | Cat | Nest | Union |
-    Column | Columns | Nesting | Colour | Obfuscate | Bold | Strikethrough |
-    Underline | Italicise | RestoreFormat;
+    Column | Columns | Nesting | Colour | Obfuscate | Bold | Italicise |
+    RestoreFormat;
 
 export enum STag {
     SFail,

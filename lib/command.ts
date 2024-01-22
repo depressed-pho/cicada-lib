@@ -319,7 +319,7 @@ export function prettyPrintCommandLine(tokens: string[]): PP.Doc {
                     // Found a strong special character. Escape it.
                     if (pos < strong)
                         docs.push(PP.yellow(PP.string(token.slice(pos, strong))));
-                    docs.push(PP.aqua(PP.text("\\" + token[strong])));
+                    docs.push(PP.lightBlue(PP.text("\\" + token[strong])));
                     pos = strong + 1;
                 }
                 else {

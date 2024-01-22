@@ -36,44 +36,6 @@ export function debold(d: Doc): Doc {
     };
 }
 
-/** Display a document with strikethrough. This has currently no effects on
- * Bedrock. */
-export function strikethrough(d: Doc): Doc {
-    return {
-        tag:     Tag.Strikethrough,
-        enabled: true,
-        doc:     d
-    };
-}
-
-/** Display a document without strikethrough. */
-export function unstrikethrough(d: Doc): Doc {
-    return {
-        tag:     Tag.Strikethrough,
-        enabled: false,
-        doc:     d
-    };
-}
-
-/** Display a document with underlining. This has currently no effects on
- * Bedrock. */
-export function underline(d: Doc): Doc {
-    return {
-        tag:     Tag.Underline,
-        enabled: true,
-        doc:     d
-    };
-}
-
-/** Display a document without underlining. */
-export function deunderline(d: Doc): Doc {
-    return {
-        tag:     Tag.Underline,
-        enabled: false,
-        doc:     d
-    };
-}
-
 /** Display a document in italics. */
 export function italicise(d: Doc): Doc {
     return {

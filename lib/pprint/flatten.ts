@@ -2,8 +2,7 @@ import { lazy } from "../lazy.js";
 import { Doc, Tag, beside, nest, fail, column, columns,
          nesting, union } from "./primitives.js";
 import { colour } from "./colours.js"
-import { obfuscate, deobfuscate, bold, debold, strikethrough,
-         unstrikethrough, underline, deunderline,
+import { obfuscate, deobfuscate, bold, debold,
          italicise, deitalicise } from "./styles.js"
 
 /** The `group` combinator is used to specify alternative layouts. The
@@ -42,12 +41,6 @@ export function flatten(doc: Doc): Doc {
             case Tag.Bold:          return d.enabled
                                              ? bold  (lazy(() => flatten(d.doc)))
                                              : debold(lazy(() => flatten(d.doc)));
-            case Tag.Strikethrough: return d.enabled
-                                             ? strikethrough  (lazy(() => flatten(d.doc)))
-                                             : unstrikethrough(lazy(() => flatten(d.doc)));
-            case Tag.Underline:     return d.enabled
-                                             ? underline  (lazy(() => flatten(d.doc)))
-                                             : deunderline(lazy(() => flatten(d.doc)));
             case Tag.Italicise:     return d.enabled
                                              ? italicise  (lazy(() => flatten(d.doc)))
                                              : deitalicise(lazy(() => flatten(d.doc)));

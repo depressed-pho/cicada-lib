@@ -34,8 +34,6 @@ export function plain(doc: Doc): Doc {
             case Tag.Colour:        doc = d.doc; continue plain;
             case Tag.Obfuscate:     doc = d.doc; continue plain;
             case Tag.Bold:          doc = d.doc; continue plain;
-            case Tag.Strikethrough: doc = d.doc; continue plain;
-            case Tag.Underline:     doc = d.doc; continue plain;
             case Tag.Italicise:     doc = d.doc; continue plain;
             case Tag.RestoreFormat: return empty;
         }
@@ -167,12 +165,6 @@ function renderFits(fits: (p: number, m: number, w: number, sd: SimpleDoc) => bo
                         case Tag.Bold:          return sFormat([Fmt.bold],
                                                                lazy(() => best(n, k, {...rf, bold: true},
                                                                                dCons(i, d.doc, dCons(i, rf, ds)))));
-                        case Tag.Strikethrough: return sFormat([Fmt.strikethrough],
-                                                               lazy(() => best(n, k, {...rf, strikethrough: true},
-                                                                               dCons(i, d.doc, dCons(i, rf, ds)))));
-                        case Tag.Underline:     return sFormat([Fmt.underline],
-                                                               lazy(() => best(n, k, {...rf, underline: true},
-                                                                               dCons(i, d.doc, dCons(i, rf, ds)))));
                         case Tag.Italicise:     return sFormat([Fmt.italicise],
                                                                lazy(() => best(n, k, {...rf, italicise: true},
                                                                                dCons(i, d.doc, dCons(i, rf, ds)))));
@@ -182,8 +174,6 @@ function renderFits(fits: (p: number, m: number, w: number, sd: SimpleDoc) => bo
                                   ...(d.colour != null ? [Fmt.setColour(d.colour)] : []),
                                   ...(d.obfuscate      ? [Fmt.obfuscate          ] : []),
                                   ...(d.bold           ? [Fmt.bold               ] : []),
-                                  ...(d.strikethrough  ? [Fmt.strikethrough      ] : []),
-                                  ...(d.underline      ? [Fmt.underline          ] : []),
                                   ...(d.italicise      ? [Fmt.italicise          ] : []) ],
                                 lazy(() => best(n, k, d, ds)));
                     }
@@ -205,8 +195,6 @@ function renderFits(fits: (p: number, m: number, w: number, sd: SimpleDoc) => bo
         colour:        null,
         obfuscate:     false,
         bold:          false,
-        strikethrough: false,
-        underline:     false,
         italicise:     false
     };
     return best(0, 0, initialFmt, dCons(0, d, dNil));
@@ -309,8 +297,6 @@ export function renderCompact(x: Doc): SimpleDoc {
                     case Tag.Colour:        docs = [d.doc, ...ds];        continue scan;
                     case Tag.Obfuscate:     docs = [d.doc, ...ds];        continue scan;
                     case Tag.Bold:          docs = [d.doc, ...ds];        continue scan;
-                    case Tag.Strikethrough: docs = [d.doc, ...ds];        continue scan;
-                    case Tag.Underline:     docs = [d.doc, ...ds];        continue scan;
                     case Tag.Italicise:     docs = [d.doc, ...ds];        continue scan;
                     case Tag.RestoreFormat: docs = ds;                    continue scan;
                 }

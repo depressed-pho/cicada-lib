@@ -128,19 +128,19 @@ function styliseNoColour(token: PP.Doc, _type: TokenType): PP.Doc {
 
 const defaultStyles = lazy(() => {
     return new Map<TokenType, (token: PP.Doc) => PP.Doc>([
-        [TokenType.BigInt   , PP.yellow     ],
-        [TokenType.Boolean  , PP.yellow     ],
-        [TokenType.Date     , PP.lightPurple],
-        [TokenType.Function , PP.gold       ],
-        [TokenType.Name     , (d) => d      ], // Don't style them.
-        [TokenType.Null     , PP.bold       ],
-        [TokenType.Number   , PP.yellow     ],
-        [TokenType.RegExp   , PP.aqua       ],
-        [TokenType.Special  , PP.gray       ],
-        [TokenType.String   , PP.green      ],
-        [TokenType.Symbol   , PP.green      ],
-        [TokenType.Undefined, PP.gray       ],
-        [TokenType.Unknown  , PP.italicise  ]
+        [TokenType.BigInt   , PP.yellow   ],
+        [TokenType.Boolean  , PP.yellow   ],
+        [TokenType.Date     , PP.pink     ],
+        [TokenType.Function , PP.orange   ],
+        [TokenType.Name     , (d) => d    ], // Don't style them.
+        [TokenType.Null     , PP.bold     ],
+        [TokenType.Number   , PP.yellow   ],
+        [TokenType.RegExp   , PP.lightBlue],
+        [TokenType.Special  , PP.gray     ],
+        [TokenType.String   , PP.green    ],
+        [TokenType.Symbol   , PP.green    ],
+        [TokenType.Undefined, PP.gray     ],
+        [TokenType.Unknown  , PP.italicise]
     ]);
 });
 function styliseWithColour(token: PP.Doc, type: TokenType): PP.Doc {

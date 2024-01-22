@@ -1,21 +1,31 @@
+/// See https://learn.microsoft.com/en-us/minecraft/creator/reference/content/rawmessagejson?view=minecraft-bedrock-experimental#formatting-codes-
 export enum Colour {
-    Black        = "0",
-    DarkBlue     = "1",
-    DarkGreen    = "2",
-    DarkAqua     = "3",
-    DarkRed      = "4",
-    DarkPurple   = "5",
-    Gold         = "6",
-    Gray         = "7",
-    DarkGray     = "8",
-    Blue         = "9",
-    Green        = "a",
-    Aqua         = "b",
-    Red          = "c",
-    LightPurple  = "d",
-    Yellow       = "e",
-    White        = "f",
-    MinecoinGold = "g"
+    Black         = "0",
+    DarkBlue      = "1",
+    DarkGreen     = "2",
+    DarkAqua      = "3",
+    DarkRed       = "4",
+    DarkPurple    = "5",
+    Orange        = "6",
+    Gray          = "7",
+    DarkGray      = "8",
+    Blue          = "9",
+    Green         = "a",
+    LightBlue     = "b",
+    Red           = "c",
+    Pink          = "d",
+    Yellow        = "e",
+    White         = "f",
+    Gold          = "g",
+    WarmLightGray = "h",
+    CoolLightGray = "i",
+    DarkBrown     = "j",
+    DarkerRed     = "m", // Officially called "dark red" but the name conflicts with §4.
+    Brown         = "n",
+    DarkGold      = "p", // Officially called "gold" but the name conflicts with §g.
+    Aqua          = "s",
+    DarkTeal      = "t",
+    Purple        = "u"
 }
 
 enum FmtTag {
@@ -23,8 +33,6 @@ enum FmtTag {
     SetColour,
     Obfuscate,
     Bold,
-    Strikethrough,
-    Underline,
     Italicise
 }
 
@@ -41,18 +49,11 @@ interface Obfuscate {
 interface Bold {
     tag: FmtTag.Bold
 }
-interface Strikethrough {
-    tag: FmtTag.Strikethrough
-}
-interface Underline {
-    tag: FmtTag.Underline
-}
 interface Italicise {
     tag: FmtTag.Italicise
 }
 
-export type Code = Reset | SetColour | Obfuscate | Bold |
-    Strikethrough | Underline | Italicise;
+export type Code = Reset | SetColour | Obfuscate | Bold | Italicise;
 
 export const reset: Code = {
     tag: FmtTag.Reset
@@ -73,14 +74,6 @@ export const bold: Code = {
     tag: FmtTag.Bold
 }
 
-export const strikethrough: Code = {
-    tag: FmtTag.Strikethrough
-}
-
-export const underline: Code = {
-    tag: FmtTag.Underline
-}
-
 export const italicise: Code = {
     tag: FmtTag.Italicise
 }
@@ -92,8 +85,6 @@ export function toString(codes: Code[]): string {
             case FmtTag.SetColour:     return "§" + c.colour;
             case FmtTag.Obfuscate:     return "§k";
             case FmtTag.Bold:          return "§l";
-            case FmtTag.Strikethrough: return "§m";
-            case FmtTag.Underline:     return "§n";
             case FmtTag.Italicise:     return "§o";
         }
     }).join("");
