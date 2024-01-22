@@ -45,6 +45,10 @@ export class Player extends Entity implements IPreferencesContainer {
         throw new Error(`Cannot detect the game mode for player ${this.name}`);
     }
 
+    public get isOp(): boolean {
+        return this.rawPlayer.isOp();
+    }
+
     public get name(): string {
         return this.rawPlayer.name;
     }

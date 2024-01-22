@@ -30,6 +30,7 @@
   * `ItemStack.prototype.tags`
   * `Player.prototype.gameMode`
   * `Player.prototype.getSession`
+  * `Player.prototype.isOp`
   * `Timer.prototype.reset`
   * `World.prototype.getDimension`
   * `World.prototype.playSound`
