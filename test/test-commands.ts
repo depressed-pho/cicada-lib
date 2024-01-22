@@ -4,7 +4,7 @@ import { Player } from "../lib/player.js";
 import { CommandRegistry, CommandTokenisationError, CommandParsingError,
          command, subcommand, tokeniseCommandLine } from "../lib/command.js";
 
-@subcommand("aabc")
+@subcommand("aabc", {aliases: ["aabc-xxxx", "AABC"]})
 class SubcommandAabcOfCommandFoo {}
 
 @subcommand("aacd")
@@ -94,6 +94,9 @@ describe("@subcommand", () => {
         expect(() => runCommand("foo aab")).to.not.throw();
         expect(() => runCommand("foo aac")).to.not.throw();
         expect(() => runCommand("foo aa" )).to.throw(CommandParsingError);
+    });
+    it("can resolve aliases", () => {
+        expect(() => runCommand("f-o-o AABC")).to.not.throw();
     });
     it("throws an error if no subcommands are given", () => {
         expect(() => runCommand("foo")).to.throw(CommandParsingError);

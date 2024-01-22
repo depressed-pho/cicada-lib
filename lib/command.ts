@@ -27,6 +27,11 @@ export interface CommandDefinitionOptions {
     aliases?: string[]
 }
 
+/** FIXME: documentation */
+export interface SubcommandDefinitionOptions {
+    aliases?: string[]
+}
+
 const subcommandDefinition = Symbol("subcommandDefinition");
 const commandParser        = Symbol("commandParser");
 
@@ -39,6 +44,7 @@ interface CommandDefinition<Class extends ICommand> {
 // Embedded in user-supplied classes by @subcommand class decorator.
 interface SubcommandDefinition<Class> {
     name: string;
+    opts: SubcommandDefinitionOptions;
     ctor: new () => Class;
 }
 
@@ -122,10 +128,14 @@ class CommandParser<Class> {
 }
 
 class SubcommandParser<Field> {
-    readonly #subcmds: OrdMap<string, SubcommandDefinition<Field>>;
+    readonly #subcmds: Map<string, SubcommandDefinition<Field>>;
+    readonly #aliases: Map<string, string>;
+    readonly #merged: OrdMap<string, SubcommandDefinition<Field>>;
 
     public constructor(ctors: (new (args: string[]) => Field)[]) {
-        this.#subcmds = new OrdMap();
+        this.#subcmds = new Map();
+        this.#aliases = new Map();
+        this.#merged  = new OrdMap();
 
         for (const ctor of ctors) {
             const subcmd =
@@ -134,10 +144,20 @@ class SubcommandParser<Field> {
             if (!subcmd)
                 throw new Error("Subcommand classes must also be decorated with @subcommand()");
 
-            if (this.#subcmds.has(subcmd.name))
+            if (this.#merged.has(subcmd.name))
                 throw new Error(`Duplicate subcommand: ${subcmd.name}`);
-            else
-                this.#subcmds.set(subcmd.name, subcmd);
+
+            for (const alias of subcmd.opts.aliases ?? []) {
+                if (this.#merged.has(alias))
+                    throw new Error(`Duplicate subcommand alias: ${alias}`);
+            }
+
+            this.#subcmds.set(subcmd.name, subcmd);
+            this.#merged.set(subcmd.name, subcmd);
+            for (const alias of subcmd.opts.aliases ?? []) {
+                this.#aliases.set(alias, subcmd.name);
+                this.#merged.set(alias, subcmd);
+            }
         }
     }
 
@@ -145,17 +165,27 @@ class SubcommandParser<Field> {
         // Find a definition of a subcommand using cmd as a prefix. We can
         // accept any prefixes of defined subcommands (such as "config" for
         // "configuration") because they're scoped in our own command.
-        const closest = this.#subcmds.getGreaterThanEqual(cmd);
+        const closest = this.#merged.getGreaterThanEqual(cmd);
         if (!closest || !closest[0].startsWith(cmd))
             throw new CommandParsingError(
                 `No subcommands starting with \`${cmd}' are available`);
 
         // But if it's also a prefix of the second-closest subcommand, the
         // supplied name is ambiguous.
-        const next = this.#subcmds.getGreaterThan(closest[0]);
-        if (next && next[0].startsWith(cmd))
-            throw new CommandParsingError(
-                `\`${cmd}' is ambiguous because more than a single subcommand start with it`);
+        for (let nextKey = closest[0];; ) {
+            const next = this.#merged.getGreaterThan(nextKey);
+            if (next && next[0].startsWith(cmd)) {
+                if (next[1].name === closest[1].name) {
+                    // It's ambigious between aliases to the same
+                    // command. We have no reason to reject it.
+                    nextKey = next[0];
+                    continue;
+                }
+                throw new CommandParsingError(
+                    `\`${cmd}' is ambiguous because more than a single subcommand start with it`);
+            }
+            break;
+        }
 
         const cmdParser =
             closest[1].ctor[Symbol.metadata]?.[commandParser] as CommandParser<Field>|undefined;
@@ -187,7 +217,7 @@ export function command<Class extends ICommand>(name: string, opts?: CommandDefi
 }
 
 /** FIXME: documentation */
-export function subcommand<Class extends {}>(name: string):
+export function subcommand<Class extends {}>(name: string, opts?: SubcommandDefinitionOptions):
     (target: new () => Class, context: ClassDecoratorContext<new () => Class>) =>
         void|(new () => Class);
 
@@ -196,8 +226,8 @@ export function subcommand<Class extends {}, Field>(classes: (new () => any)[]):
     (target: undefined, context: ClassFieldDecoratorContext<Class, Field>) =>
         void|(() => Field);
 
-export function subcommand<Class extends {}, Field>(arg: any) {
-    if (typeof arg === "string") {
+export function subcommand<Class extends {}, Field>(...args: any[]) {
+    if (typeof args[0] === "string") {
         // Used as a class decorator.
         return (target: new () => Class, context: ClassDecoratorContext<new () => Class>) => {
             // This can legitimately happen when Class has no decorated fields.
@@ -205,7 +235,8 @@ export function subcommand<Class extends {}, Field>(arg: any) {
                 ??= new CommandParser();
 
             const subcmd: SubcommandDefinition<Class> = {
-                name: arg,
+                name: args[0],
+                opts: args[1] ?? {},
                 ctor: target
             };
             context.metadata[subcommandDefinition] = subcmd;
@@ -222,7 +253,7 @@ export function subcommand<Class extends {}, Field>(arg: any) {
                 (context.metadata[commandParser] as CommandParser<Class>|undefined) ??= new CommandParser();
 
             const name = String(context.name); // FIXME: Custom argument names
-            cmdParser.subcommand(name, context.access.set, arg);
+            cmdParser.subcommand(name, context.access.set, args[0]);
         };
     }
 }
@@ -231,31 +262,33 @@ export function subcommand<Class extends {}, Field>(arg: any) {
 export class CommandRegistry {
     static readonly #commands: Map<string, CommandDefinition<any>> = new Map();
     static readonly #aliases: Map<string, string> = new Map();
+    static readonly #merged: Map<string, CommandDefinition<any>> = new Map();
 
     public static get empty(): boolean {
-        return !this.#commands.size;
+        return !this.#merged.size;
     }
 
     public static register<T extends ICommand>(cmd: CommandDefinition<T>): void {
-        if (this.#commands.has(cmd.name))
+        if (this.#merged.has(cmd.name))
             throw new Error(`Duplicate command: ${cmd.name}`);
 
         for (const alias of cmd.opts.aliases ?? []) {
-            if (this.#aliases.has(alias))
+            if (this.#merged.has(alias))
                 throw new Error(`Duplicate command alias: ${alias}`);
         }
 
         this.#commands.set(cmd.name, cmd);
+        this.#merged.set(cmd.name, cmd);
         for (const alias of cmd.opts.aliases ?? []) {
             this.#aliases.set(alias, cmd.name);
+            this.#merged.set(alias, cmd);
         }
     }
 
     public static "get"<R>(name: string, args: string[],
                            whenFound: <T extends ICommand>(cmd: T) => R,
                            whenNotFound: () => R): R {
-        const origName = this.#aliases.get(name);
-        const cmd      = this.#commands.get(origName ?? name);
+        const cmd = this.#merged.get(name);
         if (!cmd)
             return whenNotFound();
 
