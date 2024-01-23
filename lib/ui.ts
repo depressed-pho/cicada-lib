@@ -65,14 +65,52 @@ export class MessageFormResponse extends FormResponse {
 }
 
 export class ModalFormResponse extends FormResponse {
-    readonly formValues?: Map<any, any>;
+    readonly formValues?: ModalFormValues;
 
     /// @internal
     public constructor(raw: UI.ModalFormResponse,
-                       interpret: (formValues: (boolean|number|string)[]) => Map<any, any>) {
+                       interpret: (formValues: (boolean|number|string)[]) => ModalFormValues) {
         super(raw);
         if (raw.formValues) {
             this.formValues = interpret(raw.formValues);
+        }
+    }
+}
+
+export class ModalFormValues extends Map<any, any> {
+    public getBoolean(key: any): boolean {
+        const val = this.get(key);
+        switch (typeof val) {
+            case "boolean":
+                return val;
+            case undefined:
+                throw new Error(`No form values exist for key ${String(key)}`);
+            default:
+                throw new Error(`The form value for key ${String(key)} is not a boolean: ${String(val)}`);
+        }
+    }
+
+    public getNumber(key: any): number {
+        const val = this.get(key);
+        switch (typeof val) {
+            case "number":
+                return val;
+            case undefined:
+                throw new Error(`No form values exist for key ${String(key)}`);
+            default:
+                throw new Error(`The form value for key ${String(key)} is not a number: ${String(val)}`);
+        }
+    }
+
+    public getString(key: any): number {
+        const val = this.get(key);
+        switch (typeof val) {
+            case "string":
+                return val;
+            case undefined:
+                throw new Error(`No form values exist for key ${String(key)}`);
+            default:
+                throw new Error(`The form value for key ${String(key)} is not a string: ${String(val)}`);
         }
     }
 }
@@ -239,7 +277,7 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
     async show(player: Player, opts?: FormOptions): Promise<ModalFormResponse> {
         const raw = await genericShow(() => this.raw.show(player.rawPlayer), opts);
         return new ModalFormResponse(raw, formValues => {
-            const map = new Map();
+            const map = new ModalFormValues();
             for (let i = 0; i < this.#items.length; i++) {
                 const [key, val] = this.#items[i]!(formValues[i]!);
                 map.set(key, val);
