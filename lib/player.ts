@@ -22,6 +22,8 @@ export interface IPlayerSession {
 }
 
 export class Player extends Entity implements IPreferencesContainer {
+    #session?: any;
+
     /** Package private: user code should not use this. */
     public constructor(rawPlayer: MC.Player) {
         super(rawPlayer);
@@ -86,7 +88,10 @@ export class Player extends Entity implements IPreferencesContainer {
      * World.prototype.usePlayerSessions}.
      */
     public getSession<T extends IPlayerSession>(): T {
-        return SessionManager.get(this.id) as T;
+        if (this.#session === undefined)
+            this.#session = SessionManager.get(this.id);
+
+        return this.#session as T;
     }
 
     public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
