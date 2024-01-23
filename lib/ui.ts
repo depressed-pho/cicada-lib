@@ -128,8 +128,7 @@ async function genericShow<R extends UI.FormResponse>(thunk: () => Promise<R>,
     while (true) {
         const res = await thunk();
         switch (res.cancelationReason) {
-            case undefined:
-                // Submitted
+            case undefined: // Submitted
                 return res;
 
             case UI.FormCancelationReason.UserBusy:
@@ -269,7 +268,7 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
             if (typeof formValue !== "number")
                 throw new Error(
                     `Internal error: wrong type of form value ${String(formValue)} for key ${String(key)}`);
-            return optKeys[formValue]!;
+            return [key, optKeys[formValue]!];
         });
         this.raw.dropdown(label, optLabels, defaultValueIndex);
         return this;
