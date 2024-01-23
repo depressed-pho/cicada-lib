@@ -35,6 +35,7 @@
   * `BlockPermutation.prototype.tags`
   * `Dimension.prototype.spawnItem`
   * `Entity.prototype.matches`
+  * `Location.prototype.floor`
   * `ItemStack.prototype.tags`
   * `Player.prototype.gameMode`
   * `Player.prototype.getSession`

@@ -39,6 +39,13 @@ export class Location implements MC.Vector3 {
                this.z == other.z;
     }
 
+    public floor(): Location {
+        return new Location(
+            Math.floor(this.x),
+            Math.floor(this.y),
+            Math.floor(this.z));
+    }
+
     public distance(other: Location): number {
         return Math.sqrt(
                  Math.pow(this.x - other.x, 2) +
