@@ -24,12 +24,8 @@ export interface ICommand {
 
 /** FIXME: documentation */
 export interface CommandDefinitionOptions {
-    aliases?: string[]
-}
-
-/** FIXME: documentation */
-export interface SubcommandDefinitionOptions {
-    aliases?: string[]
+    aliases?: string[],
+    opOnly?: boolean
 }
 
 const subcommandDefinition = Symbol("subcommandDefinition");
@@ -44,7 +40,7 @@ interface CommandDefinition<Class extends ICommand> {
 // Embedded in user-supplied classes by @subcommand class decorator.
 interface SubcommandDefinition<Class> {
     name: string;
-    opts: SubcommandDefinitionOptions;
+    opts: CommandDefinitionOptions;
     ctor: new () => Class;
 }
 
@@ -88,7 +84,7 @@ class CommandParser<Class> {
             mkFieldPopulator(name, setter, new SubcommandParser(ctors)));
     }
 
-    public parse(args: string[], ctor: new () => Class): Class {
+    public parse(runner: Player, args: string[], ctor: new () => Class): Class {
         const into = new ctor();
 
         let posArgIdx = 0;
@@ -106,7 +102,7 @@ class CommandParser<Class> {
                     // Encountering a subcommand causes a total state
                     // transition. The subcommand is expected to absorb
                     // all the remaining arguments.
-                    setter(into, parser.parse(args[i]!, args.slice(i+1)));
+                    setter(into, parser.parse(runner, args[i]!, args.slice(i+1)));
                     i = args.length; // So that we will exit the loop after
                                      // returning from this function.
                 }
@@ -161,7 +157,7 @@ class SubcommandParser<Field> {
         }
     }
 
-    public parse(cmd: string, args: string[]): Field {
+    public parse(runner: Player, cmd: string, args: string[]): Field {
         // Find a definition of a subcommand using cmd as a prefix. We can
         // accept any prefixes of defined subcommands (such as "config" for
         // "configuration") because they're scoped in our own command.
@@ -187,6 +183,10 @@ class SubcommandParser<Field> {
             break;
         }
 
+        if (closest[1].opts.opOnly && !runner.isOp)
+            throw new CommandPermissionError(
+                `The subcommand \`${closest[1].name}' is only for server operators`);
+
         const cmdParser =
             closest[1].ctor[Symbol.metadata]?.[commandParser] as CommandParser<Field>|undefined;
         if (!cmdParser)
@@ -194,7 +194,7 @@ class SubcommandParser<Field> {
             throw new Error(
                 `Internal error: the class ${closest[1].ctor} does not have a command parser attached`);
 
-        return cmdParser.parse(args, closest[1].ctor);
+        return cmdParser.parse(runner, args, closest[1].ctor);
     }
 }
 
@@ -217,7 +217,7 @@ export function command<Class extends ICommand>(name: string, opts?: CommandDefi
 }
 
 /** FIXME: documentation */
-export function subcommand<Class extends {}>(name: string, opts?: SubcommandDefinitionOptions):
+export function subcommand<Class extends {}>(name: string, opts?: CommandDefinitionOptions):
     (target: new () => Class, context: ClassDecoratorContext<new () => Class>) =>
         void|(new () => Class);
 
@@ -285,12 +285,16 @@ export class CommandRegistry {
         }
     }
 
-    public static "get"<R>(name: string, args: string[],
+    public static "get"<R>(runner: Player, name: string, args: string[],
                            whenFound: <T extends ICommand>(cmd: T) => R,
                            whenNotFound: () => R): R {
         const cmd = this.#merged.get(name);
         if (!cmd)
             return whenNotFound();
+
+        if (cmd.opts.opOnly && !runner.isOp)
+            throw new CommandPermissionError(
+                `The command \`${cmd.name}' is only for server operators`);
 
         const cmdParser =
             cmd.ctor[Symbol.metadata]?.[commandParser] as CommandParser<any>|undefined;
@@ -299,7 +303,7 @@ export class CommandRegistry {
             throw new Error(
                 `Internal error: the class ${cmd.ctor} does not have a command parser attached`);
 
-        return whenFound(cmdParser.parse(args, cmd.ctor));
+        return whenFound(cmdParser.parse(runner, args, cmd.ctor));
     }
 }
 
@@ -442,8 +446,11 @@ export function tokeniseCommandLine(line: string, pos = 0): string[] {
     return tokens;
 }
 
-/** Package private: user code should not use this */
+/// @internal
 export class CommandTokenisationError extends Error {}
 
-/** Package private: user code should not use this */
+/// @internal
 export class CommandParsingError extends Error {}
+
+/// @internal
+export class CommandPermissionError extends Error {}

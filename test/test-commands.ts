@@ -2,25 +2,32 @@ import "mocha";
 import { expect } from "chai";
 import { Player } from "../lib/player.js";
 import { CommandRegistry, CommandTokenisationError, CommandParsingError,
-         command, subcommand, tokeniseCommandLine } from "../lib/command.js";
+         CommandPermissionError, command, subcommand, tokeniseCommandLine
+       } from "../lib/command.js";
 
 @subcommand("aabc", {aliases: ["aabc-xxxx", "AABC"]})
-class SubcommandAabcOfCommandFoo {}
+class SubcommandAabc {}
 
 @subcommand("aacd")
-class SubcommandAacdOfCommandFoo {}
+class SubcommandAacd {}
+
+@subcommand("op", {opOnly: true})
+class SubcommandOp {}
 
 @command("foo", {aliases: ["f-o-o"]})
 // @ts-ignore: TypeScript thinks it's unused while it's not.
 class CommandFoo {
-    @subcommand([SubcommandAabcOfCommandFoo, SubcommandAacdOfCommandFoo])
-    public readonly subcommand!: SubcommandAabcOfCommandFoo|SubcommandAacdOfCommandFoo;
+    @subcommand([SubcommandAabc, SubcommandAacd, SubcommandOp])
+    public readonly subcommand!: SubcommandAabc|SubcommandAacd|SubcommandOp;
 
     public run(_runner: Player): void {
-        if (this.subcommand instanceof SubcommandAabcOfCommandFoo) {
+        if (this.subcommand instanceof SubcommandAabc) {
             // ...
         }
-        else if (this.subcommand instanceof SubcommandAacdOfCommandFoo) {
+        else if (this.subcommand instanceof SubcommandAacd) {
+            // ...
+        }
+        else if (this.subcommand instanceof SubcommandOp) {
             // ...
         }
         else {
@@ -29,12 +36,19 @@ class CommandFoo {
     }
 }
 
-function runCommand(line: string) {
+@command("op", {opOnly: true})
+// @ts-ignore: TypeScript thinks it's unused while it's not.
+class CommandOp {
+    public run(_runner: Player): void {}
+}
+
+function runCommand(line: string, asOp = false) {
     const tokens = tokeniseCommandLine(line);
     if (tokens.length >= 1) {
+        const runner: Player = {isOp: asOp} as any;
         CommandRegistry.get(
-            tokens[0]!, tokens.slice(1),
-            cmd => { cmd.run(undefined as any as Player) },
+            runner, tokens[0]!, tokens.slice(1),
+            cmd => { cmd.run(runner) },
             ()  => { throw new Error(`Command not found: ${tokens[0]!}`) });
     }
     else {
@@ -87,6 +101,10 @@ describe("@command", () => {
     it("can resolve aliases", () => {
         expect(() => runCommand("f-o-o aabc")).to.not.throw();
     });
+    it("only allows server ops to run op-only commands", () => {
+        expect(() => runCommand("op")).to.throw(CommandPermissionError);
+        expect(() => runCommand("op", true)).to.not.throw();
+    });
 });
 
 describe("@subcommand", () => {
@@ -97,6 +115,10 @@ describe("@subcommand", () => {
     });
     it("can resolve aliases", () => {
         expect(() => runCommand("f-o-o AABC")).to.not.throw();
+    });
+    it("only allows server ops to run op-only commands", () => {
+        expect(() => runCommand("foo op")).to.throw(CommandPermissionError);
+        expect(() => runCommand("foo op", true)).to.not.throw();
     });
     it("throws an error if no subcommands are given", () => {
         expect(() => runCommand("foo")).to.throw(CommandParsingError);

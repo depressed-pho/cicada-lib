@@ -198,7 +198,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                 try {
                     if (tokens.length >= 1) {
                         CommandRegistry.get(
-                            tokens[0]!, tokens.slice(1),
+                            ev.sender, tokens[0]!, tokens.slice(1),
                             cmd => {
                                 ev.cancel();
                                 ev.sender.sendMessage(echo(tokens));
