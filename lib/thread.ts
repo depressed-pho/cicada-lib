@@ -5,7 +5,7 @@ export function spawn(...args: any[]) {
     let gen: (cancelled: Promise<never>) => AsyncGenerator;
     switch (args.length) {
         case 1:
-            name = undefined;
+            name = args[0].name === "" ? "<anonymous>" : args[0].name;
             gen  = args[0];
             break;
         case 2:
@@ -32,7 +32,7 @@ export abstract class Thread {
 
     public constructor(name?: string) {
         this.id                 = Thread.#nextThreadID++;
-        this.name               = name != null ? name : `thread-${this.id}`;
+        this.name               = name != null ? name : new.target.name;
         this.#isCancelRequested = false;
         // This will be clobbered when the thread starts running.
         this.#cancel            = () => {};
@@ -111,7 +111,9 @@ export abstract class Thread {
             // perfectly fine.
         }
         else {
-            console.error(e);
+            console.error(
+                "Thread #%d (%s) aborted: %o",
+                this.id, this.name, e);
         }
 
         // NOTE: Returning a rejected promise here will make join() reject,
