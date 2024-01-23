@@ -18,6 +18,8 @@
   * `minecoinGold` from `pprint/colours.ts` has been renamed to `gold`.
   * `strikethrough` from `pprint/styles.ts` has been removed because it's non-functional.
   * `underline` from `pprint/styles.ts` has been removed because it's non-functional.
+  * UI builder methods from `ui.ts` now take keys of any types to identify
+    values in `FormResponse`.
 * Non-breaking changes:
   * The constructor of `ItemStack` now accepts optional block states. This
     only works for items that have corresponding blocks.
