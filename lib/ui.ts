@@ -128,6 +128,10 @@ async function genericShow<R extends UI.FormResponse>(thunk: () => Promise<R>,
     while (true) {
         const res = await thunk();
         switch (res.cancelationReason) {
+            case undefined:
+                // Submitted
+                return res;
+
             case UI.FormCancelationReason.UserBusy:
                 if (busyRetries < unifyToNumber(opts?.retryWhenBusy ?? false)) {
                     busyRetries++;
