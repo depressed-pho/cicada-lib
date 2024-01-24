@@ -4,15 +4,15 @@ import * as MC from "@minecraft/server";
  * interface but no mutations can be performed.
  */
 export class BlockTags implements Iterable<string> {
-    readonly #perm: MC.BlockPermutation;
+    readonly #source: MC.Block|MC.BlockPermutation;
 
     /// Package private.
-    public constructor(rawPerm: MC.BlockPermutation) {
-        this.#perm = rawPerm;
+    public constructor(source: MC.Block|MC.BlockPermutation) {
+        this.#source = source;
     }
 
     public get size(): number {
-        return this.#perm.getTags().length;
+        return this.#source.getTags().length;
     }
 
     public get [Symbol.toStringTag](): string {
@@ -37,7 +37,7 @@ export class BlockTags implements Iterable<string> {
     }
 
     public has(tag: string): boolean {
-        return this.#perm.hasTag(tag);
+        return this.#source.hasTag(tag);
     }
 
     public keys(): IterableIterator<string> {
@@ -45,6 +45,6 @@ export class BlockTags implements Iterable<string> {
     }
 
     public values(): IterableIterator<string> {
-        return this.#perm.getTags()[Symbol.iterator]();
+        return this.#source.getTags()[Symbol.iterator]();
     }
 }

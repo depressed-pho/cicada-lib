@@ -1,4 +1,5 @@
 import { BlockPermutation } from "./block/permutation.js";
+import { BlockTags } from "./block/tags.js";
 import { BlockType } from "./block/type.js";
 import { Dimension } from "./dimension.js";
 import { Location } from "./location.js";
@@ -9,13 +10,13 @@ import { Wrapper } from "./wrapper.js";
 import { Direction, Vector3 } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
-export { BlockPermutation, BlockType };
+export { BlockPermutation, BlockTags, BlockType };
 export { BlockStateValue, BlockStates } from "./block/states.js";
-export { BlockTags } from "./block/tags.js";
 
 export class Block extends Wrapper<MC.Block> {
     #dimension?: Dimension;
     #location?: Location;
+    #tags?: BlockTags;
 
     public get dimension(): Dimension {
         if (!this.#dimension)
@@ -58,6 +59,14 @@ export class Block extends Wrapper<MC.Block> {
 
     public set permutation(newPerm: BlockPermutation) {
         this.raw.setPermutation(newPerm.raw);
+    }
+
+    public get tags(): BlockTags {
+        // We can cache this because BlockTags does not hold a copy.
+        if (!this.#tags)
+            this.#tags = new BlockTags(this.raw);
+
+        return this.#tags;
     }
 
     public get type(): BlockType {
