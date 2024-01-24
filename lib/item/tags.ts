@@ -21,10 +21,6 @@ export class ItemTags implements Iterable<string>, I.HasCustomInspection {
         return "ItemTags";
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
-        return inspect(new Set(this));
-    }
-
     public [Symbol.iterator](): IterableIterator<string> {
         return this.values();
     }
@@ -52,5 +48,9 @@ export class ItemTags implements Iterable<string>, I.HasCustomInspection {
 
     public values(): IterableIterator<string> {
         return this.#stack.getTags()[Symbol.iterator]();
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        return PP.spaceCat(PP.text("[ItemTags]"), inspect(new Set(this)));
     }
 }

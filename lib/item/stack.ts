@@ -140,38 +140,6 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         return this.raw.maxAmount;
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
-        const obj: any = {
-            typeId: this.typeId
-        };
-        if (this.isStackable) {
-            obj.amount    = this.amount;
-            obj.maxAmount = this.maxAmount;
-        }
-        if (this.keepOnDeath) obj.keepOnDeath = true;
-        if (this.lockMode !== ItemLockMode.none) obj.lockMode = this.lockMode;
-        if (this.lore.length > 0) obj.lore = this.lore;
-        if (this.tags.size > 0) obj.tags = this.tags;
-
-        const comps: any = {};
-        if (this.durability) comps.durability = this.durability;
-        if (this.enchantments.size > 0) comps.enchantments = this.enchantments;
-        for (const comp of this.raw.getComponents()) {
-            switch (comp.typeId) {
-                case "minecraft:durability":
-                case "minecraft:enchantments": // FIXME: Remove this in the future
-                case "minecraft:enchantable":
-                    // These are already inspected in our own way.
-                    break;
-                default:
-                    comps[comp.typeId] = comp;
-            }
-        }
-        if (Object.entries(comps).length > 0) obj.components = comps;
-
-        return PP.spaceCat(PP.text("ItemStack"), inspect(obj, {showHidden: true}));
-    }
-
     public clone(): ItemStack {
         return new ItemStack(this.raw.clone());
     }
@@ -219,5 +187,38 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
             }
         }
         return this.#enchantments;
+    }
+
+    // Custom inspection
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj: any = {
+            typeId: this.typeId
+        };
+        if (this.isStackable) {
+            obj.amount    = this.amount;
+            obj.maxAmount = this.maxAmount;
+        }
+        if (this.keepOnDeath) obj.keepOnDeath = true;
+        if (this.lockMode !== ItemLockMode.none) obj.lockMode = this.lockMode;
+        if (this.lore.length > 0) obj.lore = this.lore;
+        if (this.tags.size > 0) obj.tags = this.tags;
+
+        const comps: any = {};
+        if (this.durability) comps.durability = this.durability;
+        if (this.enchantments.size > 0) comps.enchantments = this.enchantments;
+        for (const comp of this.raw.getComponents()) {
+            switch (comp.typeId) {
+                case "minecraft:durability":
+                case "minecraft:enchantments": // FIXME: Remove this in the future
+                case "minecraft:enchantable":
+                    // These are already inspected in our own way.
+                    break;
+                default:
+                    comps[comp.typeId] = comp;
+            }
+        }
+        if (Object.entries(comps).length > 0) obj.components = comps;
+
+        return PP.spaceCat(PP.text("ItemStack"), inspect(obj, {showHidden: true}));
     }
 }

@@ -1,5 +1,7 @@
 import { ItemEnchantments } from "./enchantments.js";
 import { Wrapper } from "../wrapper.js";
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
@@ -48,5 +50,14 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
         if (Math.random() < this.damageChance)
             this.current = Math.max(0, this.current - amount);
         return this;
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj: any = {
+            current:      this.current,
+            maximum:      this.maximum,
+            damageChance: this.damageChance
+        };
+        return PP.spaceCat(PP.text("ItemDurability"), inspect(obj));
     }
 }
