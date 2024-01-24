@@ -96,12 +96,12 @@ export interface RestoreFormat {
     italicise:     boolean
 }
 
-/** The abstract data type @Doc@ represents pretty documents.
-*
-* More specifically, a value of type @Doc@ represents a non-empty set of
-* possible renderings of a document.  The rendering functions select one of
-* these possibilities.
-*/
+/** The abstract data type `Doc` represents pretty documents.
+ *
+ * More specifically, a value of type `Doc` represents a non-empty set of
+ * possible renderings of a document. The rendering functions select one of
+ * these possibilities.
+ */
 export type Doc = Fail | Empty | Text | Line | FlatAlt | Cat | Nest | Union |
     Column | Columns | Nesting | Colour | Obfuscate | Bold | Italicise |
     RestoreFormat;

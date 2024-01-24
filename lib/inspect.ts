@@ -11,7 +11,8 @@ export interface InspectOptions {
     breakLength?: number,
     compact?: boolean,
     sorted?: boolean | ((x: PropertyKey, y: PropertyKey) => number),
-    getters?: boolean | "get" | "set"
+    getters?: boolean | "get" | "set",
+    allowCustom?: boolean
 }
 
 const defaultOpts: Required<InspectOptions> = {
@@ -24,9 +25,10 @@ const defaultOpts: Required<InspectOptions> = {
     breakLength: 80,
     compact: false,
     sorted: false,
-    getters: true /* Ideally this should be false, but almost all the
-                   * objects coming from "mojang-minecraft" are native
-                   * objects with getter/setters. */
+    getters: true, /* Ideally this should be false, but almost all the
+                    * objects coming from "mojang-minecraft" are native
+                    * objects with getter/setters. */
+    allowCustom: true
 };
 
 export enum TokenType {
@@ -43,6 +45,15 @@ export enum TokenType {
     Symbol,
     Undefined,
     Unknown
+}
+
+export const customInspectSymbol = Symbol.for("cicada-lib.inspect");
+
+/** An interface for objects implementing a custom inspection method. */
+export interface HasCustomInspection {
+    [customInspectSymbol](inspect: (value: any, opts?: InspectOptions) => PP.Doc,
+                          opts: Required<InspectOptions>
+                         ): PP.Doc;
 }
 
 interface Context {
@@ -97,14 +108,14 @@ function propertyIsEnumerable(obj: any, key: PropertyKey): boolean {
 function valueOf(ctor: Function, obj: any): any {
     const prim = ctor.prototype.valueOf.call(obj);
     if (typeof prim === "object") {
-        throw Error("valueOf() applied to a non-primitive wrapper");
+        throw new Error("valueOf() applied to a non-primitive wrapper");
     }
     else {
         return prim;
     }
 }
 
-export function inspect(obj: any, opts: InspectOptions = {}): string {
+export function inspect(value: any, opts: InspectOptions = {}): string {
     const ctx: Context = {
         opts:           {...defaultOpts, ...opts},
         propFilter:     opts.showHidden ? pAllProperties : pOnlyEnumerable,
@@ -115,7 +126,7 @@ export function inspect(obj: any, opts: InspectOptions = {}): string {
         seen:           new Set<any>(),
         circular:       new Map<any, number>()
     };
-    const doc  = inspectValue(obj, ctx);
+    const doc  = inspectValue(value, ctx);
     const sDoc = opts.compact
         ? PP.renderCompact(doc)
         : PP.renderSmart(0.9, ctx.opts.breakLength, doc);
@@ -224,6 +235,33 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     /* NOTE: We don't think we can tell proxies from their targets from
      * within JavaScript. Node.js "util.inspect" uses an internal API of
      * the interpreter which we can't do the same. */
+
+    // Check if the object implements HasCustomInspection if we are allowed
+    // to do so.
+    if (ctx.opts.allowCustom) {
+        const custom = obj[customInspectSymbol];
+        if (typeof custom === "function" &&
+            // Filter out prototype objects such as "(class {}).prototype",
+            // because their methods aren't meant to be called in this way.
+            !(obj.constructor && obj.constructor.prototype === obj)) {
+
+            return custom.call(
+                obj,
+                (value: any, opts?: InspectOptions) => {
+                    if (value === obj)
+                        throw new Error(
+                            "The custom inspection method called inspect() on `this', " +
+                            "which would go into infinite recursion");
+                    // Merge options if given.
+                    const ctx1 = {
+                        ...ctx,
+                        ...(opts ? {opts: {...ctx.opts, ...opts}} : {})
+                    };
+                    return inspectValue(value, ctx1);
+                },
+                ctx.opts);
+        }
+    }
 
     // Detect circular references.
     if (ctx.seen.has(obj)) {
