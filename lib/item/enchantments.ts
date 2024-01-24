@@ -6,6 +6,17 @@ export { EnchantmentType };
 
 export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefined> implements Set<Enchantment> {
     public get size(): number {
+        // FIXME: Remove this glue code when the API is updated to 1.9.0.
+        if (this.raw && "enchantments" in this.raw) {
+            // @ts-ignore
+            const list: any = this.raw.enchantments;
+            let length = 0;
+            for (const _ench of list) {
+                length++;
+            }
+            return length;
+        }
+
         return this.raw ? this.raw.getEnchantments().length : 0;
     }
 
