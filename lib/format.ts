@@ -13,7 +13,7 @@ export function formatWithOptions(opts: InspectOptions, fmt: string, ...args: an
                     return "%";
                 case "o":
                     return args.length > 0
-                        ? inspect(args.shift())
+                        ? inspect(args.shift(), opts)
                         : matched;
                 case "O":
                     return args.length > 0

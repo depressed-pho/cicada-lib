@@ -1,17 +1,17 @@
 import { BlockStateValue } from "../block.js";
 import { Wrapper } from "../wrapper.js";
-import { type InspectOptions, type HasCustomInspection, customInspectSymbol } from "../inspect.js";
 import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
 import { ItemType } from "./type.js";
 import { ItemLockMode } from "@minecraft/server";
+import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 export { ItemLockMode };
 
-export class ItemStack extends Wrapper<MC.ItemStack> implements HasCustomInspection {
+export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspection {
     #tags?: ItemTags;
     #type?: ItemType;
     #durability?: ItemDurability|null;
@@ -140,7 +140,7 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements HasCustomInspect
         return this.raw.maxAmount;
     }
 
-    public [customInspectSymbol](inspect: (value: any, opts?: InspectOptions) => PP.Doc): PP.Doc {
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj: any = {
             typeId: this.typeId
         };
