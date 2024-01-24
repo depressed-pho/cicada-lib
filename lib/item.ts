@@ -1,9 +1,9 @@
-import { ItemStack } from "./item/stack.js";
+import { ItemLockMode, ItemStack } from "./item/stack.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
 import * as MC from "@minecraft/server";
 
-export { ItemStack };
+export { ItemLockMode, ItemStack };
 export { ItemBag } from "./item/bag.js";
 export { ItemDurability } from "./item/durability.js";
 export { Enchantment, ItemEnchantments } from "./item/enchantments.js";

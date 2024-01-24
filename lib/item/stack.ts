@@ -4,7 +4,11 @@ import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
 import { ItemType } from "./type.js";
+import { ItemLockMode } from "@minecraft/server";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
+
+export { ItemLockMode };
 
 export class ItemStack extends Wrapper<MC.ItemStack> {
     #tags?: ItemTags;
@@ -77,6 +81,34 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         this.raw.amount = n;
     }
 
+    public get isStackable(): boolean {
+        return this.raw.isStackable;
+    }
+
+    public get keepOnDeath(): boolean {
+        return this.raw.keepOnDeath;
+    }
+    public set keepOnDeath(b: boolean) {
+        this.raw.keepOnDeath = b;
+    }
+
+    public get lockMode(): ItemLockMode {
+        return this.raw.lockMode;
+    }
+    public set lockMode(mode: ItemLockMode) {
+        this.raw.lockMode = mode;
+    }
+
+    public get nameTag(): string|undefined {
+        return this.raw.nameTag;
+    }
+    public set nameTag(name: string|undefined) {
+        if (name === undefined)
+            delete this.raw.nameTag;
+        else
+            this.raw.nameTag = name;
+    }
+
     /** Returns the set of tags for this item stack. */
     public get tags(): ItemTags {
         if (!this.#tags)
@@ -105,6 +137,38 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
 
     public get maxAmount(): number {
         return this.raw.maxAmount;
+    }
+
+    public [Symbol.for("cicada-lib.inspect")](inspect: (value: any) => PP.Doc): PP.Doc {
+        const obj: any = {
+            typeId: this.typeId
+        };
+        if (this.isStackable) {
+            obj.amount    = this.amount;
+            obj.maxAmount = this.maxAmount;
+        }
+        if (this.keepOnDeath) obj.keepOnDeath = true;
+        if (this.lockMode !== ItemLockMode.none) obj.lockMode = this.lockMode;
+        if (this.lore.length > 0) obj.lore = this.lore;
+        if (this.tags.size > 0) obj.tags = this.tags;
+
+        const comps: any = {};
+        if (this.durability) comps.durability = this.durability;
+        if (this.enchantments.size > 0) comps.enchantments = this.enchantments;
+        for (const comp of this.raw.getComponents()) {
+            switch (comp.typeId) {
+                case "minecraft:durability":
+                case "minecraft:enchantments": // FIXME: Remove this in the future
+                case "minecraft:enchantable":
+                    // These are already inspected in our own way.
+                    break;
+                default:
+                    comps[comp.typeId] = comp;
+            }
+        }
+        if (Object.entries(comps).length > 0) obj.components = comps;
+
+        return PP.spaceCat(PP.text("ItemStack"), inspect(obj));
     }
 
     public clone(): ItemStack {
