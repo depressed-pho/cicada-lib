@@ -36,6 +36,14 @@ export class Player extends Entity implements IPreferencesContainer {
         return super.raw as MC.Player;
     }
 
+    /** A Console API that sends messages to the chat screen of this
+     * player. The message will also be sent to the content log. This is
+     * mainly for error reporting and debugging. Use {@link sendMessage}
+     * for regular messages. */
+    public get console(): Console {
+        return new PlayerConsole(this);
+    }
+
     public get gameMode(): GameMode {
         // It is surprising that this is the only way to obtain the
         // per-player game mode. Hope the future API will allow us to do it
@@ -47,8 +55,28 @@ export class Player extends Entity implements IPreferencesContainer {
         throw new Error(`Cannot detect the game mode for player ${this.name}`);
     }
 
+    public get isEmoting(): boolean {
+        return this.rawPlayer.isEmoting;
+    }
+
+    public get isFlying(): boolean {
+        return this.rawPlayer.isFlying;
+    }
+
+    public get isGliding(): boolean {
+        return this.rawPlayer.isGliding;
+    }
+
+    public get isJumping(): boolean {
+        return this.rawPlayer.isJumping;
+    }
+
     public get isOp(): boolean {
         return this.rawPlayer.isOp();
+    }
+
+    public get level(): number {
+        return this.rawPlayer.level;
     }
 
     public get name(): string {
@@ -59,12 +87,41 @@ export class Player extends Entity implements IPreferencesContainer {
         return this.rawPlayer.onScreenDisplay;
     }
 
-    /** A Console API that sends messages to the chat screen of this
-     * player. The message will also be sent to the content log. This is
-     * mainly for error reporting and debugging. Use {@link sendMessage}
-     * for regular messages. */
-    public get console(): Console {
-        return new PlayerConsole(this);
+    public get selectedSlot(): number {
+        return this.rawPlayer.selectedSlot;
+    }
+    public set selectedSlot(slot: number) {
+        this.rawPlayer.selectedSlot = slot;
+    }
+
+    public get totalXp(): number {
+        return this.rawPlayer.getTotalXp();
+    }
+
+    public get totalXpNeededForNextLevel(): number {
+        return this.rawPlayer.totalXpNeededForNextLevel;
+    }
+
+    public get xpEarnedAtCurrentLevel(): number {
+        return this.rawPlayer.xpEarnedAtCurrentLevel;
+    }
+
+    /** Add/remove experience to/from the player and return their current
+     * experience. The amount can be negative.
+     */
+    public addExperience(amount: number): number {
+        return this.rawPlayer.addExperience(amount);
+    }
+
+    /** Add/remove level to/from the player and return their current
+     * level. The amount can be negative.
+     */
+    public addLevels(amount: number): number {
+        return this.rawPlayer.addLevels(amount);
+    }
+
+    public resetLevel(): void {
+        this.rawPlayer.resetLevel();
     }
 
     /** Obtain the per-player preferences object for this player. */
