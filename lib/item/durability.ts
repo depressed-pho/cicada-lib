@@ -54,10 +54,11 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj: any = {
-            current:      this.current,
-            maximum:      this.maximum,
-            damageChance: this.damageChance
+            current: this.current,
+            maximum: this.maximum,
         };
+        if (this.damageChance < 1)
+            obj.damageChance = this.damageChance;
         return PP.spaceCat(PP.text("ItemDurability"), inspect(obj));
     }
 }
