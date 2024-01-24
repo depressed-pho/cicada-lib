@@ -7,11 +7,11 @@ import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { RawMessage } from "@minecraft/server";
 import { IPreferencesContainer } from "./preferences.js";
-import { GameMode } from "@minecraft/server";
+import { GameMode, PlayerSoundOptions } from "@minecraft/server";
 import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
-export { GameMode };
+export { GameMode, PlayerSoundOptions };
 export { ScreenDisplay, PlayerLeaveAfterEvent } from "@minecraft/server";
 
 export interface IPlayerSession {
@@ -120,10 +120,6 @@ export class Player extends Entity implements IPreferencesContainer {
         return this.rawPlayer.addLevels(amount);
     }
 
-    public resetLevel(): void {
-        this.rawPlayer.resetLevel();
-    }
-
     /** Obtain the per-player preferences object for this player. */
     public getPreferences<T extends object>(ty: MessageType<T>): T {
         return Prefs.decodeOrCreate(
@@ -149,6 +145,14 @@ export class Player extends Entity implements IPreferencesContainer {
             this.#session = SessionManager.get(this.id);
 
         return this.#session as T;
+    }
+
+    public playSound(soundId: string, soundOptions?: PlayerSoundOptions): void {
+        this.rawPlayer.playSound(soundId, soundOptions);
+    }
+
+    public resetLevel(): void {
+        this.rawPlayer.resetLevel();
     }
 
     public sendMessage(msg: (RawMessage|string)[]|RawMessage|string): void {
