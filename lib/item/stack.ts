@@ -1,5 +1,6 @@
 import { BlockStateValue } from "../block.js";
 import { Wrapper } from "../wrapper.js";
+import { type InspectOptions, type HasCustomInspection, customInspectSymbol } from "../inspect.js";
 import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
@@ -10,7 +11,7 @@ import * as MC from "@minecraft/server";
 
 export { ItemLockMode };
 
-export class ItemStack extends Wrapper<MC.ItemStack> {
+export class ItemStack extends Wrapper<MC.ItemStack> implements HasCustomInspection {
     #tags?: ItemTags;
     #type?: ItemType;
     #durability?: ItemDurability|null;
@@ -139,7 +140,7 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         return this.raw.maxAmount;
     }
 
-    public [Symbol.for("cicada-lib.inspect")](inspect: (value: any) => PP.Doc): PP.Doc {
+    public [customInspectSymbol](inspect: (value: any, opts?: InspectOptions) => PP.Doc): PP.Doc {
         const obj: any = {
             typeId: this.typeId
         };
@@ -168,7 +169,7 @@ export class ItemStack extends Wrapper<MC.ItemStack> {
         }
         if (Object.entries(comps).length > 0) obj.components = comps;
 
-        return PP.spaceCat(PP.text("ItemStack"), inspect(obj));
+        return PP.spaceCat(PP.text("ItemStack"), inspect(obj, {showHidden: true}));
     }
 
     public clone(): ItemStack {
