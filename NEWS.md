@@ -20,6 +20,9 @@
   * `underline` from `pprint/styles.ts` has been removed because it's non-functional.
   * UI builder methods from `ui.ts` now take keys of any types to identify
     values in `FormResponse`.
+  * `ItemEnchantments` from `item.ts` no longer implements
+    `Set<Enchantment>`. It now implements `Map<EnchantmentType, number>`
+    where `number` is the enchantment level.
 * Non-breaking changes:
   * The constructor of `ItemStack` now accepts optional block states. This
     only works for items that have corresponding blocks.

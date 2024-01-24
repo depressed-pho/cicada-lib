@@ -37,7 +37,7 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
      * of its Unbreaking level. The returned value is in the range of [0, 1].
      */
     public get damageChance(): number {
-        const level  = this.#enchantments.get("unbreaking")?.level ?? 0;
+        const level  = this.#enchantments.get("unbreaking") ?? 0;
         const chance = this.raw.getDamageChance(level);
         return chance / 100.0;
     }
