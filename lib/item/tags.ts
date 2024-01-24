@@ -1,9 +1,11 @@
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 /** A read-only set of item tags. It is mostly compatible with the Set
  * interface but no mutations can be performed.
  */
-export class ItemTags implements Iterable<string> {
+export class ItemTags implements Iterable<string>, I.HasCustomInspection {
     readonly #stack: MC.ItemStack;
 
     /// Package private.
@@ -17,6 +19,10 @@ export class ItemTags implements Iterable<string> {
 
     public get [Symbol.toStringTag](): string {
         return "ItemTags";
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        return inspect(new Set(this));
     }
 
     public [Symbol.iterator](): IterableIterator<string> {
