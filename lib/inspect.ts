@@ -12,6 +12,9 @@ export interface InspectOptions {
     compact?: boolean,
     sorted?: boolean | ((x: PropertyKey, y: PropertyKey) => number),
     getters?: boolean | "get" | "set",
+    /** Allow custom inspection methods to be invoked. Don't use this if
+     * you can't trust objects you inspect.
+     */
     allowCustom?: boolean
 }
 
@@ -26,8 +29,8 @@ const defaultOpts: Required<InspectOptions> = {
     compact: false,
     sorted: false,
     getters: true, /* Ideally this should be false, but almost all the
-                    * objects coming from "mojang-minecraft" are native
-                    * objects with getter/setters. */
+                    * objects coming from "@minecraft/*" are native objects
+                    * with getter/setters. */
     allowCustom: true
 };
 
@@ -449,7 +452,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         props     = getOwnProperties(obj, ctx);
     }
     else if (obj.constructor != null && boxedPrimConstructors.has(obj.constructor)) {
-        const prefix = mkBoxedPrimPrefix(ctorName!, tag);
+        const prefix = mkBoxedPrimPrefix(ctorName!, tag, ctx);
         const base   = PP.spaceCat(prefix, inspectValue(valueOf(obj.constructor, obj), ctx));
         props     = getOwnProperties(obj, ctx);
         if (props.length == 0 && protoProps.length == 0) {
@@ -468,7 +471,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         props     = getOwnProperties(obj, ctx, key => !isIndex(key));
     }
     else {
-        const prefix = mkPlainObjectPrefix(ctorName, tag);
+        const prefix = mkPlainObjectPrefix(ctorName, tag, ctx);
         inspector = inspectNothing;
         braces    = [PP.beside(prefix, PP.lbrace), PP.rbrace];
         props     = getOwnProperties(obj, ctx);
@@ -946,6 +949,7 @@ function mkErrorPrefix(err: Error,
         // we can put the tag but we can't do anything about it.
     }
     else {
+        // THINKME: This should be stylised.
         let taggedName = name;
         if (ctorName != null && ctorName != name) {
             // It's not a good idea to show the name of the constructor by
@@ -976,28 +980,36 @@ function mkErrorPrefix(err: Error,
     }
 }
 
-function mkBoxedPrimPrefix(ctorName: string, tag: string|null): PP.Doc {
-    let prefix = PP.brackets(PP.text(ctorName));
+function mkBoxedPrimPrefix(ctorName: string, tag: string|null, ctx: Context): PP.Doc {
+    let prefix = ctx.stylise(PP.brackets(PP.string(ctorName)), TokenType.Class);
 
     if (tag != null && tag != ctorName) {
-        prefix = PP.spaceCat(prefix, PP.brackets(PP.text(tag)));
+        prefix = PP.spaceCat(
+            prefix,
+            ctx.stylise(PP.brackets(PP.string(tag)), TokenType.Tag));
     }
 
     return prefix;
 }
 
-function mkPlainObjectPrefix(ctorName: string|null, tag: string|null): PP.Doc {
+function mkPlainObjectPrefix(ctorName: string|null, tag: string|null, ctx: Context): PP.Doc {
     let prefix;
 
     if (ctorName != null && ctorName != "Object") {
-        prefix = PP.beside(PP.text(ctorName), PP.space);
+        prefix = PP.beside(
+            ctx.stylise(PP.string(ctorName), TokenType.Class),
+            PP.space);
     }
     else {
         prefix = PP.empty;
     }
 
     if (tag != null && tag != ctorName) {
-        prefix = PP.beside(prefix, PP.beside(PP.brackets(PP.text(tag)), PP.space));
+        prefix = PP.beside(
+            prefix,
+            PP.beside(
+                ctx.stylise(PP.brackets(PP.string(tag)), TokenType.Tag),
+                PP.space));
     }
 
     return prefix;
