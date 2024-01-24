@@ -57,11 +57,20 @@ export class Location implements MC.Vector3 {
         return this.distance(other) <= epsilon;
     }
 
-    public offset(x: number, y: number, z: number): Location {
+    public offset(delta: number): Location;
+    public offset(x: number, y: number, z: number): Location;
+    public offset(...args: any[]) {
         const clone = this.clone();
-        clone.x += x;
-        clone.y += y;
-        clone.z += z;
+        if (args.length == 3) {
+            clone.x += args[0];
+            clone.y += args[1];
+            clone.z += args[2];
+        }
+        else {
+            clone.x += args[0];
+            clone.y += args[0];
+            clone.z += args[0];
+        }
         return clone;
     }
 

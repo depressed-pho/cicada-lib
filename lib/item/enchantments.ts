@@ -6,7 +6,10 @@ import * as MC from "@minecraft/server";
 
 export { EnchantmentType };
 
-export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefined> implements Map<EnchantmentType, number> {
+export class ItemEnchantments
+    extends Wrapper<MC.ItemEnchantableComponent|undefined>
+    implements Map<EnchantmentType, number>, I.HasCustomInspection {
+
     public static "type"(enchantmentId: string): EnchantmentType|undefined {
         return MC.EnchantmentTypes.get(enchantmentId);
     }
@@ -182,3 +185,15 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
         return inspect(obj);
     }
 }
+
+I.override(
+    EnchantmentType,
+    function (this: EnchantmentType,
+              inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+              stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
+        return PP.hsep([
+            stylise(PP.brackets(PP.text("EnchantmentType")), I.TokenType.Tag),
+            stylise(PP.brackets(PP.text(`max: ${this.maxLevel}`)), I.TokenType.Tag),
+            inspect(this.id)
+        ]);
+    });

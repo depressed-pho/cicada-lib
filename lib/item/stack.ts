@@ -192,7 +192,8 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
     // Custom inspection
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj: any = {
-            typeId: this.typeId
+            typeId:      this.typeId,
+            isStackable: this.isStackable,
         };
         if (this.isStackable) {
             obj.amount    = this.amount;

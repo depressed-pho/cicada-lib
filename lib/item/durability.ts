@@ -4,7 +4,10 @@ import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
-export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
+export class ItemDurability
+    extends Wrapper<MC.ItemDurabilityComponent>
+    implements I.HasCustomInspection {
+
     readonly #enchantments;
 
     /// @internal

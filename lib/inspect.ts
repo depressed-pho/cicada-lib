@@ -39,6 +39,7 @@ export enum TokenType {
     Boolean,
     Class,
     Date,
+    Error,
     Function,
     Name,
     Null,
@@ -57,8 +58,27 @@ export const customInspectSymbol = Symbol.for("cicada-lib.inspect");
 /** An interface for objects implementing a custom inspection method. */
 export interface HasCustomInspection {
     [customInspectSymbol](inspect: (value: any, opts?: InspectOptions) => PP.Doc,
+                          stylise: (token: PP.Doc, type: TokenType) => PP.Doc,
                           opts: Required<InspectOptions>
                          ): PP.Doc;
+}
+
+export type Inspector<T> = (this: T,
+                            inspect: (value: any, opts?: InspectOptions) => PP.Doc,
+                            stylise: (token: PP.Doc, type: TokenType) => PP.Doc,
+                            opts: Required<InspectOptions>) => PP.Doc;
+
+const overriddenInspectors: Map<Function & {prototype: any}, Inspector<any>>
+    = new Map();
+
+/** Override an inspection function for a given class. This is useful for
+ * defining a custom inspection method for foreign classes without
+ * subclassing them.
+ */
+export function override<T>(ctor: Function & {prototype: T},
+                            inspector: Inspector<T>
+                           ): void {
+    overriddenInspectors.set(ctor, inspector);
 }
 
 interface Context {
@@ -144,21 +164,22 @@ function styliseNoColour(token: PP.Doc, _type: TokenType): PP.Doc {
 
 const defaultStyles = lazy(() => {
     return new Map<TokenType, (token: PP.Doc) => PP.Doc>([
-        [TokenType.BigInt   , PP.yellow   ],
-        [TokenType.Boolean  , PP.yellow   ],
-        [TokenType.Class    , PP.orange   ],
-        [TokenType.Date     , PP.pink     ],
-        [TokenType.Function , PP.orange   ],
-        [TokenType.Name     , (d) => d    ], // Don't style them.
-        [TokenType.Null     , PP.bold     ],
-        [TokenType.Number   , PP.yellow   ],
-        [TokenType.RegExp   , PP.lightBlue],
-        [TokenType.Special  , PP.gray     ],
-        [TokenType.String   , PP.green    ],
-        [TokenType.Symbol   , PP.green    ],
-        [TokenType.Tag      , PP.darkAqua ],
-        [TokenType.Undefined, PP.gray     ],
-        [TokenType.Unknown  , PP.italicise]
+        [TokenType.BigInt   , PP.yellow       ],
+        [TokenType.Boolean  , PP.aqua         ],
+        [TokenType.Class    , PP.orange       ],
+        [TokenType.Date     , PP.pink         ],
+        [TokenType.Error    , PP.red          ],
+        [TokenType.Function , PP.orange       ],
+        [TokenType.Name     , PP.warmLightGray],
+        [TokenType.Null     , PP.bold         ],
+        [TokenType.Number   , PP.yellow       ],
+        [TokenType.RegExp   , PP.lightBlue    ],
+        [TokenType.Special  , PP.gray         ],
+        [TokenType.String   , PP.green        ],
+        [TokenType.Symbol   , PP.green        ],
+        [TokenType.Tag      , PP.darkAqua     ],
+        [TokenType.Undefined, PP.gray         ],
+        [TokenType.Unknown  , PP.italicise    ]
     ]);
 });
 function styliseWithColour(token: PP.Doc, type: TokenType): PP.Doc {
@@ -187,7 +208,7 @@ function inspectValue(val: any, ctx: Context): PP.Doc {
         case "string":
             return inspectString(val, ctx);
         case "symbol":
-            return ctx.stylise(PP.text(val.toString()), TokenType.Symbol);
+            return ctx.stylise(PP.string(val.toString()), TokenType.Symbol);
         case "function":
             return inspectObject(val, ctx);
         case "object":
@@ -198,7 +219,7 @@ function inspectValue(val: any, ctx: Context): PP.Doc {
                 return inspectObject(val, ctx);
             }
         default:
-            return ctx.stylise(PP.text(String(val)), TokenType.Unknown);
+            return ctx.stylise(PP.string(String(val)), TokenType.Unknown);
     }
 }
 
@@ -238,6 +259,35 @@ function inspectString(str: string, ctx: Context): PP.Doc {
         trailer);
 }
 
+function inspectObjectWithExternalInspector<T>(obj: T,
+                                               inspector: Inspector<T>,
+                                               ctx: Context): PP.Doc {
+    try {
+        const doc = inspector.call(
+            obj,
+            (value: any, opts?: InspectOptions) => {
+                if (value === obj)
+                    throw new Error(
+                        "The custom inspection method called inspect() on `this', " +
+                            "which would go into infinite recursion");
+                // Merge options if given.
+                const ctx1 = {
+                    ...ctx,
+                    ...(opts ? {opts: {...ctx.opts, ...opts}} : {})
+                };
+                return inspectValue(value, ctx1);
+            },
+            ctx.stylise,
+            ctx.opts
+        );
+        return ctx.opts.colors ? doc : PP.plain(doc);
+    }
+    catch (err) {
+        return ctx.stylise(
+            PP.string(`<Inspection threw: ${err}>`), TokenType.Error);
+    }
+}
+
 function inspectObject(obj: any, ctx: Context): PP.Doc {
     /* NOTE: We don't think we can tell proxies from their targets from
      * within JavaScript. Node.js "util.inspect" uses an internal API of
@@ -246,34 +296,21 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     // Check if the object implements HasCustomInspection if we are allowed
     // to do so.
     if (ctx.opts.allowCustom) {
-        const custom = obj[customInspectSymbol];
-        if (typeof custom === "function" &&
+        const inspector = obj[customInspectSymbol];
+        if (typeof inspector === "function" &&
             // Filter out prototype objects such as "(class {}).prototype",
             // because their methods aren't meant to be called in this way.
             !(obj.constructor && obj.constructor.prototype === obj)) {
 
-            try {
-                return custom.call(
-                    obj,
-                    (value: any, opts?: InspectOptions) => {
-                        if (value === obj)
-                            throw new Error(
-                                "The custom inspection method called inspect() on `this', " +
-                                    "which would go into infinite recursion");
-                        // Merge options if given.
-                        const ctx1 = {
-                            ...ctx,
-                            ...(opts ? {opts: {...ctx.opts, ...opts}} : {})
-                        };
-                        return inspectValue(value, ctx1);
-                    },
-                    ctx.opts);
-            }
-            catch (err) {
-                return ctx.stylise(
-                    PP.text(`<Inspection threw: ${err}>`), TokenType.Special);
-            }
+            return inspectObjectWithExternalInspector(obj, inspector, ctx);
         }
+    }
+
+    // Check if the inspector of its class is overridden.
+    if (obj.constructor) {
+        const inspector = overriddenInspectors.get(obj.constructor);
+        if (inspector)
+            return inspectObjectWithExternalInspector(obj, inspector, ctx);
     }
 
     // Detect circular references.
@@ -675,7 +712,7 @@ function inspectProperty(obj: any, key: PropertyKey, desc: PropertyDescriptor,
             catch (err) {
                 value = PP.spaceCat(
                     label,
-                    ctx.stylise(PP.text(`<Inspection threw: ${err}>`), TokenType.Special));
+                    ctx.stylise(PP.string(`<Inspection threw: ${err}>`), TokenType.Error));
             }
         }
         else {
@@ -695,10 +732,10 @@ function inspectProperty(obj: any, key: PropertyKey, desc: PropertyDescriptor,
     else {
         let name: PP.Doc;
         if (typeof key === "symbol") {
-            name = ctx.stylise(PP.text(key.toString()), TokenType.Symbol);
+            name = ctx.stylise(PP.string(key.toString()), TokenType.Symbol);
         }
         else if (!desc.enumerable) {
-            name = ctx.stylise(PP.brackets(PP.text(String(key))), TokenType.Name);
+            name = ctx.stylise(PP.brackets(PP.string(String(key))), TokenType.Name);
         }
         else if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(String(key))) {
             name = ctx.stylise(PP.text(String(key)), TokenType.Name);
@@ -786,10 +823,7 @@ function mkPrefix(ctorName: string|null, tag: string|null, fallback: string, siz
 function mkPrefix(ctorName: string|null, tag: string|null, fallback: string, ...rest: any[]): PP.Doc {
     const ctx     = rest.length == 1 ? rest[0] : rest[1];
     const sizeDoc = rest.length == 2
-        ? ctx.stylise(
-            PP.parens(
-                ctx.stylise(
-                    PP.number(rest[0]), TokenType.Number)), TokenType.Tag)
+        ? ctx.stylise(PP.parens(PP.number(rest[0])), TokenType.Tag)
         : PP.empty;
 
     if (ctorName != null) {
@@ -850,17 +884,17 @@ function mkFunctionPrefix(func: Function, ctorName: string|null, tag: string|nul
         let prefix = PP.brackets(
             PP.beside(
                 PP.text(typeName),
-                func.name != "" ? PP.text(`: ${func.name}`) : PP.text(" (anonymous)")));
+                func.name != "" ? PP.string(`: ${func.name}`) : PP.text(" (anonymous)")));
 
         if (ctorName == null) {
             prefix = PP.spaceCat(prefix, PP.text("(null prototype)"));
         }
         else if (ctorName != typeName) {
-            prefix = PP.spaceCat(prefix, PP.text(ctorName));
+            prefix = PP.spaceCat(prefix, PP.string(ctorName));
         }
 
         if (tag != null && tag != ctorName) {
-            prefix = PP.spaceCat(prefix, PP.brackets(PP.text(tag)));
+            prefix = PP.spaceCat(prefix, PP.brackets(PP.string(tag)));
         }
 
         return prefix;
@@ -870,20 +904,20 @@ function mkFunctionPrefix(func: Function, ctorName: string|null, tag: string|nul
 function mkClassPrefix(func: Function, ctorName: string|null, tag: string|null): PP.Doc {
     let prefix = PP.spaceCat(
         PP.text("class"),
-        func.name != "" ? PP.text(func.name) : PP.text("(anonymous)"));
+        func.name != "" ? PP.string(func.name) : PP.text("(anonymous)"));
 
     if (ctorName != null && ctorName != "Function") {
-        prefix = PP.spaceCat(prefix, PP.brackets(PP.text(ctorName)));
+        prefix = PP.spaceCat(prefix, PP.brackets(PP.string(ctorName)));
     }
 
     if (tag != null && tag != ctorName) {
-        prefix = PP.spaceCat(prefix, PP.brackets(PP.text(tag)));
+        prefix = PP.spaceCat(prefix, PP.brackets(PP.string(tag)));
     }
 
     if (ctorName != null) {
         const proto = Object.getPrototypeOf(func);
         if (proto && proto.name) {
-            prefix = PP.spaceCat(prefix, PP.text(`extends ${proto.name}`));
+            prefix = PP.spaceCat(prefix, PP.string(`extends ${proto.name}`));
         }
     }
     else {
@@ -898,14 +932,14 @@ function mkRegExpPrefix(ctorName: string|null, tag: string|null): PP.Doc {
 
     // Don't name the constructor if it's "RegExp".
     if (ctorName != null && ctorName != "RegExp") {
-        prefix = PP.beside(PP.text(ctorName), PP.space);
+        prefix = PP.beside(PP.string(ctorName), PP.space);
     }
     else {
         prefix = PP.empty;
     }
 
     if (tag != null && tag != ctorName) {
-        prefix = PP.beside(prefix, PP.beside(PP.brackets(PP.text(tag)), PP.space));
+        prefix = PP.beside(prefix, PP.beside(PP.brackets(PP.string(tag)), PP.space));
     }
 
     return prefix;
@@ -916,14 +950,14 @@ function mkDatePrefix(ctorName: string|null, tag: string|null): PP.Doc {
 
     // Always enclose the name of constructor.
     if (ctorName != null && ctorName != "Date") {
-        prefix = PP.brackets(PP.text(ctorName));
+        prefix = PP.brackets(PP.string(ctorName));
     }
     else {
         prefix = PP.text("[Date]");
     }
 
     if (tag != null && tag != ctorName) {
-        prefix = PP.spaceCat(prefix, PP.brackets(PP.text(tag)));
+        prefix = PP.spaceCat(prefix, PP.brackets(PP.string(tag)));
     }
 
     return prefix;
@@ -949,7 +983,7 @@ function mkErrorPrefix(err: Error,
         // we can put the tag but we can't do anything about it.
     }
     else {
-        // THINKME: This should be stylised.
+        // FIXME: This should be stylised.
         let taggedName = name;
         if (ctorName != null && ctorName != name) {
             // It's not a good idea to show the name of the constructor by
