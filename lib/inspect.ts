@@ -245,21 +245,27 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
             // because their methods aren't meant to be called in this way.
             !(obj.constructor && obj.constructor.prototype === obj)) {
 
-            return custom.call(
-                obj,
-                (value: any, opts?: InspectOptions) => {
-                    if (value === obj)
-                        throw new Error(
-                            "The custom inspection method called inspect() on `this', " +
-                            "which would go into infinite recursion");
-                    // Merge options if given.
-                    const ctx1 = {
-                        ...ctx,
-                        ...(opts ? {opts: {...ctx.opts, ...opts}} : {})
-                    };
-                    return inspectValue(value, ctx1);
-                },
-                ctx.opts);
+            try {
+                return custom.call(
+                    obj,
+                    (value: any, opts?: InspectOptions) => {
+                        if (value === obj)
+                            throw new Error(
+                                "The custom inspection method called inspect() on `this', " +
+                                    "which would go into infinite recursion");
+                        // Merge options if given.
+                        const ctx1 = {
+                            ...ctx,
+                            ...(opts ? {opts: {...ctx.opts, ...opts}} : {})
+                        };
+                        return inspectValue(value, ctx1);
+                    },
+                    ctx.opts);
+            }
+            catch (err) {
+                return ctx.stylise(
+                    PP.text(`<Inspection threw: ${err}>`), TokenType.Special);
+            }
         }
     }
 
