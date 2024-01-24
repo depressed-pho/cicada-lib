@@ -51,6 +51,8 @@ export class ItemTags implements Iterable<string>, I.HasCustomInspection {
     }
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
-        return PP.spaceCat(PP.text("[ItemTags]"), inspect(new Set(this)));
+        const obj = new Set(this);
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemTags"});
+        return inspect(obj);
     }
 }

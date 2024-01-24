@@ -34,6 +34,7 @@ const defaultOpts: Required<InspectOptions> = {
 export enum TokenType {
     BigInt,
     Boolean,
+    Class,
     Date,
     Function,
     Name,
@@ -43,6 +44,7 @@ export enum TokenType {
     Special,
     String,
     Symbol,
+    Tag,
     Undefined,
     Unknown
 }
@@ -141,6 +143,7 @@ const defaultStyles = lazy(() => {
     return new Map<TokenType, (token: PP.Doc) => PP.Doc>([
         [TokenType.BigInt   , PP.yellow   ],
         [TokenType.Boolean  , PP.yellow   ],
+        [TokenType.Class    , PP.orange   ],
         [TokenType.Date     , PP.pink     ],
         [TokenType.Function , PP.orange   ],
         [TokenType.Name     , (d) => d    ], // Don't style them.
@@ -150,6 +153,7 @@ const defaultStyles = lazy(() => {
         [TokenType.Special  , PP.gray     ],
         [TokenType.String   , PP.green    ],
         [TokenType.Symbol   , PP.green    ],
+        [TokenType.Tag      , PP.darkAqua ],
         [TokenType.Undefined, PP.gray     ],
         [TokenType.Unknown  , PP.italicise]
     ]);
@@ -289,7 +293,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     // If we have recursed too many times, only show the name of
     // constructor and exit.
     if (ctx.currentDepth > ctx.opts.depth) {
-        const prefix = mkPrefix(ctorName, tag, "Object");
+        const prefix = mkPrefix(ctorName, tag, "Object", ctx);
         return ctx.stylise(PP.brackets(prefix), TokenType.Special);
     }
 
@@ -303,7 +307,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     if (Array.isArray(obj)) {
         // Only show the constructor for non-ordinary ("Foo(n) [...]") arrays.
         const prefix = (ctorName !== "Array" || tag != null)
-            ? PP.beside(mkPrefix(ctorName, tag, "Array", obj.length), PP.space)
+            ? PP.beside(mkPrefix(ctorName, tag, "Array", obj.length, ctx), PP.space)
             : PP.empty;
         inspector = inspectArray;
         braces    = [PP.beside(prefix, PP.lbracket), PP.rbracket];
@@ -313,20 +317,20 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     else if (obj instanceof TypedArray) {
         // Don't be confused: TypedArray isn't a global object.
         const prefix = PP.beside(
-            mkPrefix(ctorName, tag, (obj as any).name, (obj as any).length),
+            mkPrefix(ctorName, tag, (obj as any).name, (obj as any).length, ctx),
             PP.space);
         inspector = inspectTypedArray;
         braces    = [PP.beside(prefix, PP.lbracket), PP.rbracket];
         props     = getOwnProperties(obj, ctx, key => !isIndex(key));
     }
     else if (obj instanceof Set) { // Not great, but there is no Set.isSet().
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "Set", obj.size), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "Set", obj.size, ctx), PP.space);
         inspector = inspectSet;
         braces    = [PP.beside(prefix, PP.lbrace), PP.rbrace];
         props     = getOwnProperties(obj, ctx);
     }
     else if (obj instanceof Map) {
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "Set", obj.size), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "Set", obj.size, ctx), PP.space);
         inspector = inspectMap;
         braces    = [PP.beside(prefix, PP.lbrace), PP.rbrace];
         props     = getOwnProperties(obj, ctx);
@@ -395,7 +399,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         braces    = [PP.spaceCat(base, PP.lbrace), PP.rbrace];
     }
     else if (obj instanceof ArrayBuffer || obj instanceof SharedArrayBuffer) {
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "<unknown>"), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "<unknown>", ctx), PP.space);
         inspector = inspectNothing;
         braces    = [PP.beside(prefix, PP.lbrace), PP.rbrace];
         props     = getOwnProperties(obj, ctx);
@@ -408,7 +412,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         }
     }
     else if (obj instanceof DataView) {
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "DataView"), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "DataView", ctx), PP.space);
         inspector = inspectNothing;
         braces    = [PP.beside(prefix, PP.lbrace), PP.rbrace];
         props     = getOwnProperties(obj, ctx);
@@ -423,7 +427,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         }
     }
     else if (obj instanceof Promise) {
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "Promise"), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "Promise", ctx), PP.space);
         // NOTE: It is impossible to inspect the internal state of Promise
         // without using interpreter-specific private methods.
         inspector = () => [ctx.stylise(PP.text("<state unknown>"), TokenType.Special)];
@@ -431,7 +435,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         props     = getOwnProperties(obj, ctx);
     }
     else if (obj instanceof WeakSet || obj instanceof WeakMap) {
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "<unknown>"), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "<unknown>", ctx), PP.space);
         // NOTE: It is impossible to inspect the elements of weak
         // containers without using interpreter-specific private methods.
         inspector = () => [ctx.stylise(PP.text("<items unknown>"), TokenType.Special)];
@@ -439,7 +443,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
         props     = getOwnProperties(obj, ctx);
     }
     else if ("WeakRef" in globalThis && obj instanceof WeakRef) {
-        const prefix = PP.beside(mkPrefix(ctorName, tag, "WeakRef"), PP.space);
+        const prefix = PP.beside(mkPrefix(ctorName, tag, "WeakRef", ctx), PP.space);
         inspector = inspectWeakRef;
         braces    = [PP.beside(prefix, PP.lbrace), PP.rbrace];
         props     = getOwnProperties(obj, ctx);
@@ -774,23 +778,47 @@ function getPrototypeProperties(obj: any, ctx: Context): [PropertyKey, PropertyD
 
 // Do not use this for functions, classes, RegExps, Dates, Errors, boxed
 // primitives, or plain Objects.
-function mkPrefix(ctorName: string|null, tag: string|null, fallback: string, size?: number): PP.Doc {
-    const sizeStr = size != null ? `(${size})` : "";
+function mkPrefix(ctorName: string|null, tag: string|null, fallback: string, ctx: Context): PP.Doc;
+function mkPrefix(ctorName: string|null, tag: string|null, fallback: string, size: number, ctx: Context): PP.Doc;
+function mkPrefix(ctorName: string|null, tag: string|null, fallback: string, ...rest: any[]): PP.Doc {
+    const ctx     = rest.length == 1 ? rest[0] : rest[1];
+    const sizeDoc = rest.length == 2
+        ? ctx.stylise(
+            PP.parens(
+                ctx.stylise(
+                    PP.number(rest[0]), TokenType.Number)), TokenType.Tag)
+        : PP.empty;
 
     if (ctorName != null) {
         if (tag != null && tag != ctorName) {
-            return PP.text(`${ctorName}${sizeStr} [${tag}]`);
+            // ctor(size) [tag]
+            return PP.spaceCat(
+                PP.beside(
+                    ctx.stylise(PP.string(ctorName), TokenType.Class),
+                    sizeDoc),
+                ctx.stylise(PP.brackets(PP.string(tag)), TokenType.Tag));
         }
         else {
-            return PP.text(`${ctorName}${sizeStr}`);
+            // ctor(size)
+            return PP.beside(
+                ctx.stylise(PP.string(ctorName), TokenType.Class),
+                sizeDoc);
         }
     }
     else {
         if (tag != null && tag != fallback) {
-            return PP.text(`[${fallback}${sizeStr}] [${tag}]`);
+            // [fallback(size)] [tag]
+            return PP.spaceCat(
+                ctx.stylise(
+                    PP.brackets(
+                        PP.beside(PP.text(fallback), sizeDoc)), TokenType.Class),
+                ctx.stylise(PP.brackets(PP.string(tag)), TokenType.Tag));
         }
         else {
-            return PP.text(`[${fallback}${sizeStr}]`);
+            // [fallback(size)]
+            return ctx.stylise(
+                PP.brackets(
+                    PP.beside(PP.text(fallback), sizeDoc)), TokenType.Class);
         }
     }
 }

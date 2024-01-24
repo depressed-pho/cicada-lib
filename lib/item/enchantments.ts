@@ -177,6 +177,8 @@ export class ItemEnchantments extends Wrapper<MC.ItemEnchantableComponent|undefi
     }
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
-        return PP.spaceCat(PP.text("[ItemEnchantments]"), inspect(new Map(this)));
+        const obj = new Map(this);
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemEnchantments"});
+        return inspect(obj);
     }
 }

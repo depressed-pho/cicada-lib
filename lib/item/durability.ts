@@ -59,6 +59,7 @@ export class ItemDurability extends Wrapper<MC.ItemDurabilityComponent> {
         };
         if (this.damageChance < 1)
             obj.damageChance = this.damageChance;
-        return PP.spaceCat(PP.text("ItemDurability"), inspect(obj));
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemDurability"});
+        return inspect(obj);
     }
 }

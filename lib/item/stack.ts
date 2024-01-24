@@ -219,6 +219,7 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         }
         if (Object.entries(comps).length > 0) obj.components = comps;
 
-        return PP.spaceCat(PP.text("ItemStack"), inspect(obj, {showHidden: true}));
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemStack"});
+        return inspect(obj);
     }
 }
