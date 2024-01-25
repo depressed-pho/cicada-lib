@@ -74,10 +74,13 @@ const overriddenInspectors: Map<Function & {prototype: any}, Inspector<any>>
 /** Override an inspection function for a given class. This is useful for
  * defining a custom inspection method for foreign classes without
  * subclassing them.
+ *
+ * `Function & {prototype: T}` is an ugly way to express `new (...args:
+ * any[]) => T` but it also accepts classes with a non-public constructor.
  */
-export function override<T>(ctor: Function & {prototype: T},
-                            inspector: Inspector<T>
-                           ): void {
+export function overrideInspector<T>(ctor: Function & {prototype: T},
+                                     inspector: Inspector<T>
+                                    ): void {
     overriddenInspectors.set(ctor, inspector);
 }
 
@@ -562,8 +565,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
                 PP.lineCat(
                     braces[0],
                     PP.vsep(
-                        PP.punctuate(
-                            PP.comma, elems)))),
+                        PP.punctuate(PP.comma, elems)))),
             braces[1]));
 }
 

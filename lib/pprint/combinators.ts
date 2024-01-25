@@ -11,7 +11,7 @@ export function sep(ds: Doc[]): Doc {
 }
 
 /** The document `fillSep(ds)` concatenates documents `ds` horizontally
- * with {@link spaceCat} as long as its fits the page, then inserts a
+ * with {@link softlineCat} as long as its fits the page, then inserts a
  * {@link line} and continues doing that for all documents in `ds`.
  */
 export function fillSep(ds: Doc[]): Doc {

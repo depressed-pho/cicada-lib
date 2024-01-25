@@ -179,14 +179,47 @@ export class ItemEnchantments
         }
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
-        const obj = new Map(this);
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemEnchantments"});
-        return inspect(obj);
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc,
+                                   opts: Required<I.InspectOptions>): PP.Doc {
+        /* [ItemEnchantments] {
+         *     "silk_touch",
+         *     "unbreaking" 1 (max: 3),
+         *     "efficiency" 5 (max: 5)
+         * }
+         */
+        const prefix = stylise(PP.brackets(PP.text("ItemEnchantments")), I.TokenType.Tag);
+        const elems  = [] as PP.Doc[];
+        for (const [type, level] of this) {
+            const docs = [] as PP.Doc[];
+            docs.push(inspect(type.id));
+            if (level > 1 || type.maxLevel > 1) {
+                docs.push(inspect(level));
+                docs.push(
+                    stylise(
+                        PP.parens(
+                            PP.spaceCat(PP.text("max:"), PP.number(type.maxLevel))),
+                        I.TokenType.Tag));
+            }
+            elems.push(PP.hsep(docs));
+        }
+        // If the entire object fits the line, print it in a single
+        // line. Otherwise break lines for each enchantments.
+        return PP.spaceCat(
+            prefix,
+            PP.group(
+                PP.lineCat(
+                    PP.nest(
+                        opts.indentationWidth,
+                        PP.lineCat(
+                            PP.lbrace,
+                            PP.vsep(
+                                PP.punctuate(PP.comma, elems)))),
+                    PP.rbrace)));
     }
 }
 
-I.override(
+I.overrideInspector(
     EnchantmentType,
     function (this: EnchantmentType,
               inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
