@@ -1,9 +1,11 @@
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 export type BlockStateValue = boolean|number|string;
 
 /** A read-only Map type that represents block permutation states. */
-export class BlockStates implements Iterable<[string, BlockStateValue]> {
+export class BlockStates implements Iterable<[string, BlockStateValue]>, I.HasCustomInspection {
     readonly #perm: MC.BlockPermutation;
 
     public constructor(rawPerm: MC.BlockPermutation) {
@@ -43,5 +45,11 @@ export class BlockStates implements Iterable<[string, BlockStateValue]> {
 
     public *values(): IterableIterator<BlockStateValue> {
         return Object.values(this.#perm.getAllStates);
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj = new Map(this);
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockStates"});
+        return inspect(obj);
     }
 }

@@ -3,9 +3,11 @@ import { BlockStates, BlockStateValue } from "./states.js";
 import { BlockTags } from "./tags.js";
 import { BlockType } from "./type.js";
 import { Wrapper } from "../wrapper.js";
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
-export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
+export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.HasCustomInspection {
     #states?: BlockStates;
     #tags?: BlockTags;
     #type?: BlockType;
@@ -66,5 +68,15 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> {
     public getItemStack(amount?: number): ItemStack|undefined {
         const rawStack = this.raw.getItemStack(amount);
         return rawStack ? new ItemStack(rawStack) : undefined;
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj: any = {
+            type:   this.type,
+            states: this.states,
+            tags:   this.tags,
+        };
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockPermutation"});
+        return inspect(obj);
     }
 }

@@ -1,5 +1,6 @@
 import { BlockStateValue } from "../block.js";
 import { Wrapper } from "../wrapper.js";
+import { ItemCooldown } from "./cooldown.js";
 import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
@@ -14,6 +15,7 @@ export { ItemLockMode };
 export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspection {
     #tags?: ItemTags;
     #type?: ItemType;
+    #cooldown?: ItemCooldown|null;
     #durability?: ItemDurability|null;
     #enchantments?: ItemEnchantments;
 
@@ -154,6 +156,17 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
 
     // ---------- Components ----------
 
+    /** Obtain cooldown effect of this item stack, or `undefined` if it's
+     * not present.
+     */
+    public get cooldown(): ItemCooldown|undefined {
+        if (this.#cooldown === undefined) {
+            const raw = this.raw.getComponent("minecraft:cooldown");
+            this.#cooldown = raw ? new ItemCooldown(raw) : null;
+        }
+        return this.#cooldown ? this.#cooldown : undefined;
+    }
+
     /** Obtain durability of this item stack, or `undefined` if it doesn't
      * take damage.
      */
@@ -199,26 +212,33 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
             obj.amount    = this.amount;
             obj.maxAmount = this.maxAmount;
         }
-        if (this.keepOnDeath) obj.keepOnDeath = true;
-        if (this.lockMode !== ItemLockMode.none) obj.lockMode = this.lockMode;
-        if (this.lore.length > 0) obj.lore = this.lore;
-        if (this.tags.size > 0) obj.tags = this.tags;
+        if (this.keepOnDeath)
+            obj.keepOnDeath = true;
+        if (this.lockMode !== ItemLockMode.none)
+            obj.lockMode = this.lockMode;
+        if (this.lore.length > 0)
+            obj.lore = this.lore;
+        if (this.tags.size > 0)
+            obj.tags = this.tags;
 
-        const comps: any = {};
-        if (this.durability) comps.durability = this.durability;
-        if (this.enchantments.size > 0) comps.enchantments = this.enchantments;
+        const comps = new Set<any>();
+        if (this.cooldown?.category !== "") comps.add(this.cooldown);
+        if (this.durability) comps.add(this.durability);
+        if (this.enchantments.size > 0) comps.add(this.enchantments);
         for (const comp of this.raw.getComponents()) {
             switch (comp.typeId) {
+                case "minecraft:cooldown":
                 case "minecraft:durability":
                 case "minecraft:enchantments": // FIXME: Remove this in the future
                 case "minecraft:enchantable":
                     // These are already inspected in our own way.
                     break;
                 default:
-                    comps[comp.typeId] = comp;
+                    comps.add(comp);
             }
         }
-        if (Object.entries(comps).length > 0) obj.components = comps;
+        if (comps.size > 0)
+            obj.components = comps;
 
         Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemStack"});
         return inspect(obj);

@@ -1,8 +1,17 @@
 import { map } from "../iterable.js";
 import { Wrapper } from "../wrapper.js";
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
-export class BlockType extends Wrapper<MC.BlockType> {
+export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspection {
+    /** Obtain all available block types registered within the world. */
+    public static getAll(): IterableIterator<BlockType> {
+        return map(MC.BlockTypes.getAll(), raw => {
+            return new BlockType(raw);
+        });
+    }
+
     /** Package private */
     public constructor(rawBlockType: MC.BlockType);
 
@@ -30,10 +39,12 @@ export class BlockType extends Wrapper<MC.BlockType> {
         return this.raw.id;
     }
 
-    /** Obtain all available block types registered within the world. */
-    public static getAll(): IterableIterator<BlockType> {
-        return map(MC.BlockTypes.getAll(), raw => {
-            return new BlockType(raw);
-        });
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj: any = {
+            id: this.id,
+            canBeWaterlogged: this.canBeWaterlogged,
+        };
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockType"});
+        return inspect(obj);
     }
 }

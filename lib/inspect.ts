@@ -556,17 +556,20 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
             braces[0]);
     }
 
-    // If the entire object fits the line, print it in a single
-    // line. Otherwise break lines for each element of the object.
-    return PP.group(
-        PP.lineCat(
-            PP.nest(
-                ctx.opts.indentationWidth,
-                PP.lineCat(
-                    braces[0],
-                    PP.vsep(
-                        PP.punctuate(PP.comma, elems)))),
-            braces[1]));
+    if (elems.length > 0)
+        // If the entire object fits the line, print it in a single
+        // line. Otherwise break lines for each element of the object.
+        return PP.group(
+            PP.lineCat(
+                PP.nest(
+                    ctx.opts.indentationWidth,
+                    PP.lineCat(
+                        braces[0],
+                        PP.vsep(
+                            PP.punctuate(PP.comma, elems)))),
+                braces[1]));
+    else
+        return PP.beside(braces[0], braces[1]);
 }
 
 function inspectNothing(_val: any, _ctx: Context): PP.Doc[] {

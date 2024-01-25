@@ -8,6 +8,8 @@ import { ItemStack } from "./item/stack.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
 import { Direction, Vector3 } from "@minecraft/server";
+import * as I from "./inspect.js";
+import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
 export { BlockPermutation, BlockTags, BlockType };
@@ -59,6 +61,10 @@ export class Block extends Wrapper<MC.Block> {
 
     public set permutation(newPerm: BlockPermutation) {
         this.raw.setPermutation(newPerm.raw);
+    }
+
+    public get redstonePower(): number|undefined {
+        return this.raw.getRedstonePower();
     }
 
     public get tags(): BlockTags {
@@ -141,6 +147,34 @@ export class Block extends Wrapper<MC.Block> {
     public getItemStack(amount?: number, withData?: boolean): ItemStack | undefined {
         const rawSt = this.raw.getItemStack(amount, withData);
         return rawSt ? new ItemStack(rawSt) : undefined;
+    }
+
+    // A workaround for a possible TypeScript bug: Using
+    // I.customInspectSymbol here causes mixins to fail typechecking,
+    // apparently because it's a unique symbol. Probably relates to
+    // https://github.com/Microsoft/TypeScript/issues/1863
+    public [Symbol.for("cicada-lib.inspect")](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj: any = {
+            dimension: this.dimension,
+            location: this.location,
+            permutation: this.permutation,
+            isAir: this.isAir,
+            isLiquid: this.isLiquid,
+            isSolid: this.isSolid,
+        };
+        if (this.type.canBeWaterlogged) {
+            obj.isWaterlogged = this.isWaterlogged;
+        }
+        if (this.redstonePower !== undefined)
+            obj.redstonePower = this.redstonePower;
+
+        const comps = new Set<any>();
+        // FIXME: Inspect known components
+        if (comps.size > 0)
+            obj.components = comps;
+
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "Block"});
+        return inspect(obj);
     }
 }
 

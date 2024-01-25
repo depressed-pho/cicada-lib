@@ -1,6 +1,8 @@
+import * as I from "./inspect.js";
+import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
-export class Location implements MC.Vector3 {
+export class Location implements MC.Vector3, I.HasCustomInspection {
     x: number;
     y: number;
     z: number;
@@ -75,6 +77,15 @@ export class Location implements MC.Vector3 {
     }
 
     public toString(): string {
-        return `${this.x}, ${this.y}, ${this.z}`;
+        return `Location <${this.x}, ${this.y}, ${this.z}>`;
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
+        return PP.spaceCat(
+            stylise(PP.text("Location"), I.TokenType.Class),
+            PP.angles(
+                PP.hsep(
+                    PP.punctuate(PP.comma, [inspect(this.x), inspect(this.y), inspect(this.z)]))));
     }
 }

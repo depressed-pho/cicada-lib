@@ -1,9 +1,11 @@
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 /** A read-only set of block permutation tags. It is mostly compatible with the Set
  * interface but no mutations can be performed.
  */
-export class BlockTags implements Iterable<string> {
+export class BlockTags implements Iterable<string>, I.HasCustomInspection {
     readonly #source: MC.Block|MC.BlockPermutation;
 
     /// Package private.
@@ -46,5 +48,11 @@ export class BlockTags implements Iterable<string> {
 
     public values(): IterableIterator<string> {
         return this.#source.getTags()[Symbol.iterator]();
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj = new Set(this);
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockTags"});
+        return inspect(obj);
     }
 }

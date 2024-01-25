@@ -5,6 +5,7 @@ import * as MC from "@minecraft/server";
 
 export { ItemLockMode, ItemStack };
 export { ItemBag } from "./item/bag.js";
+export { ItemCooldown } from "./item/cooldown.js";
 export { ItemDurability } from "./item/durability.js";
 export { EnchantmentType, ItemEnchantments } from "./item/enchantments.js";
 export { ItemTags } from "./item/tags.js";

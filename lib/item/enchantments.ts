@@ -203,19 +203,22 @@ export class ItemEnchantments
             }
             elems.push(PP.hsep(docs));
         }
-        // If the entire object fits the line, print it in a single
-        // line. Otherwise break lines for each enchantments.
-        return PP.spaceCat(
-            prefix,
-            PP.group(
-                PP.lineCat(
-                    PP.nest(
-                        opts.indentationWidth,
-                        PP.lineCat(
-                            PP.lbrace,
-                            PP.vsep(
-                                PP.punctuate(PP.comma, elems)))),
-                    PP.rbrace)));
+        if (elems.length > 0)
+            // If the entire object fits the line, print it in a single
+            // line. Otherwise break lines for each enchantments.
+            return PP.spaceCat(
+                prefix,
+                PP.group(
+                    PP.lineCat(
+                        PP.nest(
+                            opts.indentationWidth,
+                            PP.lineCat(
+                                PP.lbrace,
+                                PP.vsep(
+                                    PP.punctuate(PP.comma, elems)))),
+                        PP.rbrace)));
+        else
+            return PP.spaceCat(prefix, PP.braces(PP.empty));
     }
 }
 

@@ -3,10 +3,19 @@ import { Entity } from "./entity.js";
 import { ItemStack } from "./item/stack.js";
 import { Wrapper } from "./wrapper.js";
 import { map } from "./iterable.js";
-import { Vector3 } from "@minecraft/server";
+import { Vector3, WeatherType } from "@minecraft/server";
+import { NumberRange } from "@minecraft/common";
+import * as I from "./inspect.js";
+import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
-export class Dimension extends Wrapper<MC.Dimension> {
+export { WeatherType };
+
+export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspection {
+    public get heightRange(): NumberRange {
+        return this.raw.heightRange;
+    }
+
     public get id(): string {
         return this.raw.id;
     }
@@ -32,11 +41,29 @@ export class Dimension extends Wrapper<MC.Dimension> {
         });
     }
 
+    public getWeather(): WeatherType {
+        return this.raw.getWeather();
+    }
+
+    public setWeather(weatherType: WeatherType, duration?: number): void {
+        this.raw.setWeather(weatherType, duration);
+    }
+
     public spawnEntity(identifier: string, location: Vector3): Entity {
         return new Entity(this.raw.spawnEntity(identifier, location));
     }
 
     public spawnItem(itemStack: ItemStack, location: Vector3): Entity {
         return new Entity(this.raw.spawnItem(itemStack.raw, location));
+    }
+
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const obj: any = {
+            id:          this.id,
+            heightRange: this.heightRange,
+            weather:     this.getWeather(),
+        };
+        Object.defineProperty(obj, Symbol.toStringTag, {value: "Dimension"});
+        return inspect(obj);
     }
 }
