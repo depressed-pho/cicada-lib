@@ -72,10 +72,12 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj: any = {
-            type:   this.type,
-            states: this.states,
-            tags:   this.tags,
+            type: this.type
         };
+        if (this.states.size > 0)
+            obj.states = this.states;
+        if (this.tags.size > 0)
+            obj.tags = this.tags;
         Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockPermutation"});
         return inspect(obj);
     }

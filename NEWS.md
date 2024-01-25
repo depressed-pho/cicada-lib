@@ -27,25 +27,25 @@
   * The constructor of `ItemStack` now accepts optional block states. This
     only works for items that have corresponding blocks.
 * New properties:
-  * `Block.prototype.getItemStack`
+  * `Block.prototype.getItemStack()`
   * `Block.prototype.isAir`
   * `Block.prototype.isLiquid`
   * `Block.prototype.isSolid`
   * `Block.prototype.isValid`
   * `Block.prototype.isWaterlogged`
   * `Block.prototype.typeId` setter
-  * `BlockPermutation.prototype.equals`
+  * `BlockPermutation.prototype.equals()`
   * `BlockPermutation.prototype.tags`
-  * `Dimension.prototype.spawnItem`
-  * `Entity.prototype.matches`
-  * `Location.prototype.floor`
+  * `Dimension.prototype.spawnItem()`
+  * `Entity.prototype.matches()`
+  * `Location.prototype.floor()`
   * `ItemStack.prototype.tags`
   * `Player.prototype.gameMode`
-  * `Player.prototype.getSession`
+  * `Player.prototype.getSession()`
   * `Player.prototype.isOp`
-  * `Timer.prototype.reset`
-  * `World.prototype.getDimension`
-  * `World.prototype.playSound`
+  * `Timer.prototype.reset()`
+  * `World.prototype.getDimension()`
+  * `World.prototype.playSound()`
 * Added `hasher.ts`
 * Added `sync/mpsc.ts`
 * Added `sync/notify.ts`

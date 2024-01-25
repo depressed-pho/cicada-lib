@@ -21,7 +21,7 @@ export class BlockStates implements Iterable<[string, BlockStateValue]>, I.HasCu
     }
 
     public *entries(): IterableIterator<[string, BlockStateValue]> {
-        return Object.entries(this.#perm.getAllStates());
+        yield* Object.entries(this.#perm.getAllStates());
     }
 
     public forEach(f: (value: BlockStateValue, key: string, map: BlockStates) => void, thisArg?: any): void {
@@ -40,11 +40,11 @@ export class BlockStates implements Iterable<[string, BlockStateValue]>, I.HasCu
     }
 
     public *keys(): IterableIterator<string> {
-        return Object.keys(this.#perm.getAllStates);
+        yield* Object.keys(this.#perm.getAllStates());
     }
 
     public *values(): IterableIterator<BlockStateValue> {
-        return Object.values(this.#perm.getAllStates);
+        yield* Object.values(this.#perm.getAllStates());
     }
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
