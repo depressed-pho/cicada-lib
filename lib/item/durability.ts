@@ -60,9 +60,19 @@ export class ItemDurability
             current: this.current,
             maximum: this.maximum,
         };
-        if (this.damageChance < 1)
-            obj.damageChance = this.damageChance;
+        try {
+            if (this.damageChance < 1)
+                obj.damageChance = this.damageChance;
+        }
+        catch (e) {
+            // ItemDurabilityComponent.prototype.getDamageChance() isn't
+            // callable in read-only mode.
+            Object.defineProperty(obj, "damageChance", {
+                get:        () => this.damageChance,
+                enumerable: true
+            });
+        }
         Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemDurability"});
-        return inspect(obj);
+        return inspect(obj, {getterLabels: false});
     }
 }

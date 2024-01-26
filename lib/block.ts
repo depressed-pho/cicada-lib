@@ -151,8 +151,8 @@ export class Block extends Wrapper<MC.Block> {
 
     // A workaround for a possible TypeScript bug: Using
     // I.customInspectSymbol here causes mixins to fail typechecking,
-    // apparently because it's a unique symbol. Probably relates to
-    // https://github.com/Microsoft/TypeScript/issues/1863
+    // apparently because it's a unique
+    // symbol. https://github.com/microsoft/TypeScript/issues/57165
     public [Symbol.for("cicada-lib.inspect")](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj: any = {
             dimension: this.dimension,

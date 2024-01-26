@@ -58,12 +58,17 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
     }
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+        const self     = this;
         const obj: any = {
             id:          this.id,
             heightRange: this.heightRange,
-            weather:     this.getWeather(),
+            get weather(): WeatherType {
+                // This method is unavailable in read-only mode, although
+                // it doesn't make sense.
+                return self.getWeather();
+            }
         };
         Object.defineProperty(obj, Symbol.toStringTag, {value: "Dimension"});
-        return inspect(obj);
+        return inspect(obj, {getterLabels: false});
     }
 }

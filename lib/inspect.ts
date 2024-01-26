@@ -12,9 +12,11 @@ export interface InspectOptions {
     compact?: boolean,
     sorted?: boolean | ((x: PropertyKey, y: PropertyKey) => number),
     getters?: boolean | "get" | "set",
+    /** If `false`, getter properties are shown as if they were regular
+     * properties. Default: `true` */
+    getterLabels?: boolean,
     /** Allow custom inspection methods to be invoked. Don't use this if
-     * you can't trust objects you inspect.
-     */
+     * you can't trust objects you inspect. Default: `true` */
     allowCustom?: boolean
 }
 
@@ -31,6 +33,7 @@ const defaultOpts: Required<InspectOptions> = {
     getters: true, /* Ideally this should be false, but almost all the
                     * objects coming from "@minecraft/*" are native objects
                     * with getter/setters. */
+    getterLabels: true,
     allowCustom: true
 };
 
@@ -285,9 +288,13 @@ function inspectObjectWithExternalInspector<T>(obj: T,
         );
         return ctx.opts.colors ? doc : PP.plain(doc);
     }
-    catch (err) {
-        return ctx.stylise(
-            PP.string(`<Inspection threw: ${err}>`), TokenType.Error);
+    catch (e) {
+        if (looksLikeReadonlyError(e))
+            return ctx.stylise(
+                PP.string(`<data unavailable in read-only mode: ${e}>`), TokenType.Error);
+        else
+            return ctx.stylise(
+                PP.string(`<Inspection threw ${e}>`), TokenType.Error);
     }
 }
 
@@ -712,13 +719,18 @@ function inspectProperty(obj: any, key: PropertyKey, desc: PropertyDescriptor,
             (ctx.opts.getters === "set" && desc.set !== undefined)) {
             try {
                 const v = desc.get.call(obj);
-                value = PP.spaceCat(label, inspectValue(v, ctx));
+                value = inspectValue(v, ctx);
             }
-            catch (err) {
-                value = PP.spaceCat(
-                    label,
-                    ctx.stylise(PP.string(`<Inspection threw: ${err}>`), TokenType.Error));
+            catch (e) {
+                if (looksLikeReadonlyError(e))
+                    value = ctx.stylise(
+                        PP.text("<data unavailable in read-only mode>"), TokenType.Special);
+                else
+                    value = ctx.stylise(
+                        PP.string(`<Inspection threw ${e}>`), TokenType.Error);
             }
+            if (ctx.opts.getterLabels)
+                value = PP.spaceCat(label, value);
         }
         else {
             value = label;
@@ -1063,4 +1075,16 @@ function isIndex(key: PropertyKey): boolean {
         default:
             return false;
     }
+}
+
+/** When we call certain methods of native objects from @minecraft in a
+ * before-event handler, they raise a `ReferenceError` saying `Native
+ * function [{class}::{method}] does not have required privileges.`. We
+ * want to detect that and produce better messages.
+ */
+function looksLikeReadonlyError(e: any): boolean {
+    if (e instanceof ReferenceError)
+        return e.message.includes("does not have required privileges");
+    else
+        return false;
 }

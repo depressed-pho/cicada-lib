@@ -100,9 +100,30 @@ export class ItemEnchantments
         if (this.raw) {
             // FIXME: Remove this glue code when the API is updated to 1.9.0.
             if ("enchantments" in this.raw) {
-                // @ts-ignore
-                const ench = this.raw.enchantments.getEnchantment(type);
-                return ench ? ench.level : undefined;
+                // EnchantmentList.prototype.getEnchantment() isn't
+                // callable in read-only mode but [@@iterator] is callable,
+                // although the documentation states that neither are
+                // callable. Weird.
+                try {
+                    // @ts-ignore
+                    const ench = this.raw.enchantments.getEnchantment(type);
+                    return ench ? ench.level : undefined;
+                }
+                catch (e) {
+                    if (typeof type === "string") {
+                        for (const [type1, level] of this) {
+                            if (type === type1.id)
+                                return level;
+                        }
+                    }
+                    else {
+                        for (const [type1, level] of this) {
+                            if (type.id === type1.id)
+                                return level;
+                        }
+                    }
+                    return undefined;
+                }
             }
 
             const ench = this.raw.getEnchantment(type);
