@@ -16,14 +16,14 @@ export class ItemDurability
         this.#enchantments = enchantments;
     }
 
-    /** Return the current durability of the item. */
+    /** Return the current durability of the item. Items will zero
+     * durability will likely to break on the next use.
+     */
     public get current(): number {
         return this.raw.maxDurability - this.raw.damage;
     }
 
-    /** Update the current durability of the item. For item stacks
-     * referencing an actual item in the game, such as one in a player
-     * inventory, setting this to 0 will break the item.
+    /** Update the current durability of the item.
      */
     public set current(durability: number) {
         this.raw.damage = this.raw.maxDurability - durability;
@@ -47,12 +47,22 @@ export class ItemDurability
 
     /** Apply a damage to the tool, taking account of its Unbreaking
      * level. The damage should usually be 1 for its primary use, and 2 for
-     * non-primary uses (like using pickaxes for digging dirt).
+     * non-primary uses (like using pickaxes for digging dirt). Return
+     * `true` if it exceeded the maximum damage the item can take, i.e. it
+     * should break. `false` otherwise.
      */
-    public damage(amount: number): this {
-        if (Math.random() < this.damageChance)
-            this.current = Math.max(0, this.current - amount);
-        return this;
+    public damage(amount: number): boolean {
+        if (Math.random() < this.damageChance) {
+            if (this.current >= amount) {
+                this.current -= amount;
+                return false;
+            }
+            else {
+                this.current = 0;
+                return true;
+            }
+        }
+        return false;
     }
 
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
