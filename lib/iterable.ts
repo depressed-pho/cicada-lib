@@ -25,10 +25,14 @@ export function reversible<T>(xs: IterableIterator<T>, reverse: () => IterableIt
     });
 }
 
+export function* fromIterable<T>(xs: Iterable<T>): IterableIterator<T> {
+    for (const x of xs)
+        yield x;
+}
+
 export function* map<T, U>(xs: Iterable<T>, f: (x: T) => U): IterableIterator<U> {
-    for (const x of xs) {
+    for (const x of xs)
         yield f(x);
-    }
 }
 
 export function* concat<T>(xs: Iterable<T>, ys: Iterable<T>): IterableIterator<T> {

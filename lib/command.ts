@@ -138,7 +138,7 @@ class SubcommandParser<Field> {
                 ctor[Symbol.metadata]?.[subcommandDefinition] as SubcommandDefinition<Field>|undefined;
 
             if (!subcmd)
-                throw new Error("Subcommand classes must also be decorated with @subcommand()");
+                throw new TypeError("Subcommand classes must also be decorated with @subcommand()");
 
             if (this.#merged.has(subcmd.name))
                 throw new Error(`Duplicate subcommand: ${subcmd.name}`);
@@ -246,7 +246,7 @@ export function subcommand<Class extends {}, Field>(...args: any[]) {
         // Used as a field decorator.
         return (_target: undefined, context: ClassFieldDecoratorContext<Class, Field>) => {
             if (context.static)
-                throw new Error(
+                throw new TypeError(
                     `A field decorated with @subcommand must not be static: ${String(context.name)}`);
 
             const cmdParser =

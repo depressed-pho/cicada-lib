@@ -1,12 +1,11 @@
 import { ItemEnchantments } from "./enchantments.js";
-import { Wrapper } from "../wrapper.js";
+import { ItemComponent } from "./component.js";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
-export class ItemDurability
-    extends Wrapper<MC.ItemDurabilityComponent>
-    implements I.HasCustomInspection {
+export class ItemDurability extends ItemComponent<MC.ItemDurabilityComponent> implements I.HasCustomInspection {
+    public static readonly typeId = "minecraft:durability";
 
     readonly #enchantments;
 
@@ -77,12 +76,15 @@ export class ItemDurability
                 obj.damageChance = this.damageChance;
         }
         catch (e) {
-            // ItemDurabilityComponent.prototype.getDamageChance() isn't
-            // callable in read-only mode.
-            Object.defineProperty(obj, "damageChance", {
-                get:        () => this.damageChance,
-                enumerable: true
-            });
+            if (I.looksLikeReadonlyError(e))
+                // ItemDurabilityComponent.prototype.getDamageChance() isn't
+                // callable in read-only mode.
+                Object.defineProperty(obj, "damageChance", {
+                    get:        () => this.damageChance,
+                    enumerable: true
+                });
+            else
+                throw e;
         }
         return PP.spaceCat(
             stylise(PP.text("ItemDurability"), I.TokenType.Class),

@@ -1,5 +1,5 @@
 import { ItemStack } from "../item/stack.js";
-import { Wrapper } from "../wrapper.js";
+import { EntityComponent } from "./component.js";
 import { EquipmentSlot } from "@minecraft/server";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
@@ -16,9 +16,8 @@ const SLOTS: EquipmentSlot[] = [
     EquipmentSlot.Offhand
 ];
 
-export class EntityEquipments
-    extends Wrapper<MC.EntityEquippableComponent>
-    implements Map<EquipmentSlot, ItemStack>, I.HasCustomInspection {
+export class EntityEquipments extends EntityComponent<MC.EntityEquippableComponent> implements Map<EquipmentSlot, ItemStack>, I.HasCustomInspection {
+    public static readonly typeId = "minecraft:equippable";
 
     public get size(): number {
         let n = 0;
@@ -116,19 +115,31 @@ export class EntityEquipments
         // }
         const prefix = stylise(PP.text("EntityEquipments"), I.TokenType.Class);
         const elems  = [] as PP.Doc[];
-        for (const [slot, stack] of this) {
-            let value;
-            if (opts.showHidden)
-                value = inspect(stack);
-            else
-                value = stack.inspectTersely(inspect, stylise, opts);
+        try {
+            for (const [slot, stack] of this) {
+                let value;
+                if (opts.showHidden)
+                    value = inspect(stack);
+                else
+                    value = stack.inspectTersely(inspect, stylise, opts);
 
-            elems.push(
-                PP.fillSep([
-                    stylise(PP.text(slot), I.TokenType.Name),
-                    PP.text("=>"),
-                    value
-                ]));
+                elems.push(
+                    PP.fillSep([
+                        stylise(PP.text(slot), I.TokenType.Name),
+                        PP.text("=>"),
+                        value
+                    ]));
+            }
+        }
+        catch (e) {
+            // EntityEquippableComponent.prototype.getEquipment() isn't
+            // callable in read-only mode.
+            if (I.looksLikeReadonlyError(e))
+                elems.push(
+                    stylise(
+                        PP.text("<data unavailable in read-only mode>"), I.TokenType.Special));
+            else
+                throw e;
         }
         if (elems.length > 0)
             // If the entire object fits the line, print it in a single

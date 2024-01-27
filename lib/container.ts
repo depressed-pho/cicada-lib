@@ -73,7 +73,9 @@ export class Container extends FixedSparseArrayLike<ItemStack, new (raw: MC.Cont
      * available slot(s) and can be stacked with existing items of the same
      * type. Note, use the `obj[idx] = item` notation if you wish to set
      * the item in a particular slot.
-     * @return FIXME: what the heck does it return?
+     *
+     * @return A stack that didn't fit in the container, or `undefined` if
+     * the entire stack could be stored.
      */
     public add(item: ItemStack): ItemStack|undefined {
         const ret = this.raw.addItem(item.raw);

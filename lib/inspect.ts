@@ -1085,7 +1085,7 @@ function isIndex(key: PropertyKey): boolean {
  * function [{class}::{method}] does not have required privileges.`. We
  * want to detect that and produce better messages.
  */
-function looksLikeReadonlyError(e: any): boolean {
+export function looksLikeReadonlyError(e: any): boolean {
     if (e instanceof ReferenceError)
         return e.message.includes("does not have required privileges");
     else

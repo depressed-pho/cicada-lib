@@ -1,9 +1,14 @@
 import { Block, BlockRaycastHit } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
+import { EntityBreathable } from "./entity/breathable.js";
+import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
 import { EntityEquipments } from "./entity/equipments.js";
+import { EntityCanClimb, EntityIsHiddenWhenInvisible } from "./entity/flags.js";
 import { EntityInventory } from "./entity/inventory.js";
+import { EntityRideable } from "./entity/rideable.js";
 import { EntityTags } from "./entity/tags.js";
+import { lazy } from "./lazy.js";
 import { Location } from "./location.js";
 import { Wrapper } from "./wrapper.js";
 import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
@@ -11,14 +16,22 @@ import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
 import * as MC from "@minecraft/server";
 
 export { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions };
-export { EntityEquipments, EntityInventory };
+export {
+    EntityBreathable,
+    EntityCanClimb,
+    EntityEquipments,
+    EntityHealth,
+    EntityInventory,
+    EntityIsHiddenWhenInvisible,
+    EntityLavaMovement,
+    EntityMovement,
+    EntityRideable,
+    EntityTags,
+    EntityUnderwaterMovement,
+};
 export { EquipmentSlot } from "./entity/equipments.js";
 
 export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
-    #tags?: EntityTags;
-    #inventory?: EntityInventory|null;
-    #equipments?: EntityEquipments|null;
-
     public get dimension(): Dimension {
         return new Dimension(this.raw.dimension);
     }
@@ -43,15 +56,11 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         return this.raw.typeId;
     }
 
-    /** Returns the set of tags for this entity. The set isn't a
-     * snapshot. You can add or remove tags through the standard Set
-     * API. */
-    public get tags(): Set<string> {
-        if (!this.#tags)
-            this.#tags = new EntityTags(this.raw);
-
-        return this.#tags;
-    }
+    /** The set of tags for this entity. The set isn't a snapshot. You can
+     * add or remove tags through the standard Set API.
+     */
+    public readonly tags: Set<string>
+        = lazy(() => new EntityTags(this.raw));
 
     public getBlockFromViewDirection(options?: BlockRaycastOptions): BlockRaycastHit | undefined {
         let rawHit = this.raw.getBlockFromViewDirection(options);
@@ -100,21 +109,65 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
 
     // --------- Components ---------
 
-    public get equipments(): EntityEquipments|undefined {
-        if (this.#equipments === undefined) {
-            const raw = this.raw.getComponent("minecraft:equippable");
-            this.#equipments = raw ? new EntityEquipments(raw) : null;
-        }
-        return this.#equipments ? this.#equipments : undefined;
-    }
+    public readonly breathable: EntityBreathable|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityBreathable.typeId);
+            return raw ? new EntityBreathable(raw) : undefined;
+        });
 
-    public get inventory(): EntityInventory|undefined {
-        if (this.#inventory === undefined) {
-            const raw = this.raw.getComponent("minecraft:inventory");
-            this.#inventory = raw ? new EntityInventory(raw) : null;
-        }
-        return this.#inventory ? this.#inventory : undefined;
-    }
+    public readonly canClimb: EntityCanClimb|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityCanClimb.typeId);
+            return raw ? new EntityCanClimb(raw) : undefined;
+        });
+
+    public readonly health: EntityHealth|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityHealth.typeId);
+            return raw ? new EntityHealth(raw) : undefined;
+        });
+
+    public readonly equipments: EntityEquipments|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityEquipments.typeId);
+            return raw ? new EntityEquipments(raw) : undefined;
+        });
+
+    public readonly inventory: EntityInventory|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityInventory.typeId);
+            return raw ? new EntityInventory(raw) : undefined;
+        });
+
+    public readonly isHiddenWhenInvisible: EntityIsHiddenWhenInvisible|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityIsHiddenWhenInvisible.typeId);
+            return raw ? new EntityIsHiddenWhenInvisible(raw) : undefined;
+        });
+
+    public readonly lavaMovement: EntityLavaMovement|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityLavaMovement.typeId);
+            return raw ? new EntityLavaMovement(raw) : undefined;
+        });
+
+    public readonly movement: EntityMovement|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityMovement.typeId);
+            return raw ? new EntityMovement(raw) : undefined;
+        });
+
+    public readonly rideable: EntityRideable|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityRideable.typeId);
+            return raw ? new EntityRideable(raw) : undefined;
+        });
+
+    public readonly underwaterMovement: EntityUnderwaterMovement|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(EntityUnderwaterMovement.typeId);
+            return raw ? new EntityUnderwaterMovement(raw) : undefined;
+        });
 }
 
 export interface TeleportOptions {

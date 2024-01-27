@@ -1,7 +1,11 @@
 import { Dimension } from "./dimension.js";
 import { Entity } from "./entity.js";
+import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
+import { EntityBreathable } from "./entity/breathable.js";
 import { EntityEquipments } from "./entity/equipments.js";
+import { EntityCanClimb, EntityIsHiddenWhenInvisible } from "./entity/flags.js";
 import { EntityInventory } from "./entity/inventory.js";
+import { EntityRideable } from "./entity/rideable.js";
 import { map } from "./iterable.js";
 import { Location } from "./location.js";
 import { PlayerConsole } from "./player/console.js";
@@ -195,23 +199,19 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
 
     // --------- Components ---------
 
-    public override get equipments(): EntityEquipments {
-        const eqs = super.equipments;
-        if (!eqs)
-            throw new Error(`This player has mysteriously no equipment slots`);
+    // These components should always exist.
+    declare public readonly canClimb: EntityCanClimb;
+    declare public readonly breathable: EntityBreathable;
+    declare public readonly equipments: EntityEquipments;
+    declare public readonly health: EntityHealth;
+    declare public readonly inventory: EntityInventory;
+    declare public readonly isHiddenWhenInvisible: EntityIsHiddenWhenInvisible;
+    declare public readonly lavaMovement: EntityLavaMovement;
+    declare public readonly movement: EntityMovement;
+    declare public readonly rideable: EntityRideable;
+    declare public readonly underwaterMovement: EntityUnderwaterMovement;
 
-        return eqs;
-    }
-
-    public override get inventory(): EntityInventory {
-        const inv = super.inventory;
-        if (!inv)
-            throw new Error(`This player has mysteriously no inventories`);
-
-        return inv;
-    }
-
-    /// @internal Custom inspection
+    /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
@@ -243,13 +243,40 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
         if (this.tags.size > 0)
             obj.tags = this.tags;
 
-        const comps = new Set<any>([this.inventory]);
-        if (this.equipments.size > 0)
-            comps.add(this.equipments);
+        const comps = new Set<any>([
+            this.breathable,
+            this.canClimb,
+            this.health,
+            this.inventory,
+            this.lavaMovement,
+            this.movement,
+            this.rideable,
+            this.underwaterMovement,
+        ]);
+        try {
+            if (this.equipments.size > 0)
+                comps.add(this.equipments);
+        }
+        catch (e) {
+            if (I.looksLikeReadonlyError(e))
+                // EntityEquippableComponent.prototype.getEquipment() isn't
+                // callable in read-only mode.
+                comps.add(this.equipments);
+            else
+                throw e;
+        }
         for (const comp of this.raw.getComponents()) {
             switch (comp.typeId) {
-                case "minecraft:equippable":
-                case "minecraft:inventory":
+                case EntityBreathable.typeId:
+                case EntityCanClimb.typeId:
+                case EntityHealth.typeId:
+                case EntityEquipments.typeId:
+                case EntityInventory.typeId:
+                case EntityIsHiddenWhenInvisible.typeId:
+                case EntityLavaMovement.typeId:
+                case EntityMovement.typeId:
+                case EntityRideable.typeId:
+                case EntityUnderwaterMovement.typeId:
                     // These are already inspected in our own way.
                     break;
                 default:

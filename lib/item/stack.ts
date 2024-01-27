@@ -1,4 +1,5 @@
 import { BlockStateValue } from "../block.js";
+import { lazy } from "../lazy.js";
 import { Wrapper } from "../wrapper.js";
 import { ItemCooldown } from "./cooldown.js";
 import { ItemDurability } from "./durability.js";
@@ -13,13 +14,7 @@ import * as MC from "@minecraft/server";
 export { ItemLockMode };
 
 export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspection {
-    #tags?: ItemTags;
-    #type?: ItemType;
-    #cooldown?: ItemCooldown|null;
-    #durability?: ItemDurability|null;
-    #enchantments?: ItemEnchantments;
-
-    /** Package private: user code should not use this. */
+    /// @internal
     public constructor(rawItemStack: MC.ItemStack);
 
     /** Construct an item stack. */
@@ -38,7 +33,6 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
                 }
                 else if (args[0] instanceof ItemType) {
                     super(new MC.ItemStack(args[0].raw));
-                    this.#type = args[0];
                 }
                 else {
                     super(new MC.ItemStack(args[0]));
@@ -49,7 +43,6 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
                 if (typeof args[1] === "number") {
                     if (args[0] instanceof ItemType) {
                         super(new MC.ItemStack(args[0].raw, args[1]));
-                        this.#type = args[0];
                     }
                     else {
                         super(new MC.ItemStack(args[0], args[1]));
@@ -112,20 +105,12 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
             this.raw.nameTag = name;
     }
 
-    /** Returns the set of tags for this item stack. */
-    public get tags(): ItemTags {
-        if (!this.#tags)
-            this.#tags = new ItemTags(this.raw);
+    /** The set of tags for this item stack. */
+    public readonly tags: ItemTags
+        = lazy(() => new ItemTags(this.raw));
 
-        return this.#tags;
-    }
-
-    public get type(): ItemType {
-        if (!this.#type)
-            this.#type = new ItemType(this.raw.type);
-
-        return this.#type;
-    }
+    public readonly type: ItemType
+        = lazy(() => new ItemType(this.raw.type));
 
     public get typeId(): string {
         return this.raw.typeId;
@@ -156,55 +141,49 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
 
     // ---------- Components ----------
 
-    /** Obtain cooldown effect of this item stack, or `undefined` if it's
-     * not present.
+    /** Cooldown effect of this item stack, or `undefined` if it's not
+     * present.
      */
-    public get cooldown(): ItemCooldown|undefined {
-        if (this.#cooldown === undefined) {
-            const raw = this.raw.getComponent("minecraft:cooldown");
-            this.#cooldown = raw ? new ItemCooldown(raw) : null;
-        }
-        return this.#cooldown ? this.#cooldown : undefined;
-    }
+    public readonly cooldown: ItemCooldown|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(ItemCooldown.typeId);
+            return raw ? new ItemCooldown(raw) : undefined;
+        });
 
-    /** Obtain durability of this item stack, or `undefined` if it doesn't
-     * take damage.
+    /** Durability of this item stack, or `undefined` if it doesn't take
+     * damage.
      */
-    public get durability(): ItemDurability|undefined {
-        if (this.#durability === undefined) {
-            const raw = this.raw.getComponent("minecraft:durability");
-            this.#durability = raw ? new ItemDurability(raw, this.enchantments) : null;
-        }
-        return this.#durability ? this.#durability : undefined;
-    }
+    public readonly durability: ItemDurability|undefined
+        = lazy(() => {
+            const raw = this.raw.getComponent(ItemDurability.typeId);
+            return raw ? new ItemDurability(raw, this.enchantments) : undefined;
+        });
 
-    /** Obtain the set of enchantments applied to this item stack. This
-     * function returns an empty set of enchantments if the item cannot be
-     * enchanted.
+    /** The set of enchantments applied to this item stack. This becomes an
+     * empty set of enchantments if the item cannot be enchanted.
      */
-    public get enchantments(): ItemEnchantments {
-        if (!this.#enchantments) {
+    public readonly enchantments: ItemEnchantments
+        = lazy(() => {
             // FIXME: Remove this glue code when the API is updated to 1.9.0.
             if (1) {
                 // @ts-ignore
                 const comp = this.raw.getComponent("minecraft:enchantments");
                 if (comp)
-                    this.#enchantments = new ItemEnchantments(comp as any);
+                    return new ItemEnchantments(comp as any);
                 else
-                    this.#enchantments = new ItemEnchantments(
-                        this.raw.getComponent("minecraft:enchantable"));
+                    return new ItemEnchantments(
+                        this.raw.getComponent(ItemEnchantments.typeId));
             }
             else {
-                this.#enchantments = new ItemEnchantments(
-                    this.raw.getComponent("minecraft:enchantable"));
+                return new ItemEnchantments(
+                    this.raw.getComponent(ItemEnchantments.typeId));
             }
-        }
-        return this.#enchantments;
-    }
+        });
 
-    /// @internal Custom inspection
+    /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
-                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc,
+                                   _opts: Required<I.InspectOptions>): PP.Doc {
         const obj: any = {
             typeId:      this.typeId,
             isStackable: this.isStackable,
@@ -233,10 +212,10 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
             comps.add(this.enchantments);
         for (const comp of this.raw.getComponents()) {
             switch (comp.typeId) {
-                case "minecraft:cooldown":
-                case "minecraft:durability":
-                case "minecraft:enchantments": // FIXME: Remove this in the future
-                case "minecraft:enchantable":
+                case ItemCooldown.typeId:
+                case ItemDurability.typeId:
+                case ItemEnchantments.typeId:
+                case "minecraft:enchantments": // FIXME: Remove this when the API is updated to 1.9.0
                     // These are already inspected in our own way.
                     break;
                 default:

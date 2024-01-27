@@ -1,4 +1,3 @@
-import { Wrapper } from "../wrapper.js";
 import { EnchantmentType } from "@minecraft/server";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
@@ -6,12 +5,19 @@ import * as MC from "@minecraft/server";
 
 export { EnchantmentType };
 
-export class ItemEnchantments
-    extends Wrapper<MC.ItemEnchantableComponent|undefined>
-    implements Map<EnchantmentType, number>, I.HasCustomInspection {
+export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCustomInspection {
+    /// @internal
+    readonly raw: MC.ItemEnchantableComponent|undefined;
+
+    public static readonly typeId = "minecraft:enchantable";
 
     public static "type"(enchantmentId: string): EnchantmentType|undefined {
         return MC.EnchantmentTypes.get(enchantmentId);
+    }
+
+    /// @internal
+    public constructor(raw: MC.ItemEnchantableComponent|undefined) {
+        this.raw = raw;
     }
 
     public get size(): number {

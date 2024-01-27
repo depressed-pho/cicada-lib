@@ -6,6 +6,8 @@ import * as MC from "@minecraft/server";
 export class EntityInventory extends Container implements I.HasCustomInspection {
     readonly #rawInv: MC.EntityInventoryComponent;
 
+    public static readonly typeId = "minecraft:inventory";
+
     /// @internal
     public constructor(rawInv: MC.EntityInventoryComponent) {
         if (rawInv.container)
@@ -14,6 +16,14 @@ export class EntityInventory extends Container implements I.HasCustomInspection 
             throw new Error(`This entity does not have a valid container`);
 
         this.#rawInv = rawInv;
+    }
+
+    public get typeId(): string {
+        return this.#rawInv.typeId;
+    }
+
+    public get isValid(): boolean {
+        return this.#rawInv.isValid();
     }
 
     public get additionalSlotsPerStrength(): number {

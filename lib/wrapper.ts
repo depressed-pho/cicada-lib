@@ -1,12 +1,12 @@
 export class Wrapper<T> {
     readonly #raw: T;
 
-    /** Package private: user code should not use this. */
+    /// @internal
     public constructor(raw: T) {
         this.#raw = raw;
     }
 
-    /** Package private: user code should not use this. */
+    /// @internal
     public get raw(): T {
         return this.#raw;
     }

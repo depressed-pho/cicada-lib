@@ -1,10 +1,12 @@
 import { type Player } from "../player.js";
-import { Wrapper } from "../wrapper.js";
+import { ItemComponent } from "./component.js";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
-export class ItemCooldown extends Wrapper<MC.ItemCooldownComponent> implements I.HasCustomInspection {
+export class ItemCooldown extends ItemComponent<MC.ItemCooldownComponent> implements I.HasCustomInspection {
+    public static readonly typeId = "minecraft:cooldown";
+
     public get category(): string {
         return this.raw.cooldownCategory;
     }
