@@ -29,18 +29,16 @@ export function lazy<T>(thunk: () => T): T {
             delete (value as any)[key];
             return true;
         },
-        get(_targ: any, key: PropertyKey): any {
+        "get"(_targ: any, key: PropertyKey): any {
             if (!isEvaluated) { value = thunk(); isEvaluated = true }
 
             const prop: any = (value as any)[key];
-            if (typeof prop === "function") {
+            if (typeof prop === "function")
                 // If the property is a function, we need to recover "this"
-                // or it won't work as a method.
+                // or it won't function as a method.
                 return prop.bind(value);
-            }
-            else {
+            else
                 return prop;
-            }
         },
         getOwnPropertyDescriptor(_targ: any, key: PropertyKey): PropertyDescriptor|undefined {
             if (!isEvaluated) { value = thunk(); isEvaluated = true }
@@ -73,7 +71,7 @@ export function lazy<T>(thunk: () => T): T {
             Object.preventExtensions(value);
             return true;
         },
-        set(_targ: any, key: PropertyKey, v: any): boolean {
+        "set"(_targ: any, key: PropertyKey, v: any): boolean {
             if (!isEvaluated) { value = thunk(); isEvaluated = true }
 
             (value as any)[key] = v;

@@ -17,12 +17,15 @@ export class ItemCooldown extends Wrapper<MC.ItemCooldownComponent> implements I
         this.raw.startCooldown(player.rawPlayer);
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             category: this.category,
             ticks: this.ticks,
         };
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemCooldown"});
-        return inspect(obj);
+        return PP.spaceCat(
+            stylise(PP.text("ItemCooldown"), I.TokenType.Class),
+            inspect(obj));
     }
 }

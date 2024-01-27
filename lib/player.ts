@@ -1,7 +1,9 @@
+import { Dimension } from "./dimension.js";
 import { Entity } from "./entity.js";
 import { EntityEquipments } from "./entity/equipments.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { map } from "./iterable.js";
+import { Location } from "./location.js";
 import { PlayerConsole } from "./player/console.js";
 import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
@@ -9,10 +11,17 @@ import { RawMessage } from "@minecraft/server";
 import { IPreferencesContainer } from "./preferences.js";
 import { GameMode, PlayerSoundOptions } from "@minecraft/server";
 import * as Prefs from "./preferences.js";
+import * as I from "./inspect.js";
+import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
 export { GameMode, PlayerSoundOptions };
 export { ScreenDisplay, PlayerLeaveAfterEvent } from "@minecraft/server";
+
+export interface DimensionLocation {
+    dimension: Dimension,
+    location:  Location,
+}
 
 export interface IPlayerSession {
     /** Called when the player is about to leave. This function will be
@@ -21,7 +30,7 @@ export interface IPlayerSession {
     destroy(): void;
 }
 
-export class Player extends Entity implements IPreferencesContainer {
+export class Player extends Entity implements IPreferencesContainer, I.HasCustomInspection {
     #session?: any;
 
     /** Package private: user code should not use this. */
@@ -74,6 +83,9 @@ export class Player extends Entity implements IPreferencesContainer {
     public get isOp(): boolean {
         return this.rawPlayer.isOp();
     }
+    public set isOp(b: boolean) {
+        this.rawPlayer.setOp(b);
+    }
 
     public get level(): number {
         return this.rawPlayer.level;
@@ -92,6 +104,28 @@ export class Player extends Entity implements IPreferencesContainer {
     }
     public set selectedSlot(slot: number) {
         this.rawPlayer.selectedSlot = slot;
+    }
+
+    public get spawnPoint(): DimensionLocation|undefined {
+        const raw = this.rawPlayer.getSpawnPoint();
+        if (raw)
+            return {
+                dimension: new Dimension(raw.dimension),
+                location:  new Location(raw.x, raw.y, raw.z),
+            };
+        else
+            return undefined;
+    }
+    public set spawnPoint(dl: DimensionLocation|undefined) {
+        if (dl)
+            this.rawPlayer.setSpawnPoint({
+                dimension: dl.dimension.raw,
+                x:         dl.location.x,
+                y:         dl.location.y,
+                z:         dl.location.z,
+            });
+        else
+            this.rawPlayer.setSpawnPoint();
     }
 
     public get totalXp(): number {
@@ -176,9 +210,62 @@ export class Player extends Entity implements IPreferencesContainer {
 
         return inv;
     }
+
+    /// @internal Custom inspection
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                  stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
+        const obj: any = {
+            name:         this.name,
+            dimension:    this.dimension,
+            location:     this.location,
+            experience: {
+                level:                     this.level,
+                totalXp:                   this.totalXp,
+                totalXpNeededForNextLevel: this.totalXpNeededForNextLevel,
+                xpEarnedAtCurrentLevel:    this.xpEarnedAtCurrentLevel,
+            },
+            selectedSlot: this.selectedSlot,
+        };
+        if (this.isSneaking)
+            obj.isSneaking = true;
+        if (this.isEmoting)
+            obj.isEmoting = true;
+        if (this.isFlying)
+            obj.isFlying = true;
+        if (this.isGliding)
+            obj.isGliding = true;
+        if (this.isJumping)
+            obj.isJumping = true;
+        if (this.isOp)
+            obj.isOp = true;
+        if (this.spawnPoint)
+            obj.spawnPoint = this.spawnPoint;
+        if (this.tags.size > 0)
+            obj.tags = this.tags;
+
+        const comps = new Set<any>([this.inventory]);
+        if (this.equipments.size > 0)
+            comps.add(this.equipments);
+        for (const comp of this.raw.getComponents()) {
+            switch (comp.typeId) {
+                case "minecraft:equippable":
+                case "minecraft:inventory":
+                    // These are already inspected in our own way.
+                    break;
+                default:
+                    comps.add(comp);
+            }
+        }
+        if (comps.size > 0)
+            obj.components = comps;
+
+        return PP.spaceCat(
+            stylise(PP.text("Player"), I.TokenType.Class),
+            inspect(obj));
+    }
 }
 
-/** Package private: user code should not use this. */
+/// @internal
 export class SessionManager {
     static readonly #sessions: Map<string, IPlayerSession> = new Map(); // playerId => IPlayerSession
     static #ctor?: new (player: Player) => IPlayerSession;

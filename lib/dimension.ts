@@ -57,7 +57,9 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
         return new Entity(this.raw.spawnItem(itemStack.raw, location));
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                  stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const self     = this;
         const obj: any = {
             id:          this.id,
@@ -68,7 +70,8 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
                 return self.getWeather();
             }
         };
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "Dimension"});
-        return inspect(obj, {getterLabels: false});
+        return PP.spaceCat(
+            stylise(PP.text("Dimension"), I.TokenType.Class),
+            inspect(obj));
     }
 }

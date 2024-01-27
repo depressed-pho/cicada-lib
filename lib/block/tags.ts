@@ -50,6 +50,7 @@ export class BlockTags implements Iterable<string>, I.HasCustomInspection {
         return this.#source.getTags()[Symbol.iterator]();
     }
 
+    /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj = new Set(this);
         Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockTags"});

@@ -23,7 +23,7 @@ export interface InspectOptions {
 const defaultOpts: Required<InspectOptions> = {
     indentationWidth: 2,
     showHidden: false,
-    depth: 2,
+    depth: 10,
     colors: false,
     maxArrayLength: 100,
     maxStringLength: 10000,
@@ -289,12 +289,15 @@ function inspectObjectWithExternalInspector<T>(obj: T,
         return ctx.opts.colors ? doc : PP.plain(doc);
     }
     catch (e) {
-        if (looksLikeReadonlyError(e))
+        if (looksLikeReadonlyError(e)) {
             return ctx.stylise(
                 PP.string(`<data unavailable in read-only mode: ${e}>`), TokenType.Error);
-        else
+        }
+        else {
+            console.error(e);
             return ctx.stylise(
                 PP.string(`<Inspection threw ${e}>`), TokenType.Error);
+        }
     }
 }
 
@@ -344,7 +347,9 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     // constructor and exit.
     if (ctx.currentDepth > ctx.opts.depth) {
         const prefix = mkPrefix(ctorName, tag, "Object", ctx);
-        return ctx.stylise(PP.brackets(prefix), TokenType.Special);
+        return ctx.stylise(
+            PP.hsep([prefix, PP.lbrace, PP.text("..."), PP.rbrace]),
+            TokenType.Special);
     }
 
     const protoProps = ctx.opts.showHidden
@@ -598,9 +603,8 @@ function inspectArray(arr: any[], ctx: Context): PP.Doc[] {
             return inspectSparseArray(arr, ctx);
         }
     }
-    if (numHidden > 0) {
-        elems.push(remainingText(numHidden));
-    }
+    if (numHidden > 0)
+        elems.push(remainingText(numHidden, ctx));
     return elems;
 }
 
@@ -611,9 +615,9 @@ function inspectSparseArray(arr: any[], ctx: Context): PP.Doc[] {
 
     let expectedIdx = 0;
     for (const [key, desc] of props) {
-        if (elems.length > numElemsToShow) {
+        if (elems.length >= numElemsToShow)
             break;
-        }
+
         if (String(expectedIdx) !== key) {
             if (!isIndex(key)) {
                 break;
@@ -631,9 +635,9 @@ function inspectSparseArray(arr: any[], ctx: Context): PP.Doc[] {
     }
 
     const numHidden = arr.length - expectedIdx;
-    if (numHidden > 0) {
-        elems.push(remainingText(numHidden));
-    }
+    if (numHidden > 0)
+        elems.push(remainingText(numHidden, ctx));
+
     return elems;
 }
 
@@ -644,12 +648,10 @@ function inspectTypedArray(arr: any, ctx: Context): PP.Doc[] {
     const elemInspector  = arr.length > 0 && typeof arr[0] === "number"
                            ? inspectNumber
                            : inspectBigInt;
-    for (let i = 0; i < numElemsToShow; i++) {
+    for (let i = 0; i < numElemsToShow; i++)
         elems[i] = (elemInspector as any)(arr[i], ctx);
-    }
-    if (numHidden > 0) {
-        elems.push(remainingText(numHidden));
-    }
+    if (numHidden > 0)
+        elems.push(remainingText(numHidden, ctx));
     return elems;
 }
 
@@ -658,14 +660,12 @@ function inspectSet(set: Set<any>, ctx: Context): PP.Doc[] {
     const numHidden      = set.size - numElemsToShow;
     const elems          = [];
     for (const elem of set) {
-        if (elems.length >= numElemsToShow) {
+        if (elems.length >= numElemsToShow)
             break;
-        }
         elems.push(inspectValue(elem, ctx));
     }
-    if (numHidden > 0) {
-        elems.push(remainingText(numHidden));
-    }
+    if (numHidden > 0)
+        elems.push(remainingText(numHidden, ctx));
     return elems;
 }
 
@@ -674,9 +674,8 @@ function inspectMap(map: Map<any, any>, ctx: Context): PP.Doc[] {
     const numHidden      = map.size - numElemsToShow;
     const elems          = [];
     for (const [key, val] of map) {
-        if (elems.length >= numElemsToShow) {
+        if (elems.length >= numElemsToShow)
             break;
-        }
         elems.push(
             PP.fillSep(
                 [ inspectValue(key, ctx),
@@ -684,9 +683,8 @@ function inspectMap(map: Map<any, any>, ctx: Context): PP.Doc[] {
                   inspectValue(val, ctx)
                 ]));
     }
-    if (numHidden > 0) {
-        elems.push(remainingText(numHidden));
-    }
+    if (numHidden > 0)
+        elems.push(remainingText(numHidden, ctx));
     return elems;
 }
 
@@ -722,12 +720,15 @@ function inspectProperty(obj: any, key: PropertyKey, desc: PropertyDescriptor,
                 value = inspectValue(v, ctx);
             }
             catch (e) {
-                if (looksLikeReadonlyError(e))
+                if (looksLikeReadonlyError(e)) {
                     value = ctx.stylise(
                         PP.text("<data unavailable in read-only mode>"), TokenType.Special);
-                else
+                }
+                else {
+                    console.error(e);
                     value = ctx.stylise(
                         PP.string(`<Inspection threw ${e}>`), TokenType.Error);
+                }
             }
             if (ctx.opts.getterLabels)
                 value = PP.spaceCat(label, value);
@@ -765,9 +766,11 @@ function inspectProperty(obj: any, key: PropertyKey, desc: PropertyDescriptor,
     }
 }
 
-function remainingText(numHidden: number): PP.Doc {
-    return PP.fillSep(
-        `... ${numHidden} more item${numHidden > 1 ? "s" : ""}`.split(" ").map(PP.text));
+function remainingText(numHidden: number, ctx: Context): PP.Doc {
+    return ctx.stylise(
+        PP.fillSep(
+            `... ${numHidden} more item${numHidden > 1 ? "s" : ""}`.split(" ").map(PP.text)),
+        TokenType.Special);
 }
 
 function getConstructorName(obj: any, ctx: Context): string|null {

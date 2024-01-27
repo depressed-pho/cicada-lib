@@ -80,6 +80,7 @@ export class Location implements MC.Vector3, I.HasCustomInspection {
         return `Location <${this.x}, ${this.y}, ${this.z}>`;
     }
 
+    /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
                                    stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         return PP.spaceCat(

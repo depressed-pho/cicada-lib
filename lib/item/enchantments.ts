@@ -200,6 +200,7 @@ export class ItemEnchantments
         }
     }
 
+    /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
                                    stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc,
                                    opts: Required<I.InspectOptions>): PP.Doc {
@@ -209,7 +210,7 @@ export class ItemEnchantments
          *     "efficiency" 5 (max: 5)
          * }
          */
-        const prefix = stylise(PP.brackets(PP.text("ItemEnchantments")), I.TokenType.Tag);
+        const prefix = stylise(PP.text("ItemEnchantments"), I.TokenType.Class);
         const elems  = [] as PP.Doc[];
         for (const [type, level] of this) {
             const docs = [] as PP.Doc[];

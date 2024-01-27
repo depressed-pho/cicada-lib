@@ -39,12 +39,15 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
         return this.raw.id;
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                  stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             id: this.id,
             canBeWaterlogged: this.canBeWaterlogged,
         };
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockType"});
-        return inspect(obj);
+        return PP.spaceCat(
+            stylise(PP.text("BlockType"), I.TokenType.Class),
+            inspect(obj));
     }
 }

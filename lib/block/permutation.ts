@@ -70,7 +70,9 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
         return rawStack ? new ItemStack(rawStack) : undefined;
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                  stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             type: this.type
         };
@@ -78,7 +80,8 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
             obj.states = this.states;
         if (this.tags.size > 0)
             obj.tags = this.tags;
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockPermutation"});
-        return inspect(obj);
+        return PP.spaceCat(
+            stylise(PP.text("BlockPermutation"), I.TokenType.Class),
+            inspect(obj));
     }
 }

@@ -65,7 +65,9 @@ export class ItemDurability
         return false;
     }
 
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             current: this.current,
             maximum: this.maximum,
@@ -82,7 +84,8 @@ export class ItemDurability
                 enumerable: true
             });
         }
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemDurability"});
-        return inspect(obj, {getterLabels: false});
+        return PP.spaceCat(
+            stylise(PP.text("ItemDurability"), I.TokenType.Class),
+            inspect(obj));
     }
 }

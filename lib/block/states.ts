@@ -47,6 +47,7 @@ export class BlockStates implements Iterable<[string, BlockStateValue]>, I.HasCu
         yield* Object.values(this.#perm.getAllStates());
     }
 
+    /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
         const obj = new Map(this);
         Object.defineProperty(obj, Symbol.toStringTag, {value: "BlockStates"});

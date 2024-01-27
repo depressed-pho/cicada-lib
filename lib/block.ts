@@ -153,7 +153,9 @@ export class Block extends Wrapper<MC.Block> {
     // I.customInspectSymbol here causes mixins to fail typechecking,
     // apparently because it's a unique
     // symbol. https://github.com/microsoft/TypeScript/issues/57165
-    public [Symbol.for("cicada-lib.inspect")](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal
+    public [Symbol.for("cicada-lib.inspect")](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                              stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             dimension: this.dimension,
             location: this.location,
@@ -169,12 +171,14 @@ export class Block extends Wrapper<MC.Block> {
             obj.redstonePower = this.redstonePower;
 
         const comps = new Set<any>();
-        // FIXME: Inspect known components
+        // FIXME: Inspect known components. Block doesn't have
+        // getComponents() for some reason.
         if (comps.size > 0)
             obj.components = comps;
 
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "Block"});
-        return inspect(obj);
+        return PP.spaceCat(
+            stylise(PP.text("Block"), I.TokenType.Class),
+            inspect(obj));
     }
 }
 

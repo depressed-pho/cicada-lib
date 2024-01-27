@@ -202,8 +202,9 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         return this.#enchantments;
     }
 
-    // Custom inspection
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc): PP.Doc {
+    /// @internal Custom inspection
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             typeId:      this.typeId,
             isStackable: this.isStackable,
@@ -216,15 +217,20 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
             obj.keepOnDeath = true;
         if (this.lockMode !== ItemLockMode.none)
             obj.lockMode = this.lockMode;
+        if (this.nameTag !== undefined)
+            obj.nameTag = this.nameTag;
         if (this.lore.length > 0)
             obj.lore = this.lore;
         if (this.tags.size > 0)
             obj.tags = this.tags;
 
         const comps = new Set<any>();
-        if (this.cooldown?.category !== "") comps.add(this.cooldown);
-        if (this.durability) comps.add(this.durability);
-        if (this.enchantments.size > 0) comps.add(this.enchantments);
+        if (this.cooldown?.category !== "")
+            comps.add(this.cooldown);
+        if (this.durability)
+            comps.add(this.durability);
+        if (this.enchantments.size > 0)
+            comps.add(this.enchantments);
         for (const comp of this.raw.getComponents()) {
             switch (comp.typeId) {
                 case "minecraft:cooldown":
@@ -240,7 +246,25 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         if (comps.size > 0)
             obj.components = comps;
 
-        Object.defineProperty(obj, Symbol.toStringTag, {value: "ItemStack"});
-        return inspect(obj);
+        return PP.spaceCat(
+            stylise(PP.text("ItemStack"), I.TokenType.Class),
+            inspect(obj));
+    }
+
+    /// @internal
+    public inspectTersely(inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                          stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc,
+                          _opts: Required<I.InspectOptions>): PP.Doc {
+        let doc = inspect(this.typeId);
+        if (this.isStackable)
+            doc = PP.spaceCat(
+                doc,
+                stylise(
+                    PP.parens(
+                        PP.spaceCat(
+                            PP.text("amount:"),
+                            inspect(this.amount))),
+                    I.TokenType.Tag));
+        return doc;
     }
 }

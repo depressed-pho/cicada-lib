@@ -1,6 +1,8 @@
 import { ItemStack } from "../item/stack.js";
 import { Wrapper } from "../wrapper.js";
 import { EquipmentSlot } from "@minecraft/server";
+import * as I from "../inspect.js";
+import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 export { EquipmentSlot };
@@ -14,7 +16,10 @@ const SLOTS: EquipmentSlot[] = [
     EquipmentSlot.Offhand
 ];
 
-export class EntityEquipments extends Wrapper<MC.EntityEquippableComponent> implements Map<EquipmentSlot, ItemStack> {
+export class EntityEquipments
+    extends Wrapper<MC.EntityEquippableComponent>
+    implements Map<EquipmentSlot, ItemStack>, I.HasCustomInspection {
+
     public get size(): number {
         let n = 0;
         for (const slot of SLOTS) {
@@ -95,5 +100,51 @@ export class EntityEquipments extends Wrapper<MC.EntityEquippableComponent> impl
             if (stack)
                 yield stack;
         }
+    }
+
+    /// @internal
+    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc,
+                                   opts: Required<I.InspectOptions>): PP.Doc {
+        // Displaying the entire ItemStack for each slot would be too
+        // verbose. Do it when showHidden is enabled, otherwise only show
+        // their item IDs and amounts, like:
+        //
+        // EntityEquipments {
+        //     Mainhand => "minecraft:netherite_pickaxe",
+        //     Offhand => "minecraft:torch" (amount: 64)
+        // }
+        const prefix = stylise(PP.text("EntityEquipments"), I.TokenType.Class);
+        const elems  = [] as PP.Doc[];
+        for (const [slot, stack] of this) {
+            let value;
+            if (opts.showHidden)
+                value = inspect(stack);
+            else
+                value = stack.inspectTersely(inspect, stylise, opts);
+
+            elems.push(
+                PP.fillSep([
+                    stylise(PP.text(slot), I.TokenType.Name),
+                    PP.text("=>"),
+                    value
+                ]));
+        }
+        if (elems.length > 0)
+            // If the entire object fits the line, print it in a single
+            // line. Otherwise break lines for each enchantments.
+            return PP.spaceCat(
+                prefix,
+                PP.group(
+                    PP.lineCat(
+                        PP.nest(
+                            opts.indentationWidth,
+                            PP.lineCat(
+                                PP.lbrace,
+                                PP.vsep(
+                                    PP.punctuate(PP.comma, elems)))),
+                        PP.rbrace)));
+        else
+            return PP.spaceCat(prefix, PP.braces(PP.empty));
     }
 }
