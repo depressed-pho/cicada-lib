@@ -2,7 +2,7 @@ import { Dimension } from "./dimension.js";
 import { Entity } from "./entity.js";
 import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
 import { EntityBreathable } from "./entity/breathable.js";
-import { EntityEquipments } from "./entity/equipments.js";
+import { EntityEquipment } from "./entity/equipment.js";
 import { EntityCanClimb, EntityIsHiddenWhenInvisible } from "./entity/flags.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
@@ -202,7 +202,7 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
     // These components should always exist.
     declare public readonly canClimb: EntityCanClimb;
     declare public readonly breathable: EntityBreathable;
-    declare public readonly equipments: EntityEquipments;
+    declare public readonly equipment: EntityEquipment;
     declare public readonly health: EntityHealth;
     declare public readonly inventory: EntityInventory;
     declare public readonly isHiddenWhenInvisible: EntityIsHiddenWhenInvisible;
@@ -254,14 +254,14 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
             this.underwaterMovement,
         ]);
         try {
-            if (this.equipments.size > 0)
-                comps.add(this.equipments);
+            if (this.equipment.size > 0)
+                comps.add(this.equipment);
         }
         catch (e) {
             if (I.looksLikeReadonlyError(e))
                 // EntityEquippableComponent.prototype.getEquipment() isn't
                 // callable in read-only mode.
-                comps.add(this.equipments);
+                comps.add(this.equipment);
             else
                 throw e;
         }
@@ -270,7 +270,7 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
                 case EntityBreathable.typeId:
                 case EntityCanClimb.typeId:
                 case EntityHealth.typeId:
-                case EntityEquipments.typeId:
+                case EntityEquipment.typeId:
                 case EntityInventory.typeId:
                 case EntityIsHiddenWhenInvisible.typeId:
                 case EntityLavaMovement.typeId:

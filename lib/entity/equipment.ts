@@ -16,7 +16,7 @@ const SLOTS: EquipmentSlot[] = [
     EquipmentSlot.Offhand
 ];
 
-export class EntityEquipments extends EntityComponent<MC.EntityEquippableComponent> implements Map<EquipmentSlot, ItemStack>, I.HasCustomInspection {
+export class EntityEquipment extends EntityComponent<MC.EntityEquippableComponent> implements Map<EquipmentSlot, ItemStack>, I.HasCustomInspection {
     public static readonly typeId = "minecraft:equippable";
 
     public get size(): number {
@@ -29,7 +29,7 @@ export class EntityEquipments extends EntityComponent<MC.EntityEquippableCompone
     }
 
     public get [Symbol.toStringTag](): string {
-        return "EntityEquipments";
+        return "EntityEquipment";
     }
 
     public [Symbol.iterator](): IterableIterator<[EquipmentSlot, ItemStack]> {
@@ -60,7 +60,7 @@ export class EntityEquipments extends EntityComponent<MC.EntityEquippableCompone
         }
     }
 
-    public forEach(f: (value: ItemStack, key: EquipmentSlot, map: EntityEquipments) => void, thisArg?: any): void {
+    public forEach(f: (value: ItemStack, key: EquipmentSlot, map: EntityEquipment) => void, thisArg?: any): void {
         const boundF = f.bind(thisArg);
         for (const [slot, stack] of this) {
             boundF(stack, slot, this);
@@ -109,11 +109,11 @@ export class EntityEquipments extends EntityComponent<MC.EntityEquippableCompone
         // verbose. Do it when showHidden is enabled, otherwise only show
         // their item IDs and amounts, like:
         //
-        // EntityEquipments {
+        // EntityEquipment {
         //     Mainhand => "minecraft:netherite_pickaxe",
         //     Offhand => "minecraft:torch" (amount: 64)
         // }
-        const prefix = stylise(PP.text("EntityEquipments"), I.TokenType.Class);
+        const prefix = stylise(PP.text("EntityEquipment"), I.TokenType.Class);
         const elems  = [] as PP.Doc[];
         try {
             for (const [slot, stack] of this) {

@@ -3,7 +3,7 @@ import { Dimension } from "./dimension.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
 import { EntityBreathable } from "./entity/breathable.js";
 import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
-import { EntityEquipments } from "./entity/equipments.js";
+import { EntityEquipment } from "./entity/equipment.js";
 import { EntityCanClimb, EntityIsHiddenWhenInvisible } from "./entity/flags.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
@@ -19,7 +19,7 @@ export { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions };
 export {
     EntityBreathable,
     EntityCanClimb,
-    EntityEquipments,
+    EntityEquipment,
     EntityHealth,
     EntityInventory,
     EntityIsHiddenWhenInvisible,
@@ -29,7 +29,7 @@ export {
     EntityTags,
     EntityUnderwaterMovement,
 };
-export { EquipmentSlot } from "./entity/equipments.js";
+export { EquipmentSlot } from "./entity/equipment.js";
 
 export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     public get dimension(): Dimension {
@@ -127,10 +127,10 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
             return raw ? new EntityHealth(raw) : undefined;
         });
 
-    public readonly equipments: EntityEquipments|undefined
+    public readonly equipment: EntityEquipment|undefined
         = lazy(() => {
-            const raw = this.raw.getComponent(EntityEquipments.typeId);
-            return raw ? new EntityEquipments(raw) : undefined;
+            const raw = this.raw.getComponent(EntityEquipment.typeId);
+            return raw ? new EntityEquipment(raw) : undefined;
         });
 
     public readonly inventory: EntityInventory|undefined

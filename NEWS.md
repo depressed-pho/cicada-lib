@@ -1,5 +1,11 @@
 # Release notes
 
+## 4.0.0 -- not released yet
+
+* Breaking changes:
+  * Replaced all occurences of word "equipments" with "equipment". You know
+    English isn't my native language LOL.
+
 ## 3.0.0 -- 2024-01-28
 
 * Updated for Minecraft Bedrock 1.20.50 (@minecraft/server 1.8.0-beta).
