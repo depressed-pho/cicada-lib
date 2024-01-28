@@ -1,6 +1,6 @@
 # Release notes
 
-## 3.0.0 -- not released yet
+## 3.0.0 -- 2024-01-28
 
 * Updated for Minecraft Bedrock 1.20.50 (@minecraft/server 1.8.0-beta).
 * Switched to the official TypeScript type declarations.
