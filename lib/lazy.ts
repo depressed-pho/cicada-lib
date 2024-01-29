@@ -2,7 +2,7 @@
  * any of their properties are accessed, the thunk is evaluated and the
  * result is memorised.
  */
-export function lazy<T>(thunk: () => T): T {
+export function lazy<T extends object>(thunk: () => T): T {
     let isEvaluated = false;
     let value: T;
 

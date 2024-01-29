@@ -3,7 +3,6 @@ import { Entity } from "./entity.js";
 import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
 import { EntityBreathable } from "./entity/breathable.js";
 import { EntityEquipment } from "./entity/equipment.js";
-import { EntityCanClimb, EntityIsHiddenWhenInvisible } from "./entity/flags.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
 import { map } from "./iterable.js";
@@ -200,16 +199,37 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
     // --------- Components ---------
 
     // These components should always exist.
-    declare public readonly canClimb: EntityCanClimb;
-    declare public readonly breathable: EntityBreathable;
-    declare public readonly equipment: EntityEquipment;
-    declare public readonly health: EntityHealth;
-    declare public readonly inventory: EntityInventory;
-    declare public readonly isHiddenWhenInvisible: EntityIsHiddenWhenInvisible;
-    declare public readonly lavaMovement: EntityLavaMovement;
-    declare public readonly movement: EntityMovement;
-    declare public readonly rideable: EntityRideable;
-    declare public readonly underwaterMovement: EntityUnderwaterMovement;
+    public override get breathable(): EntityBreathable {
+        return super.breathable!;
+    }
+
+    public override get equipment(): EntityEquipment {
+        return super.equipment!;
+    }
+
+    public override get health(): EntityHealth {
+        return super.health!;
+    }
+
+    public override get inventory(): EntityInventory {
+        return super.inventory!;
+    }
+
+    public override get lavaMovement(): EntityLavaMovement {
+        return super.lavaMovement!;
+    }
+
+    public override get movement(): EntityMovement {
+        return super.movement!;
+    }
+
+    public override get rideable(): EntityRideable {
+        return super.rideable!;
+    }
+
+    public override get underwaterMovement(): EntityUnderwaterMovement {
+        return super.underwaterMovement!;
+    }
 
     /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
@@ -243,9 +263,14 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
         if (this.tags.size > 0)
             obj.tags = this.tags;
 
+        // These are flags but are in fact components.
+        if (this.canClimb)
+            obj.canClimb = true;
+        if (this.isHiddenWhenInvisible)
+            obj.isHiddenWhenInvisible = true;
+
         const comps = new Set<any>([
             this.breathable,
-            this.canClimb,
             this.health,
             this.inventory,
             this.lavaMovement,
@@ -268,11 +293,11 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
         for (const comp of this.raw.getComponents()) {
             switch (comp.typeId) {
                 case EntityBreathable.typeId:
-                case EntityCanClimb.typeId:
+                case "minecraft:can_climb":
                 case EntityHealth.typeId:
                 case EntityEquipment.typeId:
                 case EntityInventory.typeId:
-                case EntityIsHiddenWhenInvisible.typeId:
+                case "minecraft:is_hidden_when_invisible":
                 case EntityLavaMovement.typeId:
                 case EntityMovement.typeId:
                 case EntityRideable.typeId:

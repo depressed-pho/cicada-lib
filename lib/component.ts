@@ -1,4 +1,3 @@
-import { lazy } from "./lazy.js";
 import { Wrapper } from "./wrapper.js";
 import * as MC from "@minecraft/server";
 
@@ -43,10 +42,10 @@ export function component<Class extends IWrapperHavingComponents, Field>(compone
                 `A field decorated with @component must not be static: ${String(context.name)}`);
 
         return function (this: Class) {
-            return lazy(() => {
-                const raw = this.raw.getComponent(componentId);
-                return raw ? new wrapperClass(raw) : undefined;
-            });
+            // We could cache wrapped components in a WeakMap but that's
+            // probably slower than this.
+            const raw = this.raw.getComponent(componentId);
+            return raw ? new wrapperClass(raw) : undefined;
         };
     };
 }

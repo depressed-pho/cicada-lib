@@ -144,20 +144,26 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
     /** Cooldown effect of this item stack, or `undefined` if it's not
      * present.
      */
-    public readonly cooldown: ItemCooldown|undefined
-        = lazy(() => {
+    public get cooldown(): ItemCooldown|undefined {
+        if (this.#cooldown === undefined) {
             const raw = this.raw.getComponent(ItemCooldown.typeId);
-            return raw ? new ItemCooldown(raw) : undefined;
-        });
+            this.#cooldown = raw ? new ItemCooldown(raw) : null;
+        }
+        return this.#cooldown ?? undefined;
+    }
+    #cooldown?: ItemCooldown|null;
 
     /** Durability of this item stack, or `undefined` if it doesn't take
      * damage.
      */
-    public readonly durability: ItemDurability|undefined
-        = lazy(() => {
+    public get durability(): ItemDurability|undefined {
+        if (this.#durability === undefined) {
             const raw = this.raw.getComponent(ItemDurability.typeId);
-            return raw ? new ItemDurability(raw, this.enchantments) : undefined;
-        });
+            this.#durability = raw ? new ItemDurability(raw, this.enchantments) : null;
+        }
+        return this.#durability ?? undefined;
+    }
+    #durability?: ItemDurability|null;
 
     /** The set of enchantments applied to this item stack. This becomes an
      * empty set of enchantments if the item cannot be enchanted.

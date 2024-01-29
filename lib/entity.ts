@@ -4,7 +4,6 @@ import { HasDynamicProperties } from "./dynamic-props.js";
 import { EntityBreathable } from "./entity/breathable.js";
 import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
 import { EntityEquipment } from "./entity/equipment.js";
-import { EntityCanClimb, EntityIsHiddenWhenInvisible } from "./entity/flags.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
 import { EntityTags } from "./entity/tags.js";
@@ -18,11 +17,9 @@ import * as MC from "@minecraft/server";
 export { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions };
 export {
     EntityBreathable,
-    EntityCanClimb,
     EntityEquipment,
     EntityHealth,
     EntityInventory,
-    EntityIsHiddenWhenInvisible,
     EntityLavaMovement,
     EntityMovement,
     EntityRideable,
@@ -109,65 +106,93 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
 
     // --------- Components ---------
 
-    public readonly breathable: EntityBreathable|undefined
-        = lazy(() => {
+    public get breathable(): EntityBreathable|undefined {
+        if (this.#breathable === undefined) {
             const raw = this.raw.getComponent(EntityBreathable.typeId);
-            return raw ? new EntityBreathable(raw) : undefined;
-        });
+            this.#breathable = raw ? new EntityBreathable(raw) : null;
+        }
+        return this.#breathable ?? undefined;
+    }
+    #breathable?: EntityBreathable|null;
 
-    public readonly canClimb: EntityCanClimb|undefined
-        = lazy(() => {
-            const raw = this.raw.getComponent(EntityCanClimb.typeId);
-            return raw ? new EntityCanClimb(raw) : undefined;
-        });
+    public get canClimb(): boolean {
+        if (this.#canClimb === undefined) {
+            this.#canClimb = !!this.raw.getComponent("minecraft:can_climb");
+        }
+        return this.#canClimb;
+    }
+    #canClimb?: boolean;
 
-    public readonly health: EntityHealth|undefined
-        = lazy(() => {
+    public get health(): EntityHealth|undefined {
+        if (this.#health === undefined) {
             const raw = this.raw.getComponent(EntityHealth.typeId);
-            return raw ? new EntityHealth(raw) : undefined;
-        });
+            this.#health = raw ? new EntityHealth(raw) : null;
+        }
+        return this.#health ?? undefined;
+    }
+    #health?: EntityHealth|null;
 
-    public readonly equipment: EntityEquipment|undefined
-        = lazy(() => {
+    public get equipment(): EntityEquipment|undefined {
+        if (this.#equipment === undefined) {
             const raw = this.raw.getComponent(EntityEquipment.typeId);
-            return raw ? new EntityEquipment(raw) : undefined;
-        });
+            this.#equipment = raw ? new EntityEquipment(raw) : null;
+        }
+        return this.#equipment ?? undefined;
+    }
+    #equipment?: EntityEquipment|null;
 
-    public readonly inventory: EntityInventory|undefined
-        = lazy(() => {
+    public get inventory(): EntityInventory|undefined {
+        if (this.#inventory === undefined) {
             const raw = this.raw.getComponent(EntityInventory.typeId);
-            return raw ? new EntityInventory(raw) : undefined;
-        });
+            this.#inventory = raw ? new EntityInventory(raw) : null;
+        }
+        return this.#inventory ?? undefined;
+    }
+    #inventory?: EntityInventory|null;
 
-    public readonly isHiddenWhenInvisible: EntityIsHiddenWhenInvisible|undefined
-        = lazy(() => {
-            const raw = this.raw.getComponent(EntityIsHiddenWhenInvisible.typeId);
-            return raw ? new EntityIsHiddenWhenInvisible(raw) : undefined;
-        });
+    public get isHiddenWhenInvisible(): boolean {
+        if (this.#isHiddenWhenInvisible === undefined) {
+            this.#isHiddenWhenInvisible = !!this.raw.getComponent("minecraft:is_hidden_when_invisible");
+        }
+        return this.#isHiddenWhenInvisible;
+    }
+    #isHiddenWhenInvisible?: boolean;
 
-    public readonly lavaMovement: EntityLavaMovement|undefined
-        = lazy(() => {
+    public get lavaMovement(): EntityLavaMovement|undefined {
+        if (this.#lavaMovement === undefined) {
             const raw = this.raw.getComponent(EntityLavaMovement.typeId);
-            return raw ? new EntityLavaMovement(raw) : undefined;
-        });
+            this.#lavaMovement = raw ? new EntityLavaMovement(raw) : null;
+        }
+        return this.#lavaMovement ?? undefined;
+    }
+    #lavaMovement?: EntityLavaMovement|null;
 
-    public readonly movement: EntityMovement|undefined
-        = lazy(() => {
+    public get movement(): EntityMovement|undefined {
+        if (this.#movement === undefined) {
             const raw = this.raw.getComponent(EntityMovement.typeId);
-            return raw ? new EntityMovement(raw) : undefined;
-        });
+            this.#movement = raw ? new EntityMovement(raw) : null;
+        }
+        return this.#movement ?? undefined;
+    }
+    #movement?: EntityMovement|null;
 
-    public readonly rideable: EntityRideable|undefined
-        = lazy(() => {
+    public get rideable(): EntityRideable|undefined {
+        if (this.#rideable === undefined) {
             const raw = this.raw.getComponent(EntityRideable.typeId);
-            return raw ? new EntityRideable(raw) : undefined;
-        });
+            this.#rideable = raw ? new EntityRideable(raw) : null;
+        }
+        return this.#rideable ?? undefined;
+    }
+    #rideable?: EntityRideable|null;
 
-    public readonly underwaterMovement: EntityUnderwaterMovement|undefined
-        = lazy(() => {
+    public get underwaterMovement(): EntityUnderwaterMovement|undefined {
+        if (this.#underwaterMovement === undefined) {
             const raw = this.raw.getComponent(EntityUnderwaterMovement.typeId);
-            return raw ? new EntityUnderwaterMovement(raw) : undefined;
-        });
+            this.#underwaterMovement = raw ? new EntityUnderwaterMovement(raw) : null;
+        };
+        return this.#underwaterMovement ?? undefined;
+    }
+    #underwaterMovement?: EntityUnderwaterMovement|null;
 }
 
 export interface TeleportOptions {
