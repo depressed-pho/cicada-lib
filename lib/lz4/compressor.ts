@@ -232,8 +232,9 @@ class LZ4Compressor<OutputT, InputT> {
         const compBlock = new Buffer();
         for (let remaining = this.#opts.maximumBlockSize; remaining > 0; ) {
             const chunk = yield* this.#input.readSome(remaining);
-            if (chunk) {
+            if (chunk.length > 0) {
                 rawBlock.append(chunk);
+                remaining -= chunk.length;
             }
             else {
                 break;

@@ -28,9 +28,10 @@ export abstract class InputStream<OutputT, InputT> {
 
     /** Consume some input of at most the given length. The returned buffer
      * will contain less number of octets when there isn't enough data
-     * readily available. The caller is free to mutate the returned buffer.
+     * readily available. It returns an empty buffer in case of EOF. The
+     * caller is free to mutate the returned buffer.
      */
-    public abstract readSome(length: number): Generator<OutputT, Buffer|undefined, InputT>;
+    public abstract readSome(length: number): Generator<OutputT, Buffer, InputT>;
 
     /** Discard an input of the given length. */
     public abstract skip(length: number): Generator<OutputT, void, InputT>;
@@ -146,10 +147,8 @@ export class BufferInputStream<OutputT> extends InputStream<OutputT, void> {
         return this.#buf.take(length);
     }
 
-    public *readSome(length: number): Generator<OutputT, Buffer|undefined, void> {
-        return this.#buf.length > 0
-            ? this.#buf.take(length)
-            : undefined;
+    public *readSome(length: number): Generator<OutputT, Buffer, void> {
+        return this.#buf.take(length);
     }
 
     public *skip(length: number): Generator<OutputT, void, void> {
@@ -183,13 +182,7 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
         else {
             const input = yield* this.needMore();
             this.gotData(input);
-            if (input) {
-                return false;
-            }
-            else {
-                this.#isClosed = true;
-                return true;
-            }
+            return this.#isClosed;
         }
     }
 
@@ -199,6 +192,9 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
                 throw new Error("Cannot push data after signaling EOF");
             }
             this.#buf.append(input);
+        }
+        else {
+            this.#isClosed = true;
         }
     }
 
@@ -222,7 +218,7 @@ export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
         return this.#buf.take(length);
     }
 
-    public *readSome(length: number): Generator<OutputT, Buffer|undefined, Uint8Array> {
+    public *readSome(length: number): Generator<OutputT, Buffer, Uint8Array> {
         if (this.#buf.length == 0) {
             this.gotData(yield* this.needMore());
         }

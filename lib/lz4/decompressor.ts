@@ -137,7 +137,7 @@ class LZ4Decompressor<OutputT, InputT> {
             else {
                 for (let remaining = realBlockSize; remaining > 0; ) {
                     const chunk = yield* this.#input.readSome(remaining);
-                    if (!chunk) {
+                    if (chunk.length == 0) {
                         throw new PrematureEOF(`Got an EOF before reading ${realBlockSize} octets of uncompressed block`);
                     }
 
