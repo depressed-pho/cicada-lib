@@ -12,7 +12,7 @@ import * as LZ4 from "./lz4.js";
  * | Magic    | Version | Compression |
  * | 4 octets | 1 octet | 1 octet     |
  * +==========+=========+=============+
- * |  'CICA'  |   0x01  |     0x00    |
+ * |  'CICA'  |  0x01   |    0x00     |
  * +----------+---------+-------------+
  *
  * Compression schemes:

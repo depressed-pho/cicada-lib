@@ -158,9 +158,9 @@ export class BufferInputStream<OutputT> extends InputStream<OutputT, void> {
 }
 
 /** An input stream that gets data from the `yield` operator. Calling
- * `Generator.prototype.next` without an argument signals an EOF. The data
- * is internally buffered in the stream, and its ownership is taken by the
- * stream. Do not mutate it afterwards.
+ * `Generator.prototype.next()` without an argument signals an EOF. The
+ * data is internally buffered in the stream, and its ownership is taken by
+ * the stream. Do not mutate it afterwards.
  */
 export class PushInputStream<OutputT> extends InputStream<OutputT, Uint8Array> {
     readonly #buf: Buffer;
