@@ -2,7 +2,7 @@ import { Chunk } from "./buffer/chunk.js";
 
 // IMPLEMENTATION NOTE: Never ever allocate chunks that are smaller than
 // MIN_GROWTH. It induces a SEVERE performance issue.
-const MIN_GROWTH    = 512;
+const MIN_GROWTH    = 64;
 const GROWTH_FACTOR = 0.5;
 
 /** `Buffer` is a mutable, resizable sequence of octets. This is not a
@@ -14,7 +14,7 @@ export class Buffer {
     /** Construct an empty `Buffer` object. If an argument `octets` is
      * provided, it will be stored in the buffer using {@link append}.
      */
-    public constructor(octets?: Uint8Array) {
+    public constructor(octets?: Buffer|Uint8Array) {
         this.#chunks = [];
         this.#length = 0;
 
@@ -103,9 +103,16 @@ export class Buffer {
      * chunks.
      */
     public *unsafeChunks(): IterableIterator<Uint8Array> {
-        for (const chunk of this.#chunks) {
+        for (const chunk of this.#chunks)
             yield chunk.toUint8Array();
-        }
+    }
+
+    /** Iterate over octets in the buffer. The iterator is only valid until
+     * the next time the buffer is mutated.
+     */
+    public *[Symbol.iterator](): IterableIterator<number> {
+        for (const chunk of this.#chunks)
+            yield* chunk;
     }
 
     /** Clear data in the buffer but don't deallocate anything. Memory used
@@ -206,7 +213,7 @@ export class Buffer {
      * returned buffer will only be valid until the next time the original
      * buffer is mutated. Do not mutate the returned buffer.
      */
-    public unsafeSubarray(begin?: number, end?: number): Buffer {
+    public unsafeSubBuffer(begin?: number, end?: number): Buffer {
         begin ??= 0;
         if (begin < 0) {
             begin = Math.max(0, begin + this.#length);
@@ -218,19 +225,29 @@ export class Buffer {
         }
 
         const ret = new Buffer();
+        let offset = begin;
+        let length = end - begin;
         for (const chunk of this.#chunks) {
-            if (end - begin <= 0) {
+            if (length <= 0) {
                 break;
             }
-            else if (begin > chunk.length) {
+            else if (chunk.length <= offset) {
                 // Skip this chunk entirely.
+                offset -= chunk.length;
             }
-            else if (end <= chunk.length) {
-                // The requested range covers this chunk, at least partially.
-                const subChunk = chunk.unsafeSubarray(begin, end);
+            else if (chunk.length <= length) {
+                // The requested range covers this entire chunk.
+                ret.#chunks.push(chunk);
+                ret.#length += chunk.length;
+                offset      -= chunk.length;
+                length      -= chunk.length;
+            }
+            else {
+                // The requested range covers a part of this chunk.
+                const subChunk = chunk.unsafeSubChunk(offset, offset + length);
                 ret.#chunks.push(subChunk);
                 ret.#length += subChunk.length;
-                begin       += subChunk.length;
+                offset      -= subChunk.length;
                 end         -= subChunk.length;
             }
         }
@@ -284,12 +301,12 @@ export class Buffer {
                 if (littleEndian) {
                     let n = this.getUint8(offset  );
                     n    |= this.getUint8(offset+1) <<  8;
-                    return n;
+                    return n >>> 0;
                 }
                 else {
                     let n = this.getUint8(offset  ) << 8;
                     n    |= this.getUint8(offset+1);
-                    return n;
+                    return n >>> 0;
                 }
             }
         }
@@ -347,14 +364,14 @@ export class Buffer {
                     n    |= this.getUint8(offset+1) <<  8;
                     n    |= this.getUint8(offset+2) << 16;
                     n    |= this.getUint8(offset+3) << 24;
-                    return n;
+                    return n >>> 0;
                 }
                 else {
                     let n = this.getUint8(offset  ) << 24;
                     n    |= this.getUint8(offset+1) << 16;
                     n    |= this.getUint8(offset+2) <<  8;
                     n    |= this.getUint8(offset+3);
-                    return n;
+                    return n >>> 0;
                 }
             }
         }
@@ -400,5 +417,12 @@ export class Buffer {
         chunk.dView.setFloat64(chunk.length, n, littleEndian);
         chunk.length += 8;
         this.#length += 8;
+    }
+
+    /// @internal: We do a lot of debugging by running these classes on
+    /// Node.js.
+    [Symbol.for("nodejs.util.inspect.custom")](_depth: number, _opts: any, inspect: any) {
+        const str = inspect(this.toUint8Array());
+        return `Buffer${str.slice("Uint8Array".length)}`;
     }
 }

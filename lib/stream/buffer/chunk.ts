@@ -33,6 +33,14 @@ export class Chunk {
         this.#u8View   = null;
     }
 
+    /** Iterate over octets in the chunk. The iterator is only valid until
+     * the next time the chunk is mutated.
+     */
+    public *[Symbol.iterator](): IterableIterator<number> {
+        for (let i = 0; i < this.#length; i++)
+            yield this.u8View[i]!;
+    }
+
     public get length(): number {
         return this.#length;
     }
@@ -75,7 +83,7 @@ export class Chunk {
         }
     }
 
-    public unsafeSubarray(begin?: number, end?: number): Chunk {
+    public unsafeSubChunk(begin?: number, end?: number): Chunk {
         begin ??= 0;
         if (begin < 0) {
             begin += this.#length;

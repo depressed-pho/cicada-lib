@@ -1,75 +1,36 @@
 import { XXH32, xxHash32 } from "../xxhash.js";
-import { OutputStream, InputStream, Buffer,
-         BufferOutputStream, BufferInputStream } from "../stream.js";
+import { Buffer, Conduit, conduit, sinkBuffer, takeE, yieldC } from "../stream.js";
 import { LZ4MaximumBlockSize, LZ4CompressionOptions } from "./options.js";
 import { writeFrameDescriptor } from "./frame.js";
 
-export function compress(input: Uint8Array, opts?: LZ4CompressionOptions): Uint8Array;
-
-export function compress<OutputT, InputT>(
-    output: OutputStream<OutputT, InputT>,
-    input: InputStream<OutputT, InputT>,
-    opts?: LZ4CompressionOptions): Generator<OutputT, void, InputT>;
-
-export function compress(...args: any[]) {
-    switch (args.length) {
-        case 1:
-            return compressOneShot(args[0]);
-        case 2:
-            if (args[0] instanceof Uint8Array) {
-                return compressOneShot(args[0], args[1]);
-            }
-            else {
-                return compressStream(args[0], args[1]);
-            }
-        case 3:
-            return compressStream(args[0], args[1], args[2]);
-        default:
-            throw new TypeError("Wrong number of arguments");
-    }
+export function compress(input: Uint8Array, opts?: LZ4CompressionOptions): Uint8Array {
+    return yieldC(new Buffer(input))
+        .fuse(compressC(opts))
+        .fuse(sinkBuffer)
+        .run()
+        .toUint8Array();
 }
 
-function compressOneShot(input: Uint8Array, opts?: LZ4CompressionOptions): Uint8Array {
-    const os  = new BufferOutputStream();
-    const is  = new BufferInputStream(new Buffer(input));
-    const gen = new LZ4Compressor(os, is, opts).run();
-
-    if (!gen.next().done) {
-        throw new Error("Internal error: the generator yielded when it shouldn't");
-    }
-
-    return os.data.toUint8Array();
+export function compressC(opts?: LZ4CompressionOptions): Conduit<Buffer, Buffer, void> {
+    return new LZ4Compressor(opts);
 }
 
-function compressStream<OutputT, InputT>(
-    output: OutputStream<OutputT, InputT>,
-    input: InputStream<OutputT, InputT>,
-    opts?: LZ4CompressionOptions): Generator<OutputT, void, InputT> {
-
-    output.onYield((data) => input.gotData(data));
-    input.onYield(() => output.takeData());
-
-    return new LZ4Compressor(output, input, opts).run();
+function writeUint32LE(n: number): Conduit<unknown, Buffer, void> {
+    return conduit(function* () {
+        const buf = new Buffer();
+        buf.appendUint32(n, true);
+        yield* yieldC(buf);
+    });
 }
 
-interface Block {
-    rawBlock:  Buffer,
-    compBlock: Buffer
-}
-
-class LZ4Compressor<OutputT, InputT> {
-    readonly #output: OutputStream<OutputT, InputT>;
-    readonly #input: InputStream<OutputT, InputT>;
+class LZ4Compressor extends Conduit<Buffer, Buffer, void> {
     readonly #opts: Required<LZ4CompressionOptions>;
     readonly #hashSize: number;
     readonly #dictHashTable: Uint16Array;
     readonly #dictionary: Buffer;
 
-    public constructor(output: OutputStream<OutputT, InputT>,
-                       input: InputStream<OutputT, InputT>,
-                       opts?: LZ4CompressionOptions) {
-        this.#output = output;
-        this.#input  = input;
+    public constructor(opts?: LZ4CompressionOptions) {
+        super();
         this.#opts   = {
             independentBlocks: opts?.independentBlocks ?? false,
             blockChecksums:    opts?.blockChecksums    ?? false,
@@ -80,9 +41,10 @@ class LZ4Compressor<OutputT, InputT> {
             hashBits:          opts?.hashBits          ?? 16,
             skipTrigger:       opts?.skipTrigger       ?? 6
         };
-        if (this.#opts.hashBits < 0 || this.#opts.hashBits > 32) {
+        if (this.#opts.maximumBlockSize <= 0)
+            throw new RangeError(`maximumBlockSize must be a positive integer: ${this.#opts.maximumBlockSize}`);
+        if (this.#opts.hashBits < 0 || this.#opts.hashBits > 32)
             throw new RangeError(`hashBits must be in [0, 32]: ${this.#opts.hashBits}`);
-        }
         this.#hashSize      = 2 ** this.#opts.hashBits - 1 >>> 0;
         this.#dictHashTable = new Uint16Array(this.#hashSize);
         this.#dictionary    = new Buffer();
@@ -98,7 +60,7 @@ class LZ4Compressor<OutputT, InputT> {
         if (input.length >= 0xFFFF) {
             // The input is going to completely wash our dictionary
             // away. Take the last 64 KiB of the input.
-            this.#dictionary.append(input.unsafeSubarray(-0xFFFF));
+            this.#dictionary.append(input.unsafeSubBuffer(-0xFFFF));
 
             // And every offset in the dictionary hash table is now
             // invalid. Need to rebuild it entirely.
@@ -106,7 +68,7 @@ class LZ4Compressor<OutputT, InputT> {
         }
         else if (this.#dictionary.length + input.length > 0xFFFF) {
             // Some part of our existing dictionary is going away.
-            this.#dictionary.append(input.unsafeSubarray(-0xFFFF));
+            this.#dictionary.append(input.unsafeSubBuffer(-0xFFFF));
             this.#dictionary.drop(this.#dictionary.length - 0xFFFF);
 
             // This means every offset in it is now invalid.
@@ -156,10 +118,9 @@ class LZ4Compressor<OutputT, InputT> {
         return (h & this.#hashSize) >>> 0;
     }
 
-    public *run(): Generator<OutputT, void, InputT> {
-        yield* this.#output.writeUint32(0x184D2204, true); // magic
-
-        yield* writeFrameDescriptor(this.#output, {
+    public *[Symbol.iterator]() {
+        yield* writeUint32LE(0x184D2204); // magic
+        yield* writeFrameDescriptor({
             independentBlocks: this.#opts.independentBlocks,
             blockChecksums:    this.#opts.blockChecksums,
             contentSize:       this.#opts.contentSize,
@@ -167,36 +128,38 @@ class LZ4Compressor<OutputT, InputT> {
             dictionaryID:      this.#opts.dictionary?.id,
             maximumBlockSize:  this.#opts.maximumBlockSize
         });
-
         yield* this.#compressFrame();
     }
 
-    *#compressFrame(): Generator<OutputT, void, InputT> {
+    *#compressFrame() {
         const contentHash = this.#opts.contentChecksum ? new XXH32() : undefined;
         let   contentSize = 0;
-        while ((yield* this.#input.isEOF()) == false) {
+        while (true) {
             // Take the next block from the input and try compressing
             // it. If it doesn't compress, then write it as an uncompressed
             // block. Unfortunately this cannot be implemented as a
             // one-pass operation and we have to keep the entire block in
             // memory.
-            const {rawBlock, compBlock} = yield* this.#compressBlock();
+            const ret = yield* this.#compressBlock();
+            if (!ret)
+                break;
+            const {rawBlock, compBlock} = ret;
 
             if (compBlock.length >= rawBlock.length) {
                 // Damn, it made no sense to compress it. Write an
                 // uncompressed block and discard the other one.
-                yield* this.#output.writeUint32(rawBlock.length | 0x80, true);
-                yield* this.#output.write(rawBlock);
+                yield* writeUint32LE(rawBlock.length | 0x80);
+                yield* yieldC(rawBlock);
                 if (this.#opts.blockChecksums) {
-                    yield* this.#output.writeUint32(xxHash32(rawBlock), true);
+                    yield* writeUint32LE(xxHash32(rawBlock));
                 }
             }
             else {
                 // It actually compressed.
-                yield* this.#output.writeUint32(compBlock.length, true);
-                yield* this.#output.write(compBlock);
+                yield* writeUint32LE(compBlock.length);
+                yield* yieldC(compBlock);
                 if (this.#opts.blockChecksums) {
-                    yield* this.#output.writeUint32(xxHash32(compBlock), true);
+                    yield* writeUint32LE(xxHash32(compBlock));
                 }
             }
 
@@ -211,7 +174,7 @@ class LZ4Compressor<OutputT, InputT> {
         }
 
         // EndMark
-        yield* this.#output.writeUint32(0, true);
+        yield* writeUint32LE(0);
 
         if (this.#opts.contentSize !== undefined) {
             if (this.#opts.contentSize != contentSize) {
@@ -220,27 +183,20 @@ class LZ4Compressor<OutputT, InputT> {
         }
 
         if (contentHash) {
-            yield* this.#output.writeUint32(contentHash.final(), true);
+            yield* writeUint32LE(contentHash.final());
         }
     }
 
-    *#compressBlock(): Generator<OutputT, Block, InputT> {
+    *#compressBlock() {
         // Read an entire block from the stream. This is unavoidable,
         // because we must retain it in memory anyway in order to decide if
         // we should write a compressed block or not.
-        const rawBlock  = new Buffer();
-        const compBlock = new Buffer();
-        for (let remaining = this.#opts.maximumBlockSize; remaining > 0; ) {
-            const chunk = yield* this.#input.readSome(remaining);
-            if (chunk.length > 0) {
-                rawBlock.append(chunk);
-                remaining -= chunk.length;
-            }
-            else {
-                break;
-            }
-        }
+        const rawBlock = yield* takeE(this.#opts.maximumBlockSize).fuse(sinkBuffer);
+        if (rawBlock.length <= 0)
+            // Empty block means we have reached EOF.
+            return undefined;
 
+        const compBlock      = new Buffer();
         const blockHashTable = new Uint32Array(this.#hashSize);
         let numNonMatching = 1 << this.#opts.skipTrigger;
         let literalStart   = 0;
@@ -280,7 +236,7 @@ class LZ4Compressor<OutputT, InputT> {
                     // Write a sequence and skip the matched part.
                     const matchLenMinus4 = dictMatchLenMinus4 + blockMatchLen;
                     this.#writeSequence(
-                        compBlock, rawBlock.unsafeSubarray(literalStart, blockPos),
+                        compBlock, rawBlock.unsafeSubBuffer(literalStart, blockPos),
                         distance, matchLenMinus4);
 
                     blockPos    += matchLenMinus4 + 4;
@@ -317,7 +273,7 @@ class LZ4Compressor<OutputT, InputT> {
 
                     // Write a sequence and skip the matched part.
                     this.#writeSequence(
-                        compBlock, rawBlock.unsafeSubarray(literalStart, blockPos),
+                        compBlock, rawBlock.unsafeSubBuffer(literalStart, blockPos),
                         distance, matchLenMinus4);
 
                     blockPos    += matchLenMinus4 + 4;
@@ -334,7 +290,7 @@ class LZ4Compressor<OutputT, InputT> {
             blockPos += step;
         }
 
-        this.#writeLiteral(compBlock, rawBlock.unsafeSubarray(literalStart));
+        this.#writeLiteral(compBlock, rawBlock.unsafeSubBuffer(literalStart));
         return {rawBlock, compBlock};
     }
 
