@@ -1,3 +1,5 @@
+import { lazy } from "../lazy.js";
+
 const SHaveOutput = Symbol("SHaveOutput");
 interface HaveOutput<O> {
     type: typeof SHaveOutput;
@@ -166,7 +168,7 @@ export function conduit<I, O, R>(f: () => Generator<Step<I, O>, R, Supply<I, unk
 }
 
 export const awaitC: Conduit<any, never, any|undefined> =
-    (() => {
+    lazy(() => {
         class Await<I> extends Conduit<I, never, I|undefined> {
             public *[Symbol.iterator](): Generator<Step<I, never>, I|undefined, Supply<I, unknown>> {
                 const supply = yield {type: SNeedInput};
@@ -179,7 +181,7 @@ export const awaitC: Conduit<any, never, any|undefined> =
             }
         }
         return new Await();
-    })();
+    });
 
 export function awaitForever<I, O>(f: (input: I) => Conduit<I, O, any>): Conduit<I, O, void> {
     class AwaitForever extends Conduit<I, O, void> {
@@ -221,4 +223,10 @@ export function yieldC<O>(output: O): Conduit<unknown, O, void> {
         }
     }
     return new Yield();
+}
+
+export class PrematureEOF extends Error {
+    public constructor(...args: ConstructorParameters<typeof Error>) {
+        super(...args);
+    }
 }

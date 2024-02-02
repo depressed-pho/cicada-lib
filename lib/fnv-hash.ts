@@ -1,4 +1,4 @@
-import { Buffer } from "./stream.js";
+import { Buffer } from "./buffer.js";
 import { umul32 } from "./imath.js";
 
 const FNV32_OFFSET_BASIS = 0x811c9dc5;

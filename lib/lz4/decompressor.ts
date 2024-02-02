@@ -1,7 +1,8 @@
 import { XXH32 } from "../xxhash.js";
-import { Buffer, Conduit, PrematureEOF, awaitC, conduit, dropE, headE,
+import { Buffer } from "../buffer.js";
+import { Conduit, PrematureEOF, awaitC, conduit, dropE, headE,
          peekForeverE, sinkBuffer, takeE, takeExactlyE, yieldC
-       } from "../stream.js";
+       } from "../conduit.js";
 import { readFrameDescriptor } from "./frame.js";
 import { LZ4DecompressionOptions } from "./options.js";
 

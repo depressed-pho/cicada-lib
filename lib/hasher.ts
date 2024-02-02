@@ -1,4 +1,4 @@
-import { Buffer } from "./stream.js";
+import { Buffer } from "./buffer.js";
 import { XXH32 } from "./xxhash.js";
 
 /** Universal hasher of ECMAScript values. This uses 32-bit xxHash as the

@@ -1,6 +1,7 @@
-import { Buffer, Conduit, PrematureEOF, conduit, peekE, sinkBuffer, takeE,
-         yieldC
-       } from "../stream.js";
+import { Buffer } from "../buffer.js";
+import { Conduit, PrematureEOF, conduit, peekE, sinkBuffer, takeE, yieldC
+       } from "../conduit.js";
+import { lazy } from "../lazy.js";
 import { LZ4MaximumBlockSize } from "./options.js";
 import { xxHash32 } from "../xxhash.js";
 
@@ -80,58 +81,59 @@ export function writeFrameDescriptor(desc: LZ4FrameDescriptor): Conduit<unknown,
 
 /// Read a frame descriptor from a stream.
 export const readFrameDescriptor /* : Conduit<Buffer, never, LZ4FrameDescriptor> */ =
-    conduit(function* () {
-        // The length of the frame descriptor can only be determined after
-        // reading the FLG byte.
-        const flg = yield* peekE;
-        if (flg === undefined)
-            throw new PrematureEOF("Premature end of stream while reading a frame descriptor");
+    lazy(() =>
+        conduit(function* () {
+            // The length of the frame descriptor can only be determined after
+            // reading the FLG byte.
+            const flg = yield* peekE;
+            if (flg === undefined)
+                throw new PrematureEOF("Premature end of stream while reading a frame descriptor");
 
-        const version = (flg & (0b11 << 6)) >>> 6;
-        if (version != 1)
-            throw new Error(`Unknown frame descriptor version: ${version}`);
+            const version = (flg & (0b11 << 6)) >>> 6;
+            if (version != 1)
+                throw new Error(`Unknown frame descriptor version: ${version}`);
 
-        const desc: Partial<LZ4FrameDescriptor> = {
-            independentBlocks: (flg & (1 << 5)) != 0,
-            blockChecksums:    (flg & (1 << 4)) != 0,
-            contentChecksum:   (flg & (1 << 2)) != 0
-        };
-        const length =
-            1 + // FLG
-            1 + // BD
-            (desc.contentSize  === undefined ? 0 : 8) +
-            (desc.dictionaryID === undefined ? 0 : 4) +
-            1;  // HC
-        const buf = yield* takeE(length).fuse(sinkBuffer);
-        if (buf.length < length)
-            throw new PrematureEOF("Premature end of stream while reading a frame descriptor");
+            const desc: Partial<LZ4FrameDescriptor> = {
+                independentBlocks: (flg & (1 << 5)) != 0,
+                blockChecksums:    (flg & (1 << 4)) != 0,
+                contentChecksum:   (flg & (1 << 2)) != 0
+            };
+            const length =
+                1 + // FLG
+                1 + // BD
+                (desc.contentSize  === undefined ? 0 : 8) +
+                (desc.dictionaryID === undefined ? 0 : 4) +
+                1;  // HC
+            const buf = yield* takeE(length).fuse(sinkBuffer);
+            if (buf.length < length)
+                throw new PrematureEOF("Premature end of stream while reading a frame descriptor");
 
-        let offset = 1; // because we've already read the FLG.
-        const bd = buf.getUint8(offset); offset++;
-        desc.maximumBlockSize = fromMaxBlockSizeDesc((bd & (0b111 << 4)) >>> 4);
+            let offset = 1; // because we've already read the FLG.
+            const bd = buf.getUint8(offset); offset++;
+            desc.maximumBlockSize = fromMaxBlockSizeDesc((bd & (0b111 << 4)) >>> 4);
 
-        if ((flg & (1 << 3)) != 0) {
-            const sizeLo = buf.getUint32(offset, true); offset += 4;
-            const sizeHi = buf.getUint32(offset, true); offset += 4;
+            if ((flg & (1 << 3)) != 0) {
+                const sizeLo = buf.getUint32(offset, true); offset += 4;
+                const sizeHi = buf.getUint32(offset, true); offset += 4;
 
-            if (sizeHi > 0) {
-                // This requires BigInt, but QuickJS doesn't support it.
-                throw new RangeError("64-bit contentSize is currently not supported");
+                if (sizeHi > 0) {
+                    // This requires BigInt, but QuickJS doesn't support it.
+                    throw new RangeError("64-bit contentSize is currently not supported");
+                }
+                desc.contentSize = sizeLo;
             }
-            desc.contentSize = sizeLo;
-        }
 
-        if ((flg & (1 << 0)) != 0) {
-            desc.dictionaryID = buf.getUint32(offset, true); offset += 4;
-        }
+            if ((flg & (1 << 0)) != 0) {
+                desc.dictionaryID = buf.getUint32(offset, true); offset += 4;
+            }
 
-        // HC
-        const expectedSum = buf.getUint8(offset);
-        const actualSum   = (xxHash32(buf.unsafeSubBuffer(0, -1)) >> 8) & 0xFF;
-        if (expectedSum != actualSum) {
-            throw new Error(
-                `Header checksum mismatches: expected ${expectedSum.toString(16)}, got ${actualSum.toString(16)}`);
-        }
+            // HC
+            const expectedSum = buf.getUint8(offset);
+            const actualSum   = (xxHash32(buf.unsafeSubBuffer(0, -1)) >> 8) & 0xFF;
+            if (expectedSum != actualSum) {
+                throw new Error(
+                    `Header checksum mismatches: expected ${expectedSum.toString(16)}, got ${actualSum.toString(16)}`);
+            }
 
-        return desc as LZ4FrameDescriptor;
-    });
+            return desc as LZ4FrameDescriptor;
+        }));

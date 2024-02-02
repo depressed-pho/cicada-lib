@@ -1,5 +1,6 @@
 import { XXH32, xxHash32 } from "../xxhash.js";
-import { Buffer, Conduit, conduit, sinkBuffer, takeE, yieldC } from "../stream.js";
+import { Buffer } from "../buffer.js";
+import { Conduit, conduit, sinkBuffer, takeE, yieldC } from "../conduit.js";
 import { LZ4MaximumBlockSize, LZ4CompressionOptions } from "./options.js";
 import { writeFrameDescriptor } from "./frame.js";
 

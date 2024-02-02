@@ -1,4 +1,4 @@
-import { Buffer } from "./stream.js";
+import { Buffer } from "./buffer.js";
 import { umul32, urotl32 } from "./imath.js";
 
 const PRIME32_1 = 0x9E3779B1;
