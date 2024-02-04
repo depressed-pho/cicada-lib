@@ -62,15 +62,18 @@ export abstract class Thread {
 
         // This method might be called in the context of before events,
         // which means we might be in a read-only mode. The task should
-        // yield at least once so that it can mutate the world state.
+        // await (or yield in our case since we ignore any yielded values)
+        // at least once so that it can mutate the world state.
         const self = this;
         this.#task = (async function* () {
-            yield;
+            // Await a Promise that is already fulfilled with null. This is
+            // a no-op except that the async function still pauses briefly.
+            await null;
             yield* self.run(cancelled);
         })();
 
         /* Since this.#task is an async generator and we haven't called its
-         * .next() even once, the generator isn't yet running even
+         * .next() even once, the generator isn't running yet even
          * asynchronously. Schedule its execution now.
          *
          * And when the promise is fulfilled, we should continue the

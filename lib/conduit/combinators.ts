@@ -178,3 +178,11 @@ export const sinkString: Conduit<string, never, string> =
                     return chunks.join("");
             }
         }));
+
+export function yieldMany<O>(xs: Iterable<O>): Conduit<unknown, O, void> {
+    return conduit(function* () {
+        for (const x of xs) {
+            yield* yieldC(x);
+        }
+    });
+}

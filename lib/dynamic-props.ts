@@ -1,11 +1,27 @@
+import { Conduit, conduit, sinkString, takeE } from "./conduit.js";
 import { Constructor } from "./mixin.js";
 import { Wrapper } from "./wrapper.js";
 import { Vector3 } from "@minecraft/server";
 
+/** The maximum number of octets that a string property can have. It was
+ * ~10 KiB before 1.2.10, and was expanded to 128 KiB for entities and 1
+ * MiB for worlds, and then narrowed down to 32 KiB on 1.20.40.
+ */
+export const MAX_STRING_PROPERTY_LENGTH = 32767;
+
 export interface ObjectWithDynamicProperties {
+    clearDynamicProperties(): void;
     getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
     getDynamicPropertyIds(): string[];
     getDynamicPropertyTotalByteCount(): number;
+    setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
+}
+
+export interface IHasDynamicProperties {
+    get dynamicPropertyIds(): string[];
+    get dynamicPropertyTotalByteCount(): number;
+    clearDynamicProperties(): void;
+    getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
     setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
 }
 
@@ -25,6 +41,18 @@ export type DynamicPropertyTypeMap = {
  */
 export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDynamicProperties>>>(base: T) {
     abstract class HasDynamicProperties extends base {
+        public get dynamicPropertyIds(): string[] {
+            return this.raw.getDynamicPropertyIds();
+        }
+
+        public get dynamicPropertyTotalByteCount(): number {
+            return this.raw.getDynamicPropertyTotalByteCount();
+        }
+
+        public clearDynamicProperties(): void {
+            this.raw.clearDynamicProperties();
+        }
+
         public getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
 
         public getDynamicProperty<Ty extends keyof DynamicPropertyTypeMap>(
@@ -68,4 +96,26 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
         }
     }
     return HasDynamicProperties;
+}
+
+export function sinkDynamicProperty<T extends IHasDynamicProperties>(
+    dest: T,
+    oldNumParts: number,
+    genId: (index: number) => string): Conduit<string, never, number> {
+
+    return conduit(function* () {
+        let numParts = 0;
+        for (;; numParts++) {
+            const part = yield* takeE(MAX_STRING_PROPERTY_LENGTH).fuse(sinkString);
+            if (part.length > 0)
+                dest.setDynamicProperty(genId(numParts), part);
+            else
+                break;
+        }
+        for (let i = numParts; i < oldNumParts; i++) {
+            // These parts no longer exist. Remove them.
+            dest.setDynamicProperty(genId(i), undefined);
+        }
+        return numParts;
+    });
 }

@@ -183,14 +183,14 @@ export const awaitC: Conduit<any, never, any|undefined> =
         return new Await();
     });
 
-export function awaitForever<I, O>(f: (input: I) => Conduit<I, O, any>): Conduit<I, O, void> {
+export function awaitForever<I, O>(f: (input: I) => Conduit<unknown, O, void>): Conduit<I, O, void> {
     class AwaitForever extends Conduit<I, O, void> {
         public *[Symbol.iterator](): Generator<Step<I, O>, void, Supply<I, unknown>> {
             while (true) {
                 const supply = yield {type: SNeedInput};
                 switch (supply.type) {
                     case SHaveInput:
-                        yield* f(supply.input);
+                        yield* f(supply.input) as Conduit<any, O, void>;
                         break;
                     case SClosed:
                         return;
