@@ -10,6 +10,7 @@
     "./*.js": "./dist/*.js"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "prepare": "gulp",
     "build": "gulp",
     "clean": "gulp clean",
@@ -42,13 +43,14 @@
     "gulp-typescript": "^6.0.0-alpha.1",
     "merge2": "^1.4.1",
     "mocha": "^10.2.0",
+    "patch-package": "^8.0.0",
     "tsimp": "^2.0.10",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@minecraft/common": "^1.2.0-rc.1.20.70-preview.20",
-    "@minecraft/server": "^1.9.0-beta.1.20.60-preview.22",
-    "@minecraft/server-ui": "^1.2.0-beta.1.20.60-preview.22"
+    "@minecraft/common": "^1.2.0-rc.1.20.70-preview.22",
+    "@minecraft/server": "^1.9.0-beta.1.20.60-stable",
+    "@minecraft/server-ui": "^1.2.0-beta.1.20.60-stable"
   },
   "peerDependencies": {
     "@protobuf-ts/runtime": "^2.8.2"
