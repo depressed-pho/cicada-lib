@@ -100,22 +100,22 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
 
 export function sinkDynamicProperty<T extends IHasDynamicProperties>(
     dest: T,
-    oldNumParts: number,
+    oldNumChunks: number,
     genId: (index: number) => string): Conduit<string, never, number> {
 
     return conduit(function* () {
-        let numParts = 0;
-        for (;; numParts++) {
-            const part = yield* takeE(MAX_STRING_PROPERTY_LENGTH).fuse(sinkString);
-            if (part.length > 0)
-                dest.setDynamicProperty(genId(numParts), part);
+        let numChunks = 0;
+        for (;; numChunks++) {
+            const chunk = yield* takeE(MAX_STRING_PROPERTY_LENGTH).fuse(sinkString);
+            if (chunk.length > 0)
+                dest.setDynamicProperty(genId(numChunks), chunk);
             else
                 break;
         }
-        for (let i = numParts; i < oldNumParts; i++) {
+        for (let i = numChunks; i < oldNumChunks; i++) {
             // These parts no longer exist. Remove them.
             dest.setDynamicProperty(genId(i), undefined);
         }
-        return numParts;
+        return numChunks;
     });
 }
