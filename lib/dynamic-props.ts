@@ -1,4 +1,4 @@
-import { Conduit, conduit, sinkString, takeE } from "./conduit.js";
+import { Conduit, conduit, sinkString, takeE, yieldC } from "./conduit.js";
 import { Constructor } from "./mixin.js";
 import { Wrapper } from "./wrapper.js";
 import { Vector3 } from "@minecraft/server";
@@ -22,6 +22,7 @@ export interface IHasDynamicProperties {
     get dynamicPropertyTotalByteCount(): number;
     clearDynamicProperties(): void;
     getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
+    getDynamicProperty<Ty extends keyof DynamicPropertyTypeMap>(identifier: string, ty: Ty): DynamicPropertyTypeMap[Ty];
     setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
 }
 
@@ -98,10 +99,25 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
     return HasDynamicProperties;
 }
 
+export function sourceDynamicProperty<T extends IHasDynamicProperties>(
+    src: T,
+    numChunks: number,
+    genId: (index: number) => string
+): Conduit<unknown, string, void> {
+
+    return conduit(function* () {
+        for (let i = 0; i < numChunks; i++) {
+            const chunk = src.getDynamicProperty(genId(i), "string");
+            yield* yieldC(chunk);
+        }
+    });
+}
+
 export function sinkDynamicProperty<T extends IHasDynamicProperties>(
     dest: T,
     oldNumChunks: number,
-    genId: (index: number) => string): Conduit<string, never, number> {
+    genId: (index: number) => string
+): Conduit<string, never, number> {
 
     return conduit(function* () {
         let numChunks = 0;
