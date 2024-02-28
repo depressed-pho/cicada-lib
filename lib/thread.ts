@@ -1,3 +1,7 @@
+import { delayTicks } from "./delay.js";
+import { Timer } from "./timer.js";
+import { system, TicksPerSecond } from "@minecraft/server";
+
 export function spawn(gen: (cancelled: Promise<never>) => AsyncGenerator): Thread;
 export function spawn(name: string, gen: (cancelled: Promise<never>) => AsyncGenerator): Thread;
 export function spawn(...args: any[]) {
@@ -27,8 +31,33 @@ export abstract class Thread {
     #isCancelRequested: boolean;
     #cancel: () => void;
 
+    // In the past Bedrock would postpone running scheduled promises when
+    // they're going to exceed the time budget (50 ms per tick). But things
+    // appear to have changed in 1.20.60 when they introduced
+    // `system.runJob()`. Now the game appears to run all the scheduled
+    // promises before entering the next game tick, and can trigger the
+    // watchdog when there are too many scheduled promises even if
+    // individual promises are small. This forces us to measure the time
+    // and insert delays accordingly.
+    static #lastTick: number = 0;
+    static readonly #timeBudgetInMsPerTick: number = 1000 / TicksPerSecond;
+    static readonly #timer = new Timer();
+
     /** The ID of the next thread to be created. */
     static #nextThreadID: number = 0;
+
+    static #maybeResetTimer(): void {
+        const currentTick = system.currentTick;
+        if (this.#lastTick != currentTick) {
+            this.#lastTick = currentTick;
+            this.#timer.reset();
+        }
+    }
+
+    static #hasExceededTimeBudget(): boolean {
+        this.#maybeResetTimer();
+        return this.#timer.elapsedMs >= this.#timeBudgetInMsPerTick;
+    }
 
     public constructor(name?: string) {
         this.id                 = Thread.#nextThreadID++;
@@ -70,13 +99,13 @@ export abstract class Thread {
             yield* self.run(cancelled);
         })();
 
-        /* Since this.#task is an async generator and we haven't called its
-         * .next() even once, the generator isn't running yet even
-         * asynchronously. Schedule its execution now.
-         *
-         * And when the promise is fulfilled, we should continue the
-         * execution of the task until it finishes or raises an error.
-         */
+        // Since this.#task is an async generator and we haven't called its
+        // .next() even once, the generator isn't running yet even
+        // asynchronously. Schedule its execution now.
+        //
+        // And when the promise is fulfilled, we should continue the
+        // execution of the task until it finishes or raises an error.
+        Thread.#maybeResetTimer();
         this.#result = this.#task.next()
             .then(res => this.#onSuspended(res),
                   e   => this.#onError(e));
@@ -89,18 +118,24 @@ export abstract class Thread {
             return Promise.resolve(res);
         }
         else {
-            /* Throwing an exception into the generator would work most of
-             * the time, unless the generator is awaiting a promise. In
-             * that case, what happens is that the generator yields an
-             * unfulfilled promise and the execution stops at "cont.then()"
-             * below, which won't be interrupted by this.#task.throw(). So
-             * when a generator does "yield await", it has to
-             * Promise.race() with the cancellation promise in order to
-             * respond to requests in a timely manner. */
-            const cont = this.#isCancelRequested
-                ? this.#task!.throw(new ThreadCancellationRequested())
-                : this.#task!.next();
-
+            // Throwing an exception into the generator would work most of
+            // the time, unless the generator is awaiting a promise. In
+            // that case, what happens is that the generator yields an
+            // unfulfilled promise and the execution stops at "cont.then()"
+            // below, which won't be interrupted by this.#task.throw(). So
+            // when a generator does "yield await", it has to
+            // Promise.race() with the cancellation promise in order to
+            // respond to requests in a timely manner.
+            let cont;
+            if (this.#isCancelRequested) {
+                cont = this.#task!.throw(new ThreadCancellationRequested());
+            }
+            else if (Thread.#hasExceededTimeBudget()) {
+                cont = delayTicks(1).then(() => this.#task!.next());
+            }
+            else {
+                cont = this.#task!.next();
+            }
             return cont.then(res => this.#onSuspended(res),
                              e   => this.#onError(e));
         }

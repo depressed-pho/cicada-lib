@@ -1,11 +1,18 @@
 # Release notes
 
-## 4.0.0 -- not released yet
+## 4.0.0 -- 2024-02-28
 
 * Updated for Minecraft Bedrock 1.20.60 (@minecraft/server 1.9.0-beta)
 * Breaking changes:
   * Replaced all occurences of word "equipments" with "equipment". You know
     English isn't my native language LOL.
+  * Moved `setTimeout()` and its family from `delay.js` to
+    `shims/timeout.js`.
+* Non-breaking changes:
+  * `delay.js` now exports a new function `delayTicks()`.
+  * Yielding values from a `Thread` now inserts a 1 tick delay when it
+    exceeds the time budget per tick. This turned out to be necessary due
+    to an apparent change in how scheduled promises are executed.
 
 ## 3.0.0 -- 2024-01-28
 

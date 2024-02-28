@@ -1,120 +1,19 @@
-import * as MC from "@minecraft/server";
+import { TicksPerSecond, system } from "@minecraft/server";
 
 /** Return a promise which will be resolved after *at least* a given
  * fractional number of seconds have elapsed. The promise will never be
  * rejected.
  */
-export function delay(secs: number): Promise<unknown> {
+export function delay(secs: number): Promise<void> {
+    const ticks = Math.floor(secs * TicksPerSecond);
+    return delayTicks(ticks);
+}
+
+/** Return a promise which will be resolved after a given number of game
+ * ticks have elapsed. The promise will never be rejected.
+ */
+export function delayTicks(ticks: number): Promise<void> {
     return new Promise((resolve) => {
-        setTimeout(resolve, Math.floor(secs * 1000));
+        system.runTimeout(resolve, ticks);
     });
-}
-
-type TimeoutID = number;
-interface Timeout {
-    readonly handler: () => any;
-    startedAt: number; // epoch ms
-    readonly delay: number; // ms
-    readonly repeat: boolean;
-}
-const timeoutMap = new Map<TimeoutID, Timeout>();
-let nextTimeoutID = 0;
-let runId: number|null = null;
-
-function mkHandler(arg0: string|Function, ...args: any[]): (() => unknown) {
-    return typeof arg0 === "string"
-        ? () => eval(arg0)
-        : arg0.bind(null, ...args);
-}
-
-function onWorldTick() {
-    const now = Date.now();
-    for (const [tid, t] of timeoutMap) {
-        if (t.startedAt + t.delay < now) {
-            /* The handler might actually be an async function and it may
-             * have been rejected. Catch the exception if it's the case. It
-             * might also be a regular function and throws. */
-            try {
-                const ret = t.handler();
-                Promise.resolve(ret).catch(e => console.error(e));
-            }
-            catch (e) {
-                console.error(e);
-            }
-
-            if (t.repeat) {
-                t.startedAt = now;
-            }
-            else {
-                timeoutMap.delete(tid);
-            }
-        }
-    }
-    if (timeoutMap.size == 0) {
-        unlistenOnTicks();
-    }
-}
-
-function listenOnTicks(): void {
-    if (runId == null) {
-        runId = MC.system.runInterval(onWorldTick, 1);
-    }
-}
-
-function unlistenOnTicks(): void {
-    if (runId != null) {
-        MC.system.clearRun(runId);
-        runId = null;
-    }
-}
-
-/** A low-level implementation of the standard setTimeout() function. This
- * is necessary because the Minecraft API doesn't provide a native
- * setTimeout() and its family.
- */
-export function setTimeout(code: string, delay?: number): number;
-export function setTimeout(fun: Function, delay?: number, ...args: any[]): number;
-
-export function setTimeout(arg0: string|Function, delay?: number, ...args: any[]): number {
-    const tid = ++nextTimeoutID;
-    timeoutMap.set(tid, {
-        handler:   mkHandler(arg0, ...args),
-        startedAt: Date.now(),
-        delay:     delay || 0,
-        repeat:    false
-    });
-    listenOnTicks();
-    return tid;
-}
-
-/** A low-level implementation of the standard setInterval() function.
- */
-export function setInterval(code: string, delay?: number): number;
-export function setInterval(fun: Function, delay?: number, ...args: any[]): number;
-
-export function setInterval(arg0: string|Function, delay?: number, ...args: any[]): number {
-    const tid = ++nextTimeoutID;
-    timeoutMap.set(tid, {
-        handler:   mkHandler(arg0, ...args),
-        startedAt: Date.now(),
-        delay:     delay || 0,
-        repeat:    true
-    });
-    listenOnTicks();
-    return tid;
-}
-
-/** A low-level implementation of the standard clearTimeout() function.
- */
-export function clearTimeout(tid: number): void {
-    timeoutMap.delete(tid);
-    if (timeoutMap.size == 0) {
-        unlistenOnTicks();
-    }
-}
-
-/** A low-level implementation of the standard clearInterval() function.
- */
-export function clearInterval(tid: number): void {
-    clearTimeout(tid);
 }
