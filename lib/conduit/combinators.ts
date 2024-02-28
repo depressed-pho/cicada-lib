@@ -7,6 +7,28 @@ import { head, length, subarray } from "./sequence.js";
 // The type system of TypeScript is so useless here. Most of these
 // combinators cannot be meaningfully typed.
 
+/** Decode a stream of binary data as UTF-8, throwing a `TypeError` on
+ * invalid sequences.
+ */
+export const decodeUtf8: Conduit<Buffer, any, string> =
+    lazy(() =>
+        conduit(function* () {
+            const dec = new TextDecoder("UTF-8", {fatal: true, ignoreBOM: false});
+            const ret: string[] = [];
+            while (true) {
+                const buffer = yield* awaitC;
+                if (buffer) {
+                    for (const chunk of buffer.unsafeChunks())
+                        ret.push(dec.decode(chunk, {stream: true}));
+                }
+                else {
+                    break;
+                }
+            }
+            ret.push(dec.decode());
+            return ret.join("");
+        }));
+
 export function dropE(len: number) /* : Conduit<Seq, never, void> */ {
     return conduit(function* () {
         for (let rem = len; rem > 0; ) {
@@ -25,7 +47,7 @@ export function dropE(len: number) /* : Conduit<Seq, never, void> */ {
     });
 }
 
-export const headE /* : Conduit<Seq, void, Element<Seq> */ =
+export const headE /* : Conduit<Seq, never, Element<Seq> */ =
     lazy(() =>
         conduit(function* () {
             while (true) {
@@ -48,7 +70,7 @@ export const headE /* : Conduit<Seq, void, Element<Seq> */ =
             }
         }));
 
-export const peekE /* : Conduit<Seq, void, Element<Seq> */ =
+export const peekE /* : Conduit<Seq, never, Element<Seq> */ =
     lazy(() =>
         conduit(function* () {
             while (true) {
@@ -88,7 +110,7 @@ export function takeE(len: number) /* : Conduit<Seq, Seq, void> */ {
     });
 }
 
-export function takeExactlyE<I, O, R>(len: number, inner: Conduit<I, O, R>): Conduit<any, unknown, R> /* Conduit <I, O, R> */ {
+export function takeExactlyE<I, O, R>(len: number, inner: Conduit<I, O, R>): Conduit<any, any, R> /* Conduit <I, O, R> */ {
     return takeE(len).fuse(
         conduit(function* () {
             const r = yield* inner;
@@ -109,7 +131,7 @@ export function peekForeverE<I, O>(inner: Conduit<I, O, void>): Conduit<any, any
     });
 }
 
-export const sinkNull: Conduit<unknown, unknown, void> =
+export const sinkNull: Conduit<unknown, any, void> =
     lazy(() =>
         conduit(function* () {
             while (true) {
@@ -119,7 +141,7 @@ export const sinkNull: Conduit<unknown, unknown, void> =
             }
         }));
 
-export const sinkBuffer: Conduit<Buffer, never, Buffer> =
+export const sinkBuffer: Conduit<Buffer, any, Buffer> =
     lazy(() =>
         conduit(function* () {
             let buf;
@@ -152,7 +174,7 @@ export const sinkBuffer: Conduit<Buffer, never, Buffer> =
             }
         }));
 
-export const sinkBuilder: Conduit<B.Op, never, Buffer> =
+export const sinkBuilder: Conduit<B.Op, any, Buffer> =
     lazy(() =>
         conduit(function* () {
             let builder = new B.Builder();
@@ -166,7 +188,7 @@ export const sinkBuilder: Conduit<B.Op, never, Buffer> =
             return builder.toBuffer();
         }));
 
-export const sinkString: Conduit<string, never, string> =
+export const sinkString: Conduit<string, any, string> =
     lazy(() =>
         conduit(function* () {
             const chunks = [];
@@ -179,7 +201,7 @@ export const sinkString: Conduit<string, never, string> =
             }
         }));
 
-export function yieldMany<O>(xs: Iterable<O>): Conduit<unknown, O, void> {
+export function yieldMany<O>(xs: Iterable<O>): Conduit<any, O, void> {
     return conduit(function* () {
         for (const x of xs) {
             yield* yieldC(x);

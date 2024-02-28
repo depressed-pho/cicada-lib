@@ -103,7 +103,7 @@ export function sourceDynamicProperty<T extends IHasDynamicProperties>(
     src: T,
     numChunks: number,
     genId: (index: number) => string
-): Conduit<unknown, string, void> {
+): Conduit<any, string, void> {
 
     return conduit(function* () {
         for (let i = 0; i < numChunks; i++) {
@@ -117,7 +117,7 @@ export function sinkDynamicProperty<T extends IHasDynamicProperties>(
     dest: T,
     oldNumChunks: number,
     genId: (index: number) => string
-): Conduit<string, never, number> {
+): Conduit<string, any, number> {
 
     return conduit(function* () {
         let numChunks = 0;

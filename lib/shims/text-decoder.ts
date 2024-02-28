@@ -27,6 +27,7 @@ class TextDecoderShim {
     #chunkPos: number;
 
     constructor(label = "utf-8", opts?: TextDecoderShimOptions) {
+        label = label.trim().toLowerCase();
         if (!VALID_ENCODING_LABELS.has(label)) {
             throw new RangeError(`Unsupported encoding: ${label}`);
         }

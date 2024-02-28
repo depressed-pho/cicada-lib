@@ -1,6 +1,7 @@
 import { XXH32, xxHash32 } from "../xxhash.js";
 import { Buffer } from "../buffer.js";
-import { Conduit, conduit, sinkBuffer, takeE, yieldC } from "../conduit.js";
+import { Conduit, sinkBuffer, takeE, yieldC } from "../conduit.js";
+import { writeUint32 } from "../conduit/binary.js";
 import { LZ4MaximumBlockSize, LZ4CompressionOptions } from "./options.js";
 import { writeFrameDescriptor } from "./frame.js";
 
@@ -14,14 +15,6 @@ export function compress(input: Uint8Array, opts?: LZ4CompressionOptions): Uint8
 
 export function compressC(opts?: LZ4CompressionOptions): Conduit<Buffer, Buffer, void> {
     return new LZ4Compressor(opts);
-}
-
-function writeUint32LE(n: number): Conduit<unknown, Buffer, void> {
-    return conduit(function* () {
-        const buf = new Buffer();
-        buf.appendUint32(n, true);
-        yield* yieldC(buf);
-    });
 }
 
 class LZ4Compressor extends Conduit<Buffer, Buffer, void> {
@@ -120,7 +113,7 @@ class LZ4Compressor extends Conduit<Buffer, Buffer, void> {
     }
 
     public *[Symbol.iterator]() {
-        yield* writeUint32LE(0x184D2204); // magic
+        yield* writeUint32(0x184D2204, true); // magic
         yield* writeFrameDescriptor({
             independentBlocks: this.#opts.independentBlocks,
             blockChecksums:    this.#opts.blockChecksums,
@@ -149,18 +142,18 @@ class LZ4Compressor extends Conduit<Buffer, Buffer, void> {
             if (compBlock.length >= rawBlock.length) {
                 // Damn, it made no sense to compress it. Write an
                 // uncompressed block and discard the other one.
-                yield* writeUint32LE(rawBlock.length | 0x80);
+                yield* writeUint32(rawBlock.length | 0x80, true);
                 yield* yieldC(rawBlock);
                 if (this.#opts.blockChecksums) {
-                    yield* writeUint32LE(xxHash32(rawBlock));
+                    yield* writeUint32(xxHash32(rawBlock), true);
                 }
             }
             else {
                 // It actually compressed.
-                yield* writeUint32LE(compBlock.length);
+                yield* writeUint32(compBlock.length, true);
                 yield* yieldC(compBlock);
                 if (this.#opts.blockChecksums) {
-                    yield* writeUint32LE(xxHash32(compBlock));
+                    yield* writeUint32(xxHash32(compBlock), true);
                 }
             }
 
@@ -175,7 +168,7 @@ class LZ4Compressor extends Conduit<Buffer, Buffer, void> {
         }
 
         // EndMark
-        yield* writeUint32LE(0);
+        yield* writeUint32(0, true);
 
         if (this.#opts.contentSize !== undefined) {
             if (this.#opts.contentSize != contentSize) {
@@ -184,7 +177,7 @@ class LZ4Compressor extends Conduit<Buffer, Buffer, void> {
         }
 
         if (contentHash) {
-            yield* writeUint32LE(contentHash.final());
+            yield* writeUint32(contentHash.final(), true);
         }
     }
 

@@ -66,9 +66,7 @@ export abstract class Thread {
         // at least once so that it can mutate the world state.
         const self = this;
         this.#task = (async function* () {
-            // Await a Promise that is already fulfilled with null. This is
-            // a no-op except that the async function still pauses briefly.
-            await null;
+            yield;
             yield* self.run(cancelled);
         })();
 

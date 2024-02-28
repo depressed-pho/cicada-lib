@@ -1,8 +1,9 @@
 import { XXH32 } from "../xxhash.js";
 import { Buffer } from "../buffer.js";
-import { Conduit, PrematureEOF, awaitC, conduit, dropE, headE,
-         peekForeverE, sinkBuffer, takeE, takeExactlyE, yieldC
+import { Conduit, PrematureEOF, conduit, dropE, peekForeverE, sinkBuffer,
+         takeE, yieldC
        } from "../conduit.js";
+import { readUint8, readUint16, readUint32 } from "../conduit/binary.js";
 import { readFrameDescriptor } from "./frame.js";
 import { LZ4DecompressionOptions } from "./options.js";
 
@@ -17,56 +18,6 @@ export function decompress(input: Uint8Array, opts?: LZ4DecompressionOptions): U
 export function decompressC(opts?: LZ4DecompressionOptions): Conduit<Buffer, Buffer, void> {
     return new LZ4Decompressor(opts);
 }
-
-const readUint8 /* : Conduit<Buffer, never, number> */ =
-    conduit(function* () {
-        const o = yield* headE;
-        if (o !== undefined)
-            return o;
-        else
-            throw new PrematureEOF(
-                "Premature end of stream while reading an uint32 value");
-    });
-
-const readUint16LE /* : Conduit<Buffer, never, number> */ =
-    takeExactlyE(2, conduit(function* () {
-        let n = 0;
-        for (let i = 0, shift = 0; i < 2; ) {
-            const chunk = yield* awaitC;
-            if (chunk) {
-                for (const o of chunk) {
-                    n |= (o & 0xFF) << shift;
-                    i++;
-                    shift += 8;
-                }
-            }
-            else {
-                throw new PrematureEOF(
-                    "Premature end of stream while reading an uint16 value");
-            }
-        }
-        return n >>> 0;
-    }));
-
-const readUint32LE /* : Conduit<Buffer, never, number> */ =
-    takeExactlyE(4, conduit(function* () {
-        let n = 0;
-        for (let i = 0, shift = 0; i < 4; ) {
-            const chunk = yield* awaitC;
-            if (chunk) {
-                for (const o of chunk) {
-                    n |= (o & 0xFF) << shift;
-                    i++;
-                    shift += 8;
-                }
-            }
-            else {
-                throw new PrematureEOF(
-                    "Premature end of stream while reading an uint32 value");
-            }
-        }
-        return n >>> 0;
-    }));
 
 class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
     readonly #opts: Required<LZ4DecompressionOptions>;
@@ -86,7 +37,7 @@ class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
     }
 
     *#decompressAnyFrame() {
-        const magic = yield* readUint32LE;
+        const magic = yield* readUint32(true);
 
         if (magic == 0x184D2204) {
             // This is an LZ4 frame.
@@ -94,7 +45,7 @@ class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
         }
         else if (magic >= 0x184D2A50 && magic <= 0x184D2A5F) {
             // This is a skippable frame.
-            const frameSize = yield* readUint32LE;
+            const frameSize = yield* readUint32(true);
             yield* dropE(frameSize);
         }
         else {
@@ -121,7 +72,7 @@ class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
         const contentHash = desc.contentChecksum ? new XXH32() : undefined;
         let   contentSize = 0;
         while (true) {
-            const blockSize = yield* readUint32LE;
+            const blockSize = yield* readUint32(true);
 
             if (blockSize == 0) {
                 // The end of blocks.
@@ -158,7 +109,7 @@ class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
             }
 
             if (blockHash) {
-                const expectedSum = yield* readUint32LE;
+                const expectedSum = yield* readUint32(true);
                 const actualSum   = blockHash.final();
 
                 if (expectedSum != actualSum)
@@ -174,7 +125,7 @@ class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
         }
 
         if (contentHash) {
-            const expectedSum = yield* readUint32LE;
+            const expectedSum = yield* readUint32(true);
             const actualSum   = contentHash.final();
 
             if (expectedSum != actualSum) {
@@ -234,7 +185,7 @@ class LZ4Decompressor extends Conduit<Buffer, Buffer, void> {
                 break;
 
             // Read the offset.
-            const offset = yield* readUint16LE;
+            const offset = yield* readUint16(true);
             if (offset == 0)
                 throw new Error(`Corrupted block: offset 0 is invalid`);
             else if (offset > this.#dictionary.length)
