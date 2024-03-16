@@ -3,13 +3,13 @@ import { Entity } from "./entity.js";
 import { ItemStack } from "./item/stack.js";
 import { Wrapper } from "./wrapper.js";
 import { map } from "./iterable.js";
-import { Vector3, WeatherType } from "@minecraft/server";
+import { Vector3, WeatherType, WorldSoundOptions } from "@minecraft/server";
 import { NumberRange } from "@minecraft/common";
 import * as I from "./inspect.js";
 import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
-export { WeatherType };
+export { WeatherType, WorldSoundOptions };
 
 export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspection {
     public get heightRange(): NumberRange {
@@ -43,6 +43,10 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
 
     public getWeather(): WeatherType {
         return this.raw.getWeather();
+    }
+
+    public playSound(soundId: string, location: Vector3, soundOptions?: WorldSoundOptions): void {
+        this.raw.playSound(soundId, location, soundOptions);
     }
 
     public setWeather(weatherType: WeatherType, duration?: number): void {

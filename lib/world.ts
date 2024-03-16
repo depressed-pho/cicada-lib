@@ -8,12 +8,11 @@ import { HasDynamicProperties } from "./dynamic-props.js";
 import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { IPreferencesContainer } from "./preferences.js";
-import { Vector3, WorldSoundOptions } from "@minecraft/server";
 import * as PP from "./pprint.js";
 import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
-export { EntityQueryOptions, WorldSoundOptions } from "@minecraft/server";
+export { EntityQueryOptions } from "@minecraft/server";
 
 export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IPreferencesContainer {
     #isReady: boolean;
@@ -70,10 +69,6 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.setDynamicProperty(
             Prefs.dynamicPropertyId("world"),
             Prefs.encode(ty, prefs));
-    }
-
-    public playSound(soundId: string, location: Vector3, soundOptions?: WorldSoundOptions): void {
-        this.raw.playSound(soundId, location, soundOptions);
     }
 
     /** Call this if you want to use the player session manager. This has
