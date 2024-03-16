@@ -315,6 +315,28 @@ export function awaitForever<I, O>(f: (input: I) => Conduit<unknown, O, void>): 
     return new AwaitForever();
 }
 
+/** Apply an action to all values in the stream. This is a variant of
+ * `awaitForever()` where the returned values from the supplied function
+ * are ignored.
+ */
+export function forEach<I>(f: (input: I) => unknown): Conduit<I, unknown, void> {
+    class ForEach extends Conduit<I, unknown, void> {
+        public *[Symbol.iterator](): Generator<Step<I, unknown>, void, Supply<I, unknown>> {
+            while (true) {
+                const supply = yield {type: SNeedInput};
+                switch (supply.type) {
+                    case SHaveInput:
+                        f(supply.input);
+                        break;
+                    case SClosed:
+                        return;
+                }
+            }
+        }
+    }
+    return new ForEach();
+}
+
 export function leftover<I>(input: I): Conduit<I, unknown, void> {
     class Leftover extends Conduit<I, unknown, void> {
         public *[Symbol.iterator](): Generator<Step<I, unknown>, void> {
