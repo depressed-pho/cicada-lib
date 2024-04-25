@@ -21,17 +21,6 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
     }
 
     public get size(): number {
-        // FIXME: Remove this glue code when the API is updated to 1.9.0.
-        if (this.raw && "enchantments" in this.raw) {
-            // @ts-ignore
-            const list: any = this.raw.enchantments;
-            let length = 0;
-            for (const _ench of list) {
-                length++;
-            }
-            return length;
-        }
-
         return this.raw ? this.raw.getEnchantments().length : 0;
     }
 
@@ -44,14 +33,12 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
     }
 
     public canSet(type: EnchantmentType|string, level: number): boolean {
-        // FIXME: Remove this glue code when the API is updated to 1.9.0.
-        if (this.raw && "enchantments" in this.raw) {
-            // @ts-ignore
-            return this.raw.enchantments.canAddEnchantment(new MC.Enchantment(type, level));
-        }
-
         return this.raw
-            ? this.raw.canAddEnchantment({type, level})
+            ? this.raw.canAddEnchantment({
+                  type: typeof type === "string"
+                        ? new EnchantmentType(type) : type,
+                  level
+              })
             : false;
     }
 
@@ -63,13 +50,6 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
 
     public delete(type: EnchantmentType|string): boolean {
         if (this.has(type)) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if (this.raw && "enchantments" in this.raw) {
-                // @ts-ignore
-                this.raw.enchantments.removeEnchantment(type);
-                return true;
-            }
-
             this.raw!.removeEnchantment(type);
             return true;
         }
@@ -80,17 +60,8 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
 
     public *entries(): IterableIterator<[EnchantmentType, number]> {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if (this.raw && "enchantments" in this.raw) {
-                // @ts-ignore
-                for (const ench of this.raw.enchantments) {
-                    yield [ench.type, ench.level];
-                }
-                return;
-            }
-
             for (const ench of this.raw.getEnchantments()) {
-                yield [ench.type as EnchantmentType, ench.level];
+                yield [ench.type, ench.level];
             }
         }
     }
@@ -104,34 +75,6 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
 
     public "get"(type: EnchantmentType|string): number|undefined {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if ("enchantments" in this.raw) {
-                // EnchantmentList.prototype.getEnchantment() isn't
-                // callable in read-only mode but [@@iterator] is callable,
-                // although the documentation states that neither are
-                // callable. Weird.
-                try {
-                    // @ts-ignore
-                    const ench = this.raw.enchantments.getEnchantment(type);
-                    return ench ? ench.level : undefined;
-                }
-                catch (e) {
-                    if (typeof type === "string") {
-                        for (const [type1, level] of this) {
-                            if (type === type1.id)
-                                return level;
-                        }
-                    }
-                    else {
-                        for (const [type1, level] of this) {
-                            if (type.id === type1.id)
-                                return level;
-                        }
-                    }
-                    return undefined;
-                }
-            }
-
             const ench = this.raw.getEnchantment(type);
             return ench ? ench.level : undefined;
         }
@@ -142,12 +85,6 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
 
     public has(type: EnchantmentType|string): boolean {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if ("enchantments" in this.raw) {
-                // @ts-ignore
-                return this.raw.enchantments.hasEnchantment(type) > 0;
-            }
-
             return this.raw.hasEnchantment(type);
         }
         else {
@@ -157,31 +94,19 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
 
     public *keys(): IterableIterator<EnchantmentType> {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if (this.raw && "enchantments" in this.raw) {
-                // @ts-ignore
-                for (const ench of this.raw.enchantments) {
-                    yield ench.type;
-                }
-                return;
-            }
-
             for (const ench of this.raw.getEnchantments()) {
-                yield ench.type as EnchantmentType;
+                yield ench.type;
             }
         }
     }
 
     public "set"(type: EnchantmentType|string, level: number): this {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if ("enchantments" in this.raw) {
-                // @ts-ignore
-                this.raw.enchantments.addEnchantment(new MC.Enchantment(type, level));
-                return this;
-            }
-
-            this.raw.addEnchantment({type, level});
+            this.raw.addEnchantment({
+                type: typeof type === "string"
+                      ? new EnchantmentType(type) : type,
+                level
+            });
             return this;
         }
         else {
@@ -191,15 +116,6 @@ export class ItemEnchantments implements Map<EnchantmentType, number>, I.HasCust
 
     public *values(): IterableIterator<number> {
         if (this.raw) {
-            // FIXME: Remove this glue code when the API is updated to 1.9.0.
-            if (this.raw && "enchantments" in this.raw) {
-                // @ts-ignore
-                for (const ench of this.raw.enchantments) {
-                    yield ench.level;
-                }
-                return;
-            }
-
             for (const ench of this.raw.getEnchantments()) {
                 yield ench.level;
             }

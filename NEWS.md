@@ -2,12 +2,13 @@
 
 ## 5.0.0 -- not released yet
 
-* Updated for Minecraft Bedrock 1.20.71 (@minecraft/server 1.10.0-beta)
+* Updated for Minecraft Bedrock 1.20.80 (@minecraft/server 1.11.0-beta)
 * Breaking changes:
   * `World.prototype.playSound()` has now been removed. Use
     `Dimension.prototype.playSound()` instead.
 * Non-breaking changes:
   * `Dimension.prototype.playSound()`: new function
+  * `ModalFormData.submitButton`
 
 ## 4.0.0 -- 2024-02-28
 

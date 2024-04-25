@@ -305,6 +305,12 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
         return this;
     }
 
+    /** Set the label for the submit button. */
+    submitButton(label: RawMessage|string): ModalFormData {
+        this.raw.submitButton(label);
+        return this;
+    }
+
     /** Add a textbox to the form. The value `key` will show up as a key of
      * {@link ModalFormResponse.prototype.formValues} with a corresponding
      * string value.
