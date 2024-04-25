@@ -1,6 +1,6 @@
 # Release notes
 
-## 5.0.0 -- not released yet
+## 5.0.0 -- 2024-04-25
 
 * Updated for Minecraft Bedrock 1.20.80 (@minecraft/server 1.11.0-beta)
 * Breaking changes:
