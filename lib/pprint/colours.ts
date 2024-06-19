@@ -121,6 +121,16 @@ export function aqua(d: Doc): Doc {
     return colour(Fmt.Colour.Aqua, d);
 }
 
+/** Display a document with dark teal forecolour. */
+export function darkTeal(d: Doc): Doc {
+    return colour(Fmt.Colour.DarkTeal, d);
+}
+
+/** Display a document with purple forecolour. */
+export function purple(d: Doc): Doc {
+    return colour(Fmt.Colour.Purple, d);
+}
+
 /** Display a document with a forecolour given in the first parameter. */
 export function colour(c: Fmt.Colour, d: Doc): Doc {
     return {

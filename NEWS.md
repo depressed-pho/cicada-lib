@@ -6,6 +6,9 @@
 * Breaking changes:
   * `Player.prototype.selectedSlot` has been renamed to
     `Player.prototype.selectedSlotIndex`.
+* Non-breaking changes:
+  * `pprint/colours.js` now exports two missing functions `darkTeal()` and
+    `purple()`.
 * Bug fixes:
   * `delay()` from `delay.js` now correctly converts seconds into ticks.
 
