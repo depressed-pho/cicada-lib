@@ -1,5 +1,12 @@
 # Release notes
 
+## 6.0.0 -- not released yet
+
+* Updated for Minecraft Bedrock 1.21 (@minecraft/server 1.12.0-beta)
+* Breaking changes:
+  * `Player.prototype.selectedSlot` has been renamed to
+    `Player.prototype.selectedSlotIndex`.
+
 ## 5.0.0 -- 2024-04-25
 
 * Updated for Minecraft Bedrock 1.20.80 (@minecraft/server 1.11.0-beta)

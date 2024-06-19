@@ -102,11 +102,11 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
         return this.rawPlayer.onScreenDisplay;
     }
 
-    public get selectedSlot(): number {
-        return this.rawPlayer.selectedSlot;
+    public get selectedSlotIndex(): number {
+        return this.rawPlayer.selectedSlotIndex;
     }
-    public set selectedSlot(slot: number) {
-        this.rawPlayer.selectedSlot = slot;
+    public set selectedSlotIndex(slot: number) {
+        this.rawPlayer.selectedSlotIndex = slot;
     }
 
     public get spawnPoint(): DimensionLocation|undefined {
@@ -244,7 +244,7 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
                 totalXpNeededForNextLevel: this.totalXpNeededForNextLevel,
                 xpEarnedAtCurrentLevel:    this.xpEarnedAtCurrentLevel,
             },
-            selectedSlot: this.selectedSlot,
+            selectedSlotIndex: this.selectedSlotIndex,
         };
         if (this.isSneaking)
             obj.isSneaking = true;

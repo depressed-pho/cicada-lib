@@ -1,6 +1,6 @@
 {
   "name": "cicada-lib",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Library that improves Minecraft Bedrock Scripting API",
   "type": "module",
   "files": [
@@ -48,8 +48,8 @@
   },
   "dependencies": {
     "@minecraft/common": "1.2.0",
-    "@minecraft/server": "1.11.0-beta.1.20.80-stable",
-    "@minecraft/server-ui": "1.2.0-beta.1.20.80-stable",
+    "@minecraft/server": "1.12.0-beta.1.21.0-stable",
+    "@minecraft/server-ui": "1.2.0-beta.1.21.0-stable",
     "patch-package": "^8.0.0"
   },
   "peerDependencies": {
