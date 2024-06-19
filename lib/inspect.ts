@@ -165,7 +165,7 @@ function styliseNoColour(token: PP.Doc, _type: TokenType): PP.Doc {
 
 const defaultStyles = lazy(() => {
     return new Map<TokenType, (token: PP.Doc) => PP.Doc>([
-        [TokenType.BigInt   , PP.yellow       ],
+        [TokenType.BigInt   , PP.gold         ],
         [TokenType.Boolean  , PP.aqua         ],
         [TokenType.Class    , PP.orange       ],
         [TokenType.Date     , PP.pink         ],

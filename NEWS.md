@@ -9,6 +9,8 @@
 * Non-breaking changes:
   * `pprint/colours.js` now exports two missing functions `darkTeal()` and
     `purple()`.
+  * `inspect.js` now pretty-prints `BigInt` primitive values with a
+    slightly different colour from the one used for `number`.
 * Bug fixes:
   * `delay()` from `delay.js` now correctly converts seconds into ticks.
 
