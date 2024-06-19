@@ -5,7 +5,7 @@ import { TicksPerSecond, system } from "@minecraft/server";
  * rejected.
  */
 export function delay(secs: number): Promise<void> {
-    const ticks = Math.floor(secs * TicksPerSecond);
+    const ticks = Math.ceil(secs * TicksPerSecond);
     return delayTicks(ticks);
 }
 

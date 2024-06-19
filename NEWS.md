@@ -6,6 +6,8 @@
 * Breaking changes:
   * `Player.prototype.selectedSlot` has been renamed to
     `Player.prototype.selectedSlotIndex`.
+* Bug fixes:
+  * `delay()` from `delay.js` now correctly converts seconds into ticks.
 
 ## 5.0.0 -- 2024-04-25
 
