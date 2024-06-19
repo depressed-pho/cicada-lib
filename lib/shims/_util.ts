@@ -11,7 +11,14 @@ export function installGlobal(name: PropertyKey, value: any, opts?: Installation
             (globalThis as any)["cicada-lib"]["shims"] = new Set<string>();
         }
         if (!(globalThis as any)["cicada-lib"]["shims"].has(name)) {
-            (globalThis as any)[name] = value;
+            // Even if opts.overwrite is enabled we don't want to overwrite
+            // things we installed ourselves.
+            Object.defineProperty(globalThis, name, {
+                value,
+                configurable: true,
+                enumerable:   false,
+                writable:     true
+            });
             (globalThis as any)["cicada-lib"]["shims"].add(name);
         }
     }

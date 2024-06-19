@@ -1,3 +1,4 @@
+import "./shims/has-own.js";
 import * as PP from "./pprint.js";
 import { lazy } from "./lazy.js";
 
@@ -121,12 +122,6 @@ const boxedPrimConstructors: Set<Function> = lazy(() => {
                               typeof (globalThis as any)[name] === "function")
               .map(name => (globalThis as any)[name] as Function));
 });
-
-/* Object.hasOwn() is not available everywhere. This is an alternative
- * implementation. */
-function hasOwn(obj: any, key: PropertyKey): boolean {
-    return Object.prototype.hasOwnProperty.call(obj, key);
-}
 
 /* Object.prototype.propertyIsEnumerable() may be overridden by
  * subclasses. Invoke the original method. */
@@ -340,7 +335,7 @@ function inspectObject(obj: any, ctx: Context): PP.Doc {
     // Only list the tag in case it's non-enumerable / not an own property,
     // otherwise we'd print this twice.
     const tag      = ctx.opts.showHidden
-        ? (hasOwn              (obj, Symbol.toStringTag) ? undefined : obj[Symbol.toStringTag])
+        ? (Object.hasOwn       (obj, Symbol.toStringTag) ? undefined : obj[Symbol.toStringTag])
         : (propertyIsEnumerable(obj, Symbol.toStringTag) ? undefined : obj[Symbol.toStringTag]);
 
     // If we have recursed too many times, only show the name of
