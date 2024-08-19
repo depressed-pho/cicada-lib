@@ -9,7 +9,7 @@ export class EntityBreathable extends EntityComponent<MC.EntityBreathableCompone
     public static readonly typeId = "minecraft:breathable";
 
     public set airSupply(value: number) {
-        this.raw.setAirSupply(value);
+        this.raw.airSupply = value;
     }
 
     public get breatheBlocks(): IterableIterator<BlockPermutation> {
