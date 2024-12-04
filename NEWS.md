@@ -1,5 +1,9 @@
 # Release notes
 
+## 6.0.4 -- 2024-12-04
+
+* Updated for Minecraft Bedrock 1.21.50 (@minecraft/server 1.17.0-beta)
+
 ## 6.0.3 -- 2024-10-26
 
 * Updated for Minecraft Bedrock 1.21.40 (@minecraft/server 1.16.0-beta)

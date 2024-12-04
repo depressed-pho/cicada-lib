@@ -32,7 +32,10 @@ export class BlockStates implements Iterable<[string, BlockStateValue]>, I.HasCu
     }
 
     public get(key: string): BlockStateValue|undefined {
-        return this.#perm.getState(key);
+        // The key is actually restricted to BlockStateSuperset from
+        // @minecraft/vanilla-data, but making it depend on vanilla-data is
+        // probably not the right thing to do.
+        return this.#perm.getState(key as any);
     }
 
     public has(key: string): boolean {

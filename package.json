@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "@minecraft/common": "1.2.0",
-    "@minecraft/server": "1.16.0-beta.1.21.43-stable",
+    "@minecraft/server": "1.17.0-beta.1.21.50-stable",
     "@minecraft/server-ui": "1.4.0-beta.1.21.43-stable",
     "patch-package": "^8.0.0"
   },
