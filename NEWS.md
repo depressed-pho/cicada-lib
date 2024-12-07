@@ -7,6 +7,11 @@
     `BlockInventory` object, which is a subclass of `Container`. The getter
     returns `undefined` if the block doesn't have a block component
     `minecraft:inventory`.
+* Bug fixes:
+  * `Container.prototype.entries` and many other methods of the class
+    completely stopped working, and it turned out to be a schrödinbug. That
+    is, I swear they worked in the past but I noticed the code should have
+    never worked in the first place...
 
 ## 6.0.4 -- 2024-12-04
 

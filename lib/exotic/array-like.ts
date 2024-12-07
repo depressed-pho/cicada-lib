@@ -50,6 +50,7 @@ export namespace FixedSparseArrayLike {
  */
 export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     readonly #ops: Required<FixedSparseArrayLike.Ops<T>>;
+    readonly #proxy: FixedSparseArrayLike<T>;
 
     readonly length;
     [index: number]: T;
@@ -70,7 +71,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
         // the constructor that looks like an array but is actually
         // not. This is necessary to override the behaviour of obj[idx]
         // notation.
-        return new Proxy(this, {
+        this.#proxy = new Proxy(this, {
             defineProperty(self: FixedSparseArrayLike<T>, key: PropertyKey, desc: PropertyDescriptor): boolean {
                 if (toArrayIndex(key) !== undefined) {
                     // We are unwilling to allow this although it's not
@@ -141,13 +142,24 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
                 return true;
             }
         });
+        return this.#proxy;
     }
+
+    // CAUTION: Methods in this very class (but not subclasses) cannot
+    // refer to array elements using the this[i] notation due to the way
+    // how the magic works. Within methods "this" is bound to a regular
+    // object but not a proxy in order to allow accessing private
+    // properties, and trying to get its (phantom) numeric properties just
+    // results in "undefined". By extension methods in this class cannot do
+    // things like Array.prototype.foo.call(this), although it's fine to do
+    // Array.prototype.foo.call(this.#proxy). See also
+    // getProxiedProperty().
 
     public [Symbol.isConcatSpreadable] = true;
 
     public *[Symbol.iterator](): IterableIterator<T> {
         for (let i = 0; i < this.length; i++) {
-            const value = this[i];
+            const value = this.#ops.get(i);
             if (value !== undefined) {
                 yield value;
             }
@@ -156,7 +168,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
 
     public at(index: number): T|undefined {
         index = clamp(index, 0, this.length);
-        return this[index];
+        return this.#ops.get(index);
     }
 
     public copyWithin(target: number, start: number, end?: number): this {
@@ -180,20 +192,23 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
                 to   = target + i;
             }
 
-            const value = this[from]!;
-            this[to] = this.#ops.clone(value);
+            const value = this.#ops.get(from);
+            if (value === undefined)
+                this.#ops.delete(to);
+            else
+                this.#ops.set(to, this.#ops.clone(value));
         }
 
         return this;
     }
 
     public concat(...items: (T | Array<T>)[]): T[] {
-        return Array.prototype.concat.apply(this, items);
+        return Array.prototype.concat.apply(this.#proxy, items);
     }
 
     public *entries(): IterableIterator<[number, T]> {
         for (let i = 0; i < this.length; i++) {
-            const value = this[i];
+            const value = this.#ops.get(i);
             if (value !== undefined) {
                 yield [i, value];
             }
@@ -201,7 +216,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     }
 
     public every(p: (value: T, index: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): boolean {
-        return Array.prototype.every.call(this, p as any, thisArg);
+        return Array.prototype.every.call(this.#proxy, p as any, thisArg);
     }
 
     public fill(value: T, start: number, end?: number): this {
@@ -212,12 +227,12 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
             end = this.length;
 
         for (let i = start; i < end; i++)
-            this[i] = this.#ops.clone(value);
+            this.#ops.set(i, this.#ops.clone(value));
         return this;
     }
 
     public filter(p: (value: T, index: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): T[] {
-        return Array.prototype.filter.call(this, p as any, thisArg);
+        return Array.prototype.filter.call(this.#proxy, p as any, thisArg);
     }
 
     public find(p: (value: T, number: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): T|undefined {
@@ -242,7 +257,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     public findLast(p: (value: T, index: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): T|undefined {
         const boundP = p.bind(thisArg);
         for (let i = this.length - 1; i >= 0; i--) {
-            const value = this[i];
+            const value = this.#ops.get(i);
             if (value !== undefined && boundP(value, i, this))
                 return value;
         }
@@ -252,7 +267,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     public findLastIndex(p: (value: T, index: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): number {
         const boundP = p.bind(thisArg);
         for (let i = this.length - 1; i >= 0; i--) {
-            const item = this[i];
+            const item = this.#ops.get(i);
             if (item !== undefined && boundP(item, i, this))
                 return i;
         }
@@ -260,7 +275,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     }
 
     public forEach(f: (value: T, index: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): void {
-        Array.prototype.forEach.call(this, f as any, thisArg);
+        Array.prototype.forEach.call(this.#proxy, f as any, thisArg);
     }
 
     public *keys(): IterableIterator<number> {
@@ -271,7 +286,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     }
 
     public map<T>(f: (value: T, index: number, self: FixedSparseArrayLike<T>) => T, thisArg?: any): T[] {
-        return Array.prototype.map.call(this, f as any, thisArg) as T[];
+        return Array.prototype.map.call(this.#proxy, f as any, thisArg) as T[];
     }
 
     /** `pop()` works differently from `Array.prototype.pop()`. It returns
@@ -281,9 +296,9 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
      */
     public pop(): T|undefined {
         for (let i = this.length - 1; i >= 0; i--) {
-            const value = this[i];
+            const value = this.#ops.get(i);
             if (value !== undefined) {
-                delete this[i];
+                this.#ops.delete(i);
                 return value;
             }
         }
@@ -301,7 +316,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
                 i++;
                 let j = 0;
                 for (; j < values.length; j++, i++)
-                    this[i] = values[j]!
+                    this.#ops.set(i, values[j]!);
                 return values.slice(j + 1);
             }
         }
@@ -311,17 +326,17 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     public reduce(f: (acc: T, value: T, index: number, self: FixedSparseArrayLike<T>) => T): T;
     public reduce<Acc>(f: (acc: Acc, value: T, index: number, self: FixedSparseArrayLike<T>) => Acc, init: Acc): Acc;
     public reduce(f: any, init?: any) {
-        return Array.prototype.reduce.call(this, f, init);
+        return Array.prototype.reduce.call(this.#proxy, f, init);
     }
 
     public reduceRight(f: (acc: T, value: T, index: number, self: FixedSparseArrayLike<T>) => T): T;
     public reduceRight<Acc>(f: (acc: Acc, value: T, index: number, self: FixedSparseArrayLike<T>) => Acc, init: Acc): Acc;
     public reduceRight(f: any, init?: any) {
-        return Array.prototype.reduceRight.call(this, f, init);
+        return Array.prototype.reduceRight.call(this.#proxy, f, init);
     }
 
     public reverse(): this {
-        Array.prototype.reverse.call(this);
+        Array.prototype.reverse.call(this.#proxy);
         return this;
     }
 
@@ -331,9 +346,9 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
      */
     public shift(): T|undefined {
         for (let i = 0; i < this.length; i++) {
-            const value = this[i];
+            const value = this.#ops.get(i);
             if (value !== undefined) {
-                delete this[i];
+                this.#ops.delete(i);
                 return value;
             }
         }
@@ -341,7 +356,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     }
 
     public slice(start?: number, end?: number): T[] {
-        return Array.prototype.slice.call(this, start, end);
+        return Array.prototype.slice.call(this.#proxy, start, end);
     }
 
     public some(p: (value: T, index: number, self: FixedSparseArrayLike<T>) => unknown, thisArg?: any): boolean {
@@ -354,7 +369,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     }
 
     public sort(cmp?: (a: T, b: T) => number): this {
-        Array.prototype.sort.call(this, cmp);
+        Array.prototype.sort.call(this.#proxy, cmp);
         return this;
     }
 
@@ -362,7 +377,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
     public splice(start: number, deleteCount: number, ...items: T[]): T[];
     public splice(...args: any[]) {
         // @ts-ignore: TypeScript can't prove this is well-typed.
-        return Array.prototype.splice.apply(this, args);
+        return Array.prototype.splice.apply(this.#proxy, args);
     }
 
     /** `unshift()` works differently from `Array.prototype.unshift()`. It
@@ -392,4 +407,6 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
                 yield value;
         }
     }
+
+    // FIXME: Provide a custom inspection. See ../container.ts
 }

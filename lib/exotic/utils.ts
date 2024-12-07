@@ -44,8 +44,8 @@ export function getProxiedProperty<T, U extends T>(target: T,
             }
             else {
                 // This is a data property. If it's a function, we must
-                // bind it to the correct "this" object, or it won't work
-                // as a method.
+                // bind it to the correct "this" object, or it won't be
+                // able to access private properties.
                 if (typeof desc.value === "function")
                     return desc.value.bind(thisObj);
                 else
