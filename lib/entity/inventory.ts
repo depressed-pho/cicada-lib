@@ -4,46 +4,46 @@ import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 export class EntityInventory extends Container implements I.HasCustomInspection {
-    readonly #rawInv: MC.EntityInventoryComponent;
+    readonly #raw: MC.EntityInventoryComponent;
 
     public static readonly typeId = "minecraft:inventory";
 
     /// @internal
-    public constructor(rawInv: MC.EntityInventoryComponent) {
-        if (rawInv.container)
-            super(rawInv.container);
+    public constructor(raw: MC.EntityInventoryComponent) {
+        if (raw.container)
+            super(raw.container);
         else
             throw new Error(`This entity does not have a valid container`);
 
-        this.#rawInv = rawInv;
+        this.#raw = raw;
     }
 
     public get typeId(): string {
-        return this.#rawInv.typeId;
+        return this.#raw.typeId;
     }
 
     public get isValid(): boolean {
-        return this.#rawInv.isValid();
+        return this.#raw.isValid();
     }
 
     public get additionalSlotsPerStrength(): number {
-        return this.#rawInv.additionalSlotsPerStrength;
+        return this.#raw.additionalSlotsPerStrength;
     }
 
     public get canBeSiphonedFrom(): boolean {
-        return this.#rawInv.canBeSiphonedFrom;
+        return this.#raw.canBeSiphonedFrom;
     }
 
     public get containerType(): string {
-        return this.#rawInv.containerType;
+        return this.#raw.containerType;
     }
 
     public get "private"(): boolean {
-        return this.#rawInv.private;
+        return this.#raw.private;
     }
 
     public get restrictToOwner(): boolean {
-        return this.#rawInv.restrictToOwner;
+        return this.#raw.restrictToOwner;
     }
 
     /// @internal
@@ -51,24 +51,8 @@ export class EntityInventory extends Container implements I.HasCustomInspection 
                                    stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
             containerType: this.containerType,
+            container: new Container(this.#raw.container!),
         };
-
-        // Now we want to display "this" as Container instead of
-        // EntityInventory, so that inspecting obj.container will invoke
-        // super[I.customInspectSymbol]. This is super hacky but I can't
-        // think of any better ways.
-        // @ts-ignore: TypeScript doesn't like super[key].
-        const getSuperProp = (key: PropertyKey) => super[key];
-        obj.container = new Proxy(this, {
-            "get"(self: EntityInventory, key: PropertyKey): any {
-                const prop = getSuperProp(key);
-                if (typeof prop === "function")
-                    return prop.bind(self);
-                else
-                    return prop;
-            }
-        });
-
         if (this.additionalSlotsPerStrength > 0)
             obj.additionalSlotsPerStrength = this.additionalSlotsPerStrength;
         if (this.canBeSiphonedFrom)

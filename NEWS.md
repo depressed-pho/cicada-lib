@@ -1,5 +1,13 @@
 # Release notes
 
+## 6.1.0 -- not released yet
+
+* Non-breaking changes:
+  * `Block` now has a new getter `inventory` which may return a
+    `BlockInventory` object, which is a subclass of `Container`. The getter
+    returns `undefined` if the block doesn't have a block component
+    `minecraft:inventory`.
+
 ## 6.0.4 -- 2024-12-04
 
 * Updated for Minecraft Bedrock 1.21.50 (@minecraft/server 1.17.0-beta)

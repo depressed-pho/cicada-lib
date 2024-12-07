@@ -2,19 +2,10 @@ import { map } from "../../iterable.js";
 import { Block } from "../../block.js";
 import { Wrapper } from "../../wrapper.js";
 import { Faced } from "../faced.js";
-// FIXME: This enum does not exist in 1.8.0-beta yet
-// import { BlockPistonState } from "@minecraft/server";
+import { BlockPistonState } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { BlockPistonState };
-
-// FIXME: Remove this when the API is updated to 1.9.0.
-enum BlockPistonState {
-    Expanded = 'Expanded',
-    Expanding = 'Expanding',
-    Retracted = 'Retracted',
-    Retracting = 'Retracting',
-}
 
 export class Piston extends Faced(Block) {
     readonly #piston: MC.BlockPistonComponent;

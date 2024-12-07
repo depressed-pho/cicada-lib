@@ -1,3 +1,4 @@
+import { BlockInventory } from "./block/inventory.js";
 import { BlockPermutation } from "./block/permutation.js";
 import { BlockTags } from "./block/tags.js";
 import { BlockType } from "./block/type.js";
@@ -26,6 +27,15 @@ export class Block extends Wrapper<MC.Block> {
 
         return this.#dimension;
     }
+
+    public get inventory(): BlockInventory|undefined {
+        if (this.#inventory === undefined) {
+            const raw = this.raw.getComponent(BlockInventory.typeId);
+            this.#inventory = raw ? new BlockInventory(raw) : null;
+        }
+        return this.#inventory ?? undefined;
+    }
+    #inventory?: BlockInventory|null;
 
     public get isAir(): boolean {
         return this.raw.isAir;
@@ -170,9 +180,11 @@ export class Block extends Wrapper<MC.Block> {
         if (this.redstonePower !== undefined)
             obj.redstonePower = this.redstonePower;
 
+        // NOTE: The class Block doesn't have getComponents() for some
+        // reason. We can only inspect components known to us.
         const comps = new Set<any>();
-        // FIXME: Inspect known components. Block doesn't have
-        // getComponents() for some reason.
+        if (this.inventory)
+            comps.add(this.inventory);
         if (comps.size > 0)
             obj.components = comps;
 
