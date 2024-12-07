@@ -210,7 +210,7 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
             obj.tags = this.tags;
 
         const comps = new Set<any>();
-        if (this.cooldown?.category !== "")
+        if (this.cooldown && this.cooldown.category !== "")
             comps.add(this.cooldown);
         if (this.durability)
             comps.add(this.durability);
