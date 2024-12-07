@@ -67,7 +67,7 @@ export abstract class FixedSparseArrayLike<T> implements Iterable<T> {
         this.length = length;
 
         // The dark side of JavaScript magic... We return an object from
-        // the constructor that looks like a Container but is actually
+        // the constructor that looks like an array but is actually
         // not. This is necessary to override the behaviour of obj[idx]
         // notation.
         return new Proxy(this, {

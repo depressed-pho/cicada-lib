@@ -73,19 +73,23 @@ export class Container extends FixedSparseArrayLike<ItemStack> implements I.HasC
         // verbose. Do it when showHidden is enabled, otherwise only show
         // their item IDs and amounts, like:
         //
-        // [Container](36) [
+        // Container(36) [
         //     "minecraft:netherite_pickaxe",
         //     <34 empty slots>,
         //     "minecraft:torch" (amount: 64)
         // ]
-        const prefix         = stylise(PP.text("Container"), I.TokenType.Class);
+        const sizeDoc        = stylise(PP.parens(PP.number(this.length)), I.TokenType.Tag);
+        const prefix         = PP.beside(stylise(PP.text("Container"), I.TokenType.Class), sizeDoc);
         const numElemsToShow = Math.min(this.length, opts.maxArrayLength);
         const elems          = [] as PP.Doc[];
 
         let expectedIdx = 0;
+        let numHidden = 0;
         for (const [slot, item] of this.entries()) {
-            if (elems.length >= numElemsToShow)
-                break;
+            if (elems.length >= numElemsToShow) {
+                numHidden++;
+                continue;
+            }
 
             if (expectedIdx !== slot) {
                 const numHoles = slot - expectedIdx;
@@ -104,17 +108,30 @@ export class Container extends FixedSparseArrayLike<ItemStack> implements I.HasC
             expectedIdx++;
         }
 
-        const numHidden = this.length - expectedIdx;
+        if (expectedIdx < this.length) {
+            const numHoles = this.length - expectedIdx;
+            elems.push(
+                stylise(
+                    PP.text(`<${numHoles} empty slot${numHoles > 1 ? "s" : ""}>`),
+                    I.TokenType.Undefined));
+            expectedIdx = this.length;
+        }
+
         if (numHidden > 0)
             elems.push(
                 stylise(
                     PP.fillSep(
-                        `... ${numHidden} more item${numHidden > 1 ? "s" : ""}`.split(" ").map(PP.text)),
+                        [ PP.text("..."),
+                          stylise(PP.number(numHidden), I.TokenType.Number),
+                          PP.text("more"),
+                          PP.text("item"),
+                          PP.text("stack" + (numHidden > 1 ? "s" : ""))
+                        ]),
                     I.TokenType.Special));
 
         if (elems.length > 0)
             // If the entire object fits the line, print it in a single
-            // line. Otherwise break lines for each enchantments.
+            // line. Otherwise break lines for each items.
             return PP.spaceCat(
                 prefix,
                 PP.group(
