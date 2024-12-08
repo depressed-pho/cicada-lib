@@ -1,6 +1,6 @@
 # Release notes
 
-## 6.1.0 -- not released yet
+## 6.1.0 -- 2024-12-08
 
 * Non-breaking changes:
   * `Block` now has a new getter `inventory` which may return a
