@@ -1,6 +1,6 @@
 # Release notes
 
-## 6.2.0 -- 2025-02-17
+## 7.0.0 -- 2025-02-17
 
 * Updated for Minecraft Bedrock 1.21.60 (@minecraft/server 1.18.0-beta)
 * Breaking changes:
