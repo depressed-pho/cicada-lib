@@ -1,5 +1,22 @@
 # Release notes
 
+## 6.2.0 -- 2025-02-17
+
+* Updated for Minecraft Bedrock 1.21.60 (@minecraft/server 1.18.0-beta)
+* Breaking changes:
+  * `BlockType.prototype.canBeWaterlogged` has been removed.
+* Non-breaking changes:
+  * `Block.prototype.canBeDestroyedByLiquidSpread` has been added.
+  * `Block.prototype.canContainLiquid` has been added.
+  * `Block.prototype.isLiquidBlocking` has been added.
+  * `Block.prototype.liquidSpreadCausesSpawn` has been added.
+  * `Block.prototype.liquidCanFlowFromDirection` has been added.
+  * `Block.prototype.isWaterlogged` now has a setter. Previously the
+    property only had a getter.
+  * `BlockPermutation.prototype.canBeDestroyedByLiquidSpread` has been added.
+  * `BlockPermutation.prototype.isLiquidBlocking` has been added.
+  * `BlockPermutation.prototype.liquidSpreadCausesSpawn` has been added.
+
 ## 6.1.0 -- 2024-12-08
 
 * Non-breaking changes:

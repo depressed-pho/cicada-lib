@@ -8,12 +8,12 @@ import { Constructor } from "./mixin.js";
 import { ItemStack } from "./item/stack.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
-import { Direction, Vector3 } from "@minecraft/server";
+import { Direction, LiquidType, Vector3 } from "@minecraft/server";
 import * as I from "./inspect.js";
 import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
-export { BlockPermutation, BlockTags, BlockType };
+export { BlockPermutation, BlockTags, BlockType, LiquidType };
 export { BlockStateValue, BlockStates } from "./block/states.js";
 
 export class Block extends Wrapper<MC.Block> {
@@ -55,6 +55,10 @@ export class Block extends Wrapper<MC.Block> {
 
     public get isWaterlogged(): boolean {
         return this.raw.isWaterlogged;
+    }
+
+    public set isWaterlogged(waterlogged: boolean) {
+        this.raw.setWaterlogged(waterlogged);
     }
 
     public get location(): Location {
@@ -112,6 +116,26 @@ export class Block extends Wrapper<MC.Block> {
 
     public get z(): number {
         return this.raw.z;
+    }
+
+    public canBeDestroyedByLiquidSpread(liquidType: LiquidType): boolean {
+        return this.raw.canBeDestroyedByLiquidSpread(liquidType);
+    }
+
+    public canContainLiquid(liquidType: LiquidType): boolean {
+        return this.raw.canContainLiquid(liquidType);
+    }
+
+    public isLiquidBlocking(liquidType: LiquidType): boolean {
+        return this.raw.isLiquidBlocking(liquidType);
+    }
+
+    public liquidSpreadCausesSpawn(liquidType: LiquidType): boolean {
+        return this.raw.liquidSpreadCausesSpawn(liquidType);
+    }
+
+    public liquidCanFlowFromDirection(liquidType: LiquidType, flowDirection: Direction): boolean {
+        return this.raw.liquidCanFlowFromDirection(liquidType, flowDirection);
     }
 
     /// Get another block at a given offset towards a given direction.
@@ -174,9 +198,11 @@ export class Block extends Wrapper<MC.Block> {
             isLiquid: this.isLiquid,
             isSolid: this.isSolid,
         };
-        if (this.type.canBeWaterlogged) {
+        if (this.canContainLiquid(LiquidType.Water)) {
             obj.isWaterlogged = this.isWaterlogged;
         }
+        // THINKME: What about other liquid-related properties? Are they
+        // worth reporting? (Yes they are!)
         if (this.redstonePower !== undefined)
             obj.redstonePower = this.redstonePower;
 

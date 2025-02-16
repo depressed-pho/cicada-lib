@@ -31,10 +31,6 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
         }
     }
 
-    public get canBeWaterlogged(): boolean {
-        return this.raw.canBeWaterlogged;
-    }
-
     public get id(): string {
         return this.raw.id;
     }
@@ -43,8 +39,7 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
         const obj: any = {
-            id: this.id,
-            canBeWaterlogged: this.canBeWaterlogged,
+            id: this.id
         };
         return PP.spaceCat(
             stylise(PP.text("BlockType"), I.TokenType.Class),

@@ -3,6 +3,7 @@ import { BlockStates, BlockStateValue } from "./states.js";
 import { BlockTags } from "./tags.js";
 import { BlockType } from "./type.js";
 import { Wrapper } from "../wrapper.js";
+import { LiquidType } from "@minecraft/server";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
@@ -59,6 +60,18 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
 
     public get typeId(): string {
         return this.type.id;
+    }
+
+    public canBeDestroyedByLiquidSpread(liquidType: LiquidType): boolean {
+        return this.raw.canBeDestroyedByLiquidSpread(liquidType);
+    }
+
+    public isLiquidBlocking(liquidType: LiquidType): boolean {
+        return this.raw.isLiquidBlocking(liquidType);
+    }
+
+    public liquidSpreadCausesSpawn(liquidType: LiquidType): boolean {
+        return this.raw.liquidSpreadCausesSpawn(liquidType);
     }
 
     public equals(other: BlockPermutation): boolean {
