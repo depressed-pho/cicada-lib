@@ -1,5 +1,17 @@
 # Release notes
 
+## 7.1.0 -- 2025-03-26
+
+* Player sessions are now guaranteed to be created before any of
+  user-defined `playerSpawn` after-event callbacks are invoked. Previously
+  this wasn't guaranteed.
+* Likewise, player sessions are now guaranteed to be destroyed after any of
+  user-defined `playerLeave` after-event callbacks are invoked. Previously
+  this wasn't guaranteed either.
+* `ready` after-event is now trigerred right before the first `playerSpawn`
+  after-event is trigerred. Previously its implementation relied on an
+  undocumented behaviour of the game.
+
 ## 7.0.0 -- 2025-02-17
 
 * Updated for Minecraft Bedrock 1.21.60 (@minecraft/server 1.18.0-beta)

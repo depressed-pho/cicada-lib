@@ -16,8 +16,6 @@ export { EntityQueryOptions } from "@minecraft/server";
 
 export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IPreferencesContainer {
     #isReady: boolean;
-    #readinessProbe: number|null;
-    #pendingEvents: (() => void)[];
 
     /** World after-event signals */
     public readonly afterEvents: WorldAfterEvents;
@@ -29,11 +27,9 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
      * limitation. User code must never call it directly. */
     public constructor(rawWorld: MC.World) {
         super(rawWorld);
-        this.#isReady        = false;
-        this.#readinessProbe = null;
-        this.#pendingEvents  = [];
-        this.afterEvents     = new WorldAfterEvents(this.raw.afterEvents);
-        this.beforeEvents    = new WorldBeforeEvents(this.raw.beforeEvents);
+        this.#isReady     = false;
+        this.afterEvents  = new WorldAfterEvents(this.raw.afterEvents);
+        this.beforeEvents = new WorldBeforeEvents(this.raw.beforeEvents);
         this.#glueEvents();
 
         this.afterEvents.worldInitialize.subscribe(() => {
@@ -86,68 +82,44 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
                 "The world is already up and running. It's too late to configure player sessions.");
 
         SessionManager.class = sessionClass;
-
-        this.afterEvents.playerSpawn.subscribe(ev => {
-            if (ev.initialSpawn)
-                SessionManager.create(ev.player);
-        });
-        this.beforeEvents.playerLeave.subscribe(ev => {
-            SessionManager.destroy(ev.player.id);
-        });
     }
 
     #glueEvents(): void {
-        /* The game starts ticking the world even before it's fully
-         * loaded. Players can even join it (and possibly leave it) before
-         * it's ready. This is strange and is very inconvenient but is
-         * apparently an intended behaviour. THINKME: Maybe the upcoming
-         * PlayerSpawnEvent will fire after a full load? Check that.
-         */
-        const onTick = () => {
-            if (!this.#isReady) {
-                const it = this.raw.getPlayers();
-                // World.prototype.getPlayers returns null when it's not
-                // ready yet, which isn't even documented!!
-                if (it) {
-                    this.#isReady = true;
-                    this.afterEvents.ready.signal({});
-
-                    for (const ev of this.#pendingEvents) {
-                        ev();
-                    }
-                    this.#pendingEvents = [];
-
-                    MC.system.clearRun(this.#readinessProbe!);
-                    this.#readinessProbe = null;
-                }
-            }
-        };
-        this.#readinessProbe = MC.system.runInterval(onTick, 1);
-
         this.raw.afterEvents.playerSpawn.subscribe(rawEv => {
+            if (!this.#isReady) {
+                /* The game starts ticking the world even before it's fully
+                 * loaded. Players can even join it (and possibly leave it)
+                 * before it's ready. This is strange and is very
+                 * inconvenient but is apparently an intended
+                 * behaviour. Now that a player spawned in the world, we're
+                 * sure the world has been loaded.
+                 *
+                 * But in singleplayer this event can still be trigerred
+                 * way before the game starts rendering the world as of
+                 * v1.21.60, and we haven't found a way to detect the real
+                 * readiness. F*ck you Mojang, why do you keep simple
+                 * things this hard.
+                 */
+                this.#isReady = true;
+                this.afterEvents.ready.signal({});
+            }
+
             const ev: PlayerSpawnAfterEvent = {
                 initialSpawn: rawEv.initialSpawn,
                 player:       new Player(rawEv.player)
             };
-            if (this.#isReady) {
-                this.afterEvents.playerSpawn.signal(ev);
-            }
-            else {
-                this.#pendingEvents.push(() => {
-                    this.afterEvents.playerSpawn.signal(ev);
-                });
-            }
+
+            if (ev.initialSpawn && SessionManager.class)
+                SessionManager.create(ev.player);
+
+            this.afterEvents.playerSpawn.signal(ev);
         });
 
         this.raw.afterEvents.playerLeave.subscribe(ev => {
-            if (this.#isReady) {
-                this.afterEvents.playerLeave.signal(ev);
-            }
-            else {
-                this.#pendingEvents.push(() => {
-                    this.afterEvents.playerLeave.signal(ev);
-                });
-            }
+            this.afterEvents.playerLeave.signal(ev);
+
+            if (SessionManager.class)
+                SessionManager.destroy(ev.playerId);
         });
     }
 

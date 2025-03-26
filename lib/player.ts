@@ -322,6 +322,10 @@ export class SessionManager {
     static readonly #sessions: Map<string, IPlayerSession> = new Map(); // playerId => IPlayerSession
     static #ctor?: new (player: Player) => IPlayerSession;
 
+    public static get "class"(): (new (player: Player) => IPlayerSession) | undefined {
+        return this.#ctor;
+    }
+
     public static set "class"(ctor: new (player: Player) => IPlayerSession) {
         if (this.#ctor)
             throw new Error("A session class cannot be changed once it's set");
