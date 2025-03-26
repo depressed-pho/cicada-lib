@@ -8,7 +8,7 @@ export abstract class Component<T extends MC.Component> extends Wrapper<T> {
     }
 
     public get isValid(): boolean {
-        return this.raw.isValid();
+        return this.raw.isValid;
     }
 }
 

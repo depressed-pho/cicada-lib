@@ -32,7 +32,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.beforeEvents = new WorldBeforeEvents(this.raw.beforeEvents);
         this.#glueEvents();
 
-        this.afterEvents.worldInitialize.subscribe(() => {
+        this.afterEvents.worldLoad.subscribe(() => {
             // Listen to chatSend before events if there is at least one
             // custom command registered (via @command).
             if (!CommandRegistry.empty)

@@ -1,5 +1,21 @@
 # Release notes
 
+## 8.0.0 -- not released yet
+
+Updated for Minecraft Bedrock 1.21.70 (@minecraft/server 2.0.0-beta)
+
+Breaking changes:
+* `WorldAfterEvents.prototype.worldInitialize` has been renamed to
+  `worldLoad`.
+
+Non-breaking changes:
+* `ActionFormData.prototype.divider` has been added.
+* `ActionFormData.prototype.header` has been added.
+* `ActionFormData.prototype.label` has been added.
+* `ModalFormData.prototype.divider` has been added.
+* `ModalFormData.prototype.header` has been added.
+* `ModalFormData.prototype.label` has been added.
+
 ## 7.1.0 -- 2025-03-26
 
 * Player sessions are now guaranteed to be created before any of

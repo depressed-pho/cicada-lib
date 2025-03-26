@@ -42,7 +42,7 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     }
 
     public get isValid(): boolean {
-        return this.raw.isValid();
+        return this.raw.isValid;
     }
 
     public get location(): Location {

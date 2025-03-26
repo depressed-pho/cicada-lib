@@ -39,7 +39,10 @@ export class CustomEventSignal<Ev> implements IEventSignal<Ev> {
              * async function and it doesn't catch exceptions. When that
              * happens exceptions get lost and cause a great confusion, so
              * if the function returns a promise attach a handler to catch
-             * them all. */
+             * them all.
+             *
+             * THINKME: We think we can now remove this as of v1.21.70.
+             */
             const ret = cb(ev);
             Promise.resolve(ret).catch(e => console.error(e));
         }

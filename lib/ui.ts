@@ -174,6 +174,24 @@ export class ActionFormData extends Wrapper<UI.ActionFormData> {
         return this;
     }
 
+    /** Add a section divider to the form. */
+    divider(): ActionFormData {
+        this.raw.divider();
+        return this;
+    }
+
+    /** Add a header to the form. */
+    header(text: RawMessage|string): ActionFormData {
+        this.raw.header(text);
+        return this;
+    }
+
+    /** Add a label to the form. */
+    label(text: RawMessage|string): ActionFormData {
+        this.raw.label(text);
+        return this;
+    }
+
     /** Create and show this modal popup form. Return asynchronously when
      * the player confirms or cancels the dialog.
      */
@@ -246,6 +264,12 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
         this.#items = [];
     }
 
+    /** Add a section divider to the form. */
+    divider(): ModalFormData {
+        this.raw.divider();
+        return this;
+    }
+
     /** Add a dropdown with choices to the form. `options` is an iterable
      * object (such as `Array`) of tuples `[optionKey, optionLabel]`. The
      * value `key` will show up as a key of {@link ModalFormResponse.prototype.formValues} with a
@@ -271,6 +295,18 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
             return [key, optKeys[formValue]!];
         });
         this.raw.dropdown(label, optLabels, defaultValueIndex);
+        return this;
+    }
+
+    /** Add a header to the form. */
+    header(text: RawMessage|string): ModalFormData {
+        this.raw.header(text);
+        return this;
+    }
+
+    /** Add a label to the form. */
+    label(text: RawMessage|string): ModalFormData {
+        this.raw.label(text);
         return this;
     }
 

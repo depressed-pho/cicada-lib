@@ -50,7 +50,7 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     public get isValid(): boolean {
-        return this.raw.isValid();
+        return this.raw.isValid;
     }
 
     public get isWaterlogged(): boolean {
@@ -168,7 +168,7 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     /** Package private */
-    public getComponentOrThrow<T extends keyof MC.BlockComponentTypeMap>(componentId: T): MC.BlockComponentTypeMap[T] {
+    public getComponentOrThrow<T extends keyof MC.BlockComponentTypeMap>(componentId: T): MC.BlockComponentReturnType<T> {
         const c = this.raw.getComponent(componentId);
         if (c) {
             return c;

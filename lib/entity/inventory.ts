@@ -23,7 +23,7 @@ export class EntityInventory extends Container implements I.HasCustomInspection 
     }
 
     public get isValid(): boolean {
-        return this.#raw.isValid();
+        return this.#raw.isValid;
     }
 
     public get additionalSlotsPerStrength(): number {
