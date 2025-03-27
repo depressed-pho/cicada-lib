@@ -1,6 +1,6 @@
 # Release notes
 
-## 8.0.0 -- not released yet
+## 8.0.0 -- 2025-03-27
 
 Updated for Minecraft Bedrock 1.21.70 (@minecraft/server 2.0.0-beta)
 
@@ -15,6 +15,7 @@ Non-breaking changes:
 * `ModalFormData.prototype.divider` has been added.
 * `ModalFormData.prototype.header` has been added.
 * `ModalFormData.prototype.label` has been added.
+* Added `sync/latch.ts`.
 
 ## 7.1.0 -- 2025-03-26
 
