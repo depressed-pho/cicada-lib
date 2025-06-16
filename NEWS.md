@@ -1,5 +1,20 @@
 # Release notes
 
+## 9.0.0 -- 2025-06-16
+
+Updated for Minecraft Bedrock 1.21.84 (@minecraft/server 2.0.0-beta)
+
+Breaking changes - the following functions now take options as an object
+instead of positional arguments:
+* `ModalFormData.prototype.dropdown`
+* `ModalFormData.prototype.slider`
+* `ModalFormData.prototype.textField`
+* `ModalFormData.prototype.toggle`
+
+Pre-native custom commands (`command.ts`) is now considered deprecated
+because MCBE natively allows addons to register custom commands as of
+1.21.80. We don't remove it immediately, but we may do it in the future.
+
 ## 8.0.0 -- 2025-03-27
 
 Updated for Minecraft Bedrock 1.21.70 (@minecraft/server 2.0.0-beta)

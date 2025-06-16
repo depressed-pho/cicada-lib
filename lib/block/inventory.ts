@@ -19,8 +19,9 @@ export class BlockInventory extends Container implements I.HasCustomInspection {
     }
 
     /// @internal
-    public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
-                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
+    public override [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
+                                            stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc
+                                           ): PP.Doc {
         const obj: any = {
             container: new Container(this.#raw.container!),
         };

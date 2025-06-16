@@ -7,6 +7,11 @@ import * as PP from "./pprint.js";
  * support class static blocks.
  */
 
+/* This is an implementation of pre-native custom commands. It is
+ * deprecated as of cicada-lib 9.0.0 (MCBE 1.21.80) and will be probably
+ * removed in the future.
+ */
+
 // We are going to use decorator metadata but it's unlikely that the
 // runtime supports it natively. Here's a polyfill.
 if (!("metadata" in Symbol)) {

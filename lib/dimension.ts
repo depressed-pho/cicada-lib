@@ -54,7 +54,7 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
     }
 
     public spawnEntity(identifier: string, location: Vector3): Entity {
-        return new Entity(this.raw.spawnEntity(identifier, location));
+        return new Entity(this.raw.spawnEntity<string>(identifier, location));
     }
 
     public spawnItem(itemStack: ItemStack, location: Vector3): Entity {

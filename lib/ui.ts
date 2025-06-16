@@ -2,11 +2,21 @@ import { delay } from "./delay.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
 import { RawMessage } from "@minecraft/server";
-import { FormCancelationReason } from "@minecraft/server-ui";
+import {
+    FormCancelationReason,
+    ModalFormDataDropdownOptions,
+    ModalFormDataSliderOptions,
+    ModalFormDataTextFieldOptions,
+    ModalFormDataToggleOptions
+} from "@minecraft/server-ui";
 import * as UI from "@minecraft/server-ui";
 
 export {
-    FormCancelationReason
+    FormCancelationReason,
+    ModalFormDataDropdownOptions,
+    ModalFormDataSliderOptions,
+    ModalFormDataTextFieldOptions,
+    ModalFormDataToggleOptions
 };
 
 export interface FormOptions {
@@ -69,7 +79,7 @@ export class ModalFormResponse extends FormResponse {
 
     /// @internal
     public constructor(raw: UI.ModalFormResponse,
-                       interpret: (formValues: (boolean|number|string)[]) => ModalFormValues) {
+                       interpret: (formValues: (boolean|number|string|undefined)[]) => ModalFormValues) {
         super(raw);
         if (raw.formValues) {
             this.formValues = interpret(raw.formValues);
@@ -270,31 +280,31 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
         return this;
     }
 
-    /** Add a dropdown with choices to the form. `options` is an iterable
-     * object (such as `Array`) of tuples `[optionKey, optionLabel]`. The
+    /** Add a dropdown with choices to the form. `items` is an iterable
+     * object (such as `Array`) of tuples `[itemKey, itemLabel]`. The
      * value `key` will show up as a key of {@link ModalFormResponse.prototype.formValues} with a
-     * corresponding option key.
+     * corresponding item key.
      */
     dropdown(key: any,
              label: RawMessage|string,
-             options: Iterable<[any, RawMessage|string]>,
-             defaultValueIndex?: number
+             items: Iterable<[any, RawMessage|string]>,
+             options?: ModalFormDataDropdownOptions
             ): ModalFormData {
 
-        const optKeys: any[] = [];
-        const optLabels = [];
-        for (const [optKey, optLabel] of options) {
-            optKeys.push(optKey);
-            optLabels.push(optLabel);
+        const itemKeys: any[] = [];
+        const itemLabels = [];
+        for (const [itemKey, itemLabel] of items) {
+            itemKeys.push(itemKey);
+            itemLabels.push(itemLabel);
         }
 
         this.#items.push(formValue => {
             if (typeof formValue !== "number")
                 throw new Error(
                     `Internal error: wrong type of form value ${String(formValue)} for key ${String(key)}`);
-            return [key, optKeys[formValue]!];
+            return [key, itemKeys[formValue]!];
         });
-        this.raw.dropdown(label, optLabels, defaultValueIndex);
+        this.raw.dropdown(label, itemLabels, options);
         return this;
     }
 
@@ -333,11 +343,10 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
            label: RawMessage|string,
            minimumValue: number,
            maximumValue: number,
-           valueStep: number,
-           defaultValue?: number,
+           options?: ModalFormDataSliderOptions
           ): ModalFormData {
         this.#items.push(formValue => [key, formValue]);
-        this.raw.slider(label, minimumValue, maximumValue, valueStep, defaultValue);
+        this.raw.slider(label, minimumValue, maximumValue, options);
         return this;
     }
 
@@ -354,10 +363,10 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
     textField(key: any,
               label: RawMessage|string,
               placeholderText: RawMessage|string,
-              defaultValue?: string
+              options?: ModalFormDataTextFieldOptions
              ): ModalFormData {
         this.#items.push(formValue => [key, formValue]);
-        this.raw.textField(label, placeholderText, defaultValue);
+        this.raw.textField(label, placeholderText, options);
         return this;
     }
 
@@ -370,9 +379,12 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
     /** Add a toggle checkbox button to the form. The value `key` will show
      * up as a key of {@link ModalFormResponse.prototype.formValues} with a
      * corresponding boolean value. */
-    toggle(key: any, label: RawMessage|string, defaultValue?: boolean): ModalFormData {
+    toggle(key: any,
+           label: RawMessage|string,
+           options?: ModalFormDataToggleOptions
+          ): ModalFormData {
         this.#items.push(formValue => [key, formValue]);
-        this.raw.toggle(label, defaultValue);
+        this.raw.toggle(label, options);
         return this;
     }
 }
