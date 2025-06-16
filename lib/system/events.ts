@@ -4,6 +4,7 @@ import { ScriptEventCommandMessageAfterEvent } from "../script-event.js";
 import { WatchdogTerminateBeforeEvent } from "../watchdog.js";
 import { Wrapper } from "../wrapper.js";
 import { identity } from "../function.js";
+import type { StartupEvent } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export class SystemAfterEvents extends Wrapper<MC.SystemAfterEvents> {
@@ -22,11 +23,13 @@ export class SystemAfterEvents extends Wrapper<MC.SystemAfterEvents> {
 }
 
 export class SystemBeforeEvents extends Wrapper<MC.SystemBeforeEvents> {
+    public readonly startup: IEventSignal<StartupEvent>;
     public readonly watchdogTerminate: IEventSignal<WatchdogTerminateBeforeEvent>;
 
     /** Package private: user code should not use this. */
     public constructor(rawEvents: MC.SystemBeforeEvents) {
         super(rawEvents);
+        this.startup = this.raw.startup;
         this.watchdogTerminate = new GluedEventSignalWithoutOptions(
             this.raw.watchdogTerminate,
             (rawEv: MC.WatchdogTerminateBeforeEvent) => {

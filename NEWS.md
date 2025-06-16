@@ -1,5 +1,10 @@
 # Release notes
 
+## 9.1.0 -- 2025-06-16
+
+Non-breaking changes:
+* `SystemBeforeEvents.prototype.startup` has been added.
+
 ## 9.0.0 -- 2025-06-16
 
 Updated for Minecraft Bedrock 1.21.84 (@minecraft/server 2.0.0-beta)
