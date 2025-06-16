@@ -1,6 +1,6 @@
-import { OrdMap } from "./collections/ordered-map.js";
-import { Player } from "./player.js";
-import * as PP from "./pprint.js";
+import { OrdMap } from "../collections/ordered-map.js";
+import { Player } from "../player.js";
+import * as PP from "../pprint.js";
 
 /* NOTE: Classes compiled using these decorators have to be targetted to
  * ES2020 atm, because the version of QuickJS used by MCBE 1.20.51 does not

@@ -1,5 +1,5 @@
 import { CommandRegistry, CommandTokenisationError, CommandParsingError,
-         prettyPrintCommandLine, tokeniseCommandLine } from "./command.js";
+         prettyPrintCommandLine, tokeniseCommandLine } from "./command/legacy.js";
 import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
@@ -34,9 +34,9 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
 
         this.afterEvents.worldLoad.subscribe(() => {
             // Listen to chatSend before events if there is at least one
-            // custom command registered (via @command).
+            // legacy custom command registered (via @command).
             if (!CommandRegistry.empty)
-                this.#listenToCustomCommands();
+                this.#listenToLegacyCustomCommands();
         });
     }
 
@@ -123,7 +123,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         });
     }
 
-    #listenToCustomCommands() {
+    #listenToLegacyCustomCommands() {
         const prefix = ";";
 
         function render(doc: PP.Doc): string {

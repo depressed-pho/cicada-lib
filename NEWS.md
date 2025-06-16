@@ -1,5 +1,10 @@
 # Release notes
 
+## 10.0.0 -- not released yet
+
+Breaking changes:
+* The old `command.ts` has been renamed to `command/legacy.ts`.
+
 ## 9.1.0 -- 2025-06-16
 
 Non-breaking changes:
