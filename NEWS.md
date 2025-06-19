@@ -9,6 +9,9 @@ Breaking changes:
   corresponding native methods have also been removed.
 
 Non-breaking changes:
+* `Entity.prototype.exhaustion` has been added.
+* `Entity.prototype.hunger` has been added.
+* `Entity.prototype.saturation` has been added.
 * `Player.prototype.permissionLevel` has been added.
 
 ## 10.0.0 -- 2025-06-19

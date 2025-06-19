@@ -1,6 +1,9 @@
 import { Dimension } from "./dimension.js";
 import { Entity } from "./entity.js";
-import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
+import {
+    EntityExhaustion, EntityHealth, EntityHunger, EntityLavaMovement,
+    EntityMovement, EntitySaturation, EntityUnderwaterMovement
+} from "./entity/attributes.js";
 import { EntityBreathable } from "./entity/breathable.js";
 import { EntityEquipment } from "./entity/equipment.js";
 import { EntityInventory } from "./entity/inventory.js";
@@ -199,8 +202,16 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
         return super.equipment!;
     }
 
+    public override get exhaustion(): EntityExhaustion {
+        return super.exhaustion!;
+    }
+
     public override get health(): EntityHealth {
         return super.health!;
+    }
+
+    public override get hunger(): EntityHunger {
+        return super.hunger!;
     }
 
     public override get inventory(): EntityInventory {
@@ -217,6 +228,10 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
 
     public override get rideable(): EntityRideable {
         return super.rideable!;
+    }
+
+    public override get saturation(): EntitySaturation {
+        return super.saturation!;
     }
 
     public override get underwaterMovement(): EntityUnderwaterMovement {
@@ -281,11 +296,14 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
 
         const comps = new Set<any>([
             this.breathable,
+            this.exhaustion,
             this.health,
+            this.hunger,
             this.inventory,
             this.lavaMovement,
             this.movement,
             this.rideable,
+            this.saturation,
             this.underwaterMovement,
         ]);
         try {
@@ -304,13 +322,16 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
             switch (comp.typeId) {
                 case EntityBreathable.typeId:
                 case "minecraft:can_climb":
+                case EntityExhaustion.typeId:
                 case EntityHealth.typeId:
+                case EntityHunger.typeId:
                 case EntityEquipment.typeId:
                 case EntityInventory.typeId:
                 case "minecraft:is_hidden_when_invisible":
                 case EntityLavaMovement.typeId:
                 case EntityMovement.typeId:
                 case EntityRideable.typeId:
+                case EntitySaturation.typeId:
                 case EntityUnderwaterMovement.typeId:
                     // These are already inspected in our own way.
                     break;

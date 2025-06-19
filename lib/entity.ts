@@ -2,7 +2,10 @@ import { Block, BlockRaycastHit } from "./block.js";
 import { Dimension } from "./dimension.js";
 import { HasDynamicProperties } from "./dynamic-props.js";
 import { EntityBreathable } from "./entity/breathable.js";
-import { EntityHealth, EntityLavaMovement, EntityMovement, EntityUnderwaterMovement } from "./entity/attributes.js";
+import {
+    EntityExhaustion, EntityHealth, EntityHunger, EntityLavaMovement,
+    EntityMovement, EntitySaturation, EntityUnderwaterMovement
+} from "./entity/attributes.js";
 import { EntityEquipment } from "./entity/equipment.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
@@ -123,6 +126,15 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
     }
     #canClimb?: boolean;
 
+    public get exhaustion(): EntityExhaustion|undefined {
+        if (this.#exhaustion === undefined) {
+            const raw = this.raw.getComponent(EntityExhaustion.typeId);
+            this.#exhaustion = raw ? new EntityExhaustion(raw) : null;
+        }
+        return this.#exhaustion ?? undefined;
+    }
+    #exhaustion?: EntityExhaustion|null;
+
     public get health(): EntityHealth|undefined {
         if (this.#health === undefined) {
             const raw = this.raw.getComponent(EntityHealth.typeId);
@@ -131,6 +143,15 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         return this.#health ?? undefined;
     }
     #health?: EntityHealth|null;
+
+    public get hunger(): EntityHunger|undefined {
+        if (this.#hunger === undefined) {
+            const raw = this.raw.getComponent(EntityHunger.typeId);
+            this.#hunger = raw ? new EntityHunger(raw) : null;
+        }
+        return this.#hunger ?? undefined;
+    }
+    #hunger?: EntityHunger|null;
 
     public get equipment(): EntityEquipment|undefined {
         if (this.#equipment === undefined) {
@@ -184,6 +205,15 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         return this.#rideable ?? undefined;
     }
     #rideable?: EntityRideable|null;
+
+    public get saturation(): EntitySaturation|undefined {
+        if (this.#saturation === undefined) {
+            const raw = this.raw.getComponent(EntitySaturation.typeId);
+            this.#saturation = raw ? new EntitySaturation(raw) : null;
+        }
+        return this.#saturation ?? undefined;
+    }
+    #saturation?: EntitySaturation|null;
 
     public get underwaterMovement(): EntityUnderwaterMovement|undefined {
         if (this.#underwaterMovement === undefined) {

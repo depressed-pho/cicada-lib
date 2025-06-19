@@ -45,8 +45,16 @@ class EntityAttribute<T extends MC.EntityAttributeComponent> extends EntityCompo
     }
 }
 
+export class EntityExhaustion extends EntityAttribute<MC.EntityExhaustionComponent> {
+    public static readonly typeId = "minecraft:player.exhaustion";
+}
+
 export class EntityHealth extends EntityAttribute<MC.EntityHealthComponent> {
     public static readonly typeId = "minecraft:health";
+}
+
+export class EntityHunger extends EntityAttribute<MC.EntityHungerComponent> {
+    public static readonly typeId = "minecraft:player.hunger";
 }
 
 export class EntityLavaMovement extends EntityAttribute<MC.EntityLavaMovementComponent> {
@@ -55,6 +63,10 @@ export class EntityLavaMovement extends EntityAttribute<MC.EntityLavaMovementCom
 
 export class EntityMovement extends EntityAttribute<MC.EntityMovementComponent> {
     public static readonly typeId = "minecraft:movement";
+}
+
+export class EntitySaturation extends EntityAttribute<MC.EntitySaturationComponent> {
+    public static readonly typeId = "minecraft:player.saturation";
 }
 
 export class EntityUnderwaterMovement extends EntityAttribute<MC.EntityUnderwaterMovementComponent> {
