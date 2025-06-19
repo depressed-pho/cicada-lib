@@ -188,7 +188,7 @@ class SubcommandParser<Field> {
             break;
         }
 
-        if (closest[1].opts.opOnly && runner.permissionLevel != PlayerPermissionLevel.Operator)
+        if (closest[1].opts.opOnly && runner.permissionLevel < PlayerPermissionLevel.Operator)
             throw new CommandPermissionError(
                 `The subcommand \`${closest[1].name}' is only for server operators`);
 
@@ -297,7 +297,7 @@ export class CommandRegistry {
         if (!cmd)
             return whenNotFound();
 
-        if (cmd.opts.opOnly && runner.permissionLevel != PlayerPermissionLevel.Operator)
+        if (cmd.opts.opOnly && runner.permissionLevel < PlayerPermissionLevel.Operator)
             throw new CommandPermissionError(
                 `The command \`${cmd.name}' is only for server operators`);
 
