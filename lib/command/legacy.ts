@@ -1,5 +1,5 @@
 import { OrdMap } from "../collections/ordered-map.js";
-import { Player } from "../player.js";
+import { Player, PlayerPermissionLevel } from "../player.js";
 import * as PP from "../pprint.js";
 
 /* NOTE: Classes compiled using these decorators have to be targetted to
@@ -188,7 +188,7 @@ class SubcommandParser<Field> {
             break;
         }
 
-        if (closest[1].opts.opOnly && !runner.isOp)
+        if (closest[1].opts.opOnly && runner.permissionLevel != PlayerPermissionLevel.Operator)
             throw new CommandPermissionError(
                 `The subcommand \`${closest[1].name}' is only for server operators`);
 
@@ -297,7 +297,7 @@ export class CommandRegistry {
         if (!cmd)
             return whenNotFound();
 
-        if (cmd.opts.opOnly && !runner.isOp)
+        if (cmd.opts.opOnly && runner.permissionLevel != PlayerPermissionLevel.Operator)
             throw new CommandPermissionError(
                 `The command \`${cmd.name}' is only for server operators`);
 

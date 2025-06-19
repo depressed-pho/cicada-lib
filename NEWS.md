@@ -1,5 +1,16 @@
 # Release notes
 
+## 10.1.0 -- not released yet
+
+Updated for Minecraft Bedrock 1.21.90 (@minecraft/server 2.1.0-beta)
+
+Breaking changes:
+* `Player.prototype.isOp` getter/setter has been removed because their
+  corresponding native methods have also been removed.
+
+Non-breaking changes:
+* `Player.prototype.permissionLevel` has been added.
+
 ## 10.0.0 -- 2025-06-19
 
 Breaking changes:

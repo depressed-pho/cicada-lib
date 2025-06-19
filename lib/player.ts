@@ -12,13 +12,13 @@ import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { RawMessage } from "@minecraft/server";
 import { IPreferencesContainer } from "./preferences.js";
-import { GameMode, PlayerSoundOptions } from "@minecraft/server";
+import { GameMode, PlayerPermissionLevel, PlayerSoundOptions } from "@minecraft/server";
 import * as Prefs from "./preferences.js";
 import * as I from "./inspect.js";
 import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
-export { GameMode, PlayerSoundOptions };
+export { GameMode, PlayerPermissionLevel, PlayerSoundOptions };
 export { ScreenDisplay, PlayerLeaveAfterEvent } from "@minecraft/server";
 
 export interface DimensionLocation {
@@ -57,14 +57,7 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
     }
 
     public get gameMode(): GameMode {
-        // It is surprising that this is the only way to obtain the
-        // per-player game mode. Hope the future API will allow us to do it
-        // efficiently.
-        if (this.matches({gameMode: GameMode.adventure})) return GameMode.adventure;
-        if (this.matches({gameMode: GameMode.creative })) return GameMode.creative;
-        if (this.matches({gameMode: GameMode.spectator})) return GameMode.spectator;
-        if (this.matches({gameMode: GameMode.survival })) return GameMode.survival;
-        throw new Error(`Cannot detect the game mode for player ${this.name}`);
+        return this.rawPlayer.getGameMode();
     }
 
     public get isEmoting(): boolean {
@@ -83,11 +76,10 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
         return this.rawPlayer.isJumping;
     }
 
-    public get isOp(): boolean {
-        return this.rawPlayer.isOp();
-    }
-    public set isOp(b: boolean) {
-        this.rawPlayer.setOp(b);
+    public get permissionLevel(): PlayerPermissionLevel {
+        // Why do we not redefine the enum with strings? Because numeric
+        // values make sense if they were to be compared by their order.
+        return this.rawPlayer.playerPermissionLevel;
     }
 
     public get level(): number {
@@ -245,6 +237,26 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
                 xpEarnedAtCurrentLevel:    this.xpEarnedAtCurrentLevel,
             },
             selectedSlotIndex: this.selectedSlotIndex,
+            gameMode: (() => {
+                switch (this.gameMode) {
+                    case GameMode.Adventure: return "adventure";
+                    case GameMode.Creative:  return "creative";
+                    case GameMode.Spectator: return "spectator";
+                    case GameMode.Survival:  return "survival";
+                    default:
+                        return `unknown (${this.gameMode})`;
+                }
+            })(),
+            permissionLevel: (() => {
+                switch (this.permissionLevel) {
+                    case PlayerPermissionLevel.Visitor:  return "visitor";
+                    case PlayerPermissionLevel.Member:   return "member";
+                    case PlayerPermissionLevel.Operator: return "operator";
+                    case PlayerPermissionLevel.Custom:   return "custom";
+                    default:
+                        return `unknown (${this.permissionLevel})`;
+                }
+            })()
         };
         if (this.isSneaking)
             obj.isSneaking = true;
@@ -256,8 +268,6 @@ export class Player extends Entity implements IPreferencesContainer, I.HasCustom
             obj.isGliding = true;
         if (this.isJumping)
             obj.isJumping = true;
-        if (this.isOp)
-            obj.isOp = true;
         if (this.spawnPoint)
             obj.spawnPoint = this.spawnPoint;
         if (this.tags.size > 0)

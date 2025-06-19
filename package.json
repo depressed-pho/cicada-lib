@@ -48,8 +48,8 @@
   },
   "dependencies": {
     "@minecraft/common": "1.2.0",
-    "@minecraft/server": "2.0.0-beta.1.21.84-stable",
-    "@minecraft/server-ui": "2.0.0-beta.1.21.84-stable",
+    "@minecraft/server": "2.1.0-beta.1.21.90-stable",
+    "@minecraft/server-ui": "2.1.0-beta.1.21.90-stable",
     "patch-package": "^8.0.0"
   },
   "peerDependencies": {
