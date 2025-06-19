@@ -1,9 +1,11 @@
 # Release notes
 
-## 10.0.0 -- not released yet
+## 10.0.0 -- 2025-06-19
 
 Breaking changes:
 * The old `command.ts` has been renamed to `command/legacy.ts`.
+* Replaced `command.ts` with a decorator-based framework for defining
+  native custom commands appeared in MCBE 1.21.80.
 
 ## 9.1.0 -- 2025-06-16
 

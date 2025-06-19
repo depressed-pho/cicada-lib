@@ -1,3 +1,4 @@
+import { CommandRegistry } from "./command.js";
 import { SystemAfterEvents, SystemBeforeEvents } from "./system/events.js";
 import { Wrapper } from "./wrapper.js";
 import * as MC from "@minecraft/server";
@@ -15,6 +16,10 @@ export class System extends Wrapper<MC.System> {
 
         this.afterEvents  = new SystemAfterEvents(this.raw.afterEvents);
         this.beforeEvents = new SystemBeforeEvents(this.raw.beforeEvents);
+
+        this.beforeEvents.startup.subscribe(ev => {
+            CommandRegistry.register(ev.customCommandRegistry);
+        });
     }
 }
 
