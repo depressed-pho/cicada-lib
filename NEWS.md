@@ -1,5 +1,10 @@
 # Release notes
 
+## 10.2.0 -- not released yet
+
+Non-breaking hanges:
+* A shim for `Set.prototype.union` has been added as `shims/set-union.ts`.
+
 ## 10.1.1 -- 2025-07-01
 
 Fix `ModalFormData` from `ui.ts` failing to extract the resulting
