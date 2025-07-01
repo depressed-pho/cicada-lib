@@ -1,6 +1,6 @@
 # Release notes
 
-## 10.1.1 -- not released yet
+## 10.1.1 -- 2025-07-01
 
 Fix `ModalFormData` from `ui.ts` failing to extract the resulting
 values. The code was supposed to be updated for MCBE 1.21.90 in cicada-lib
