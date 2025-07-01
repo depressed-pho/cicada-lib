@@ -1,5 +1,11 @@
 # Release notes
 
+## 10.1.1 -- not released yet
+
+Fix `ModalFormData` from `ui.ts` failing to extract the resulting
+values. The code was supposed to be updated for MCBE 1.21.90 in cicada-lib
+10.1.0 but the update was flawed.
+
 ## 10.1.0 -- 2025-06-19
 
 Updated for Minecraft Bedrock 1.21.90 (@minecraft/server 2.1.0-beta)

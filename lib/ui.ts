@@ -267,7 +267,7 @@ export class MessageFormData extends Wrapper<UI.MessageFormData> {
 }
 
 export class ModalFormData extends Wrapper<UI.ModalFormData> {
-    readonly #items: ((formValue: boolean|number|string) => [any, any])[];
+    readonly #items: (null | ((formValue: boolean|number|string) => [any, any]))[];
 
     public constructor() {
         super(new UI.ModalFormData());
@@ -276,6 +276,7 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
 
     /** Add a section divider to the form. */
     divider(): ModalFormData {
+        this.#items.push(null);
         this.raw.divider();
         return this;
     }
@@ -310,12 +311,14 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
 
     /** Add a header to the form. */
     header(text: RawMessage|string): ModalFormData {
+        this.#items.push(null);
         this.raw.header(text);
         return this;
     }
 
     /** Add a label to the form. */
     label(text: RawMessage|string): ModalFormData {
+        this.#items.push(null);
         this.raw.label(text);
         return this;
     }
@@ -328,8 +331,11 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
         return new ModalFormResponse(raw, formValues => {
             const map = new ModalFormValues();
             for (let i = 0; i < this.#items.length; i++) {
-                const [key, val] = this.#items[i]!(formValues[i]!);
-                map.set(key, val);
+                const interp = this.#items[i];
+                if (interp) {
+                    const [key, val] = interp(formValues[i]!);
+                    map.set(key, val)
+                };
             }
             return map;
         });
@@ -352,6 +358,7 @@ export class ModalFormData extends Wrapper<UI.ModalFormData> {
 
     /** Set the label for the submit button. */
     submitButton(label: RawMessage|string): ModalFormData {
+        this.#items.push(null);
         this.raw.submitButton(label);
         return this;
     }
