@@ -1,6 +1,6 @@
 {
   "name": "cicada-lib",
-  "version": "9.1.0",
+  "version": "10.2.0",
   "description": "Library that improves Minecraft Bedrock Scripting API",
   "type": "module",
   "files": [

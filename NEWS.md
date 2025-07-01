@@ -1,6 +1,6 @@
 # Release notes
 
-## 10.2.0 -- not released yet
+## 10.2.0 -- 2025-07-02
 
 Non-breaking hanges:
 * A shim for `Set.prototype.union` has been added as `shims/set-union.ts`.
