@@ -1,8 +1,15 @@
 # Release notes
 
+## 11.0.0 -- not released yet
+
+Breaking changes:
+* The optional parameter `cheatsRequired` for the `@command()` decorator
+  was intended to be defaulted to `false` but it was accidentally defaulted
+  to `true`. It's now defaulted to `false`.
+
 ## 10.2.0 -- 2025-07-02
 
-Non-breaking hanges:
+Non-breaking changes:
 * A shim for `Set.prototype.union` has been added as `shims/set-union.ts`.
 
 ## 10.1.1 -- 2025-07-01

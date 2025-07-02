@@ -51,7 +51,7 @@ export interface CommandResult {
 }
 
 export interface CommandDefinition {
-    /** Cheats must be enabled to run this command. Defaults to true. */
+    /** Cheats must be enabled to run this command. Defaults to false. */
     cheatsRequired?: boolean;
 
     /** Command description as seen on the command line. */
@@ -316,7 +316,7 @@ export class CommandRegistry {
             }
 
             const nativeCmd = {
-                cheatsRequired: cmd.cheatsRequired ?? true,
+                cheatsRequired: cmd.cheatsRequired ?? false,
                 description: cmd.description,
                 mandatoryParameters: params.mandatoryParams,
                 name: cmd.name,
