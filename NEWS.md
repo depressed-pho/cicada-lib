@@ -1,6 +1,6 @@
 # Release notes
 
-## 11.0.0 -- not released yet
+## 11.0.0 -- 2025-07-03
 
 Breaking changes:
 * The optional parameter `cheatsRequired` for the `@command()` decorator
