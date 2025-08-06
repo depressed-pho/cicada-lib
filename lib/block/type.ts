@@ -12,7 +12,7 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
         });
     }
 
-    /** Package private */
+    /// @internal
     public constructor(rawBlockType: MC.BlockType);
 
     /** Construct a block type. */
@@ -23,9 +23,9 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
             super(arg0);
         }
         else {
-            const rawBt = MC.BlockTypes.get(arg0);
-            if (rawBt)
-                super(rawBt);
+            const rawBT = MC.BlockTypes.get(arg0);
+            if (rawBT)
+                super(rawBT);
             else
                 throw new Error(`No such block ID exists: ${arg0}`);
         }

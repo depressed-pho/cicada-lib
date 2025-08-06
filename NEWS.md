@@ -1,5 +1,9 @@
 # Release notes
 
+## 11.1.0 -- not released yet
+
+Updated for Minecraft Bedrock 1.21.100 (@minecraft/server 2.2.0-beta)
+
 ## 11.0.0 -- 2025-07-03
 
 Breaking changes:
