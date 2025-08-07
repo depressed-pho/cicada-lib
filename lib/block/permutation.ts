@@ -1,4 +1,6 @@
+import { ItemBag } from "../item/bag.js";
 import { ItemStack } from "../item/stack.js";
+import { LootTableManager } from "../loot-table.js";
 import { BlockStates, BlockStateValue } from "./states.js";
 import { BlockTags } from "./tags.js";
 import { BlockType } from "./type.js";
@@ -13,7 +15,7 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
     #tags?: BlockTags;
     #type?: BlockType;
 
-    /// Package private: user code should not use this.
+    /// @internal
     public constructor(rawPerm: MC.BlockPermutation);
 
     /// Construct a block permutation with its ID and optional states.
@@ -64,6 +66,20 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
 
     public canBeDestroyedByLiquidSpread(liquidType: LiquidType): boolean {
         return this.raw.canBeDestroyedByLiquidSpread(liquidType);
+    }
+
+    /** Generate loot from the block permutation as if it had been mined.
+     *
+     * @param tool
+     * Optional. The tool to use in the looting operation.
+     *
+     * @returns
+     * A bag of items dropped from the loot drop event. Can be empty if no
+     * loot dropped, or `null` if the provided tool is insufficient to mine
+     * the block.
+     */
+    public generateLoot(tool?: ItemStack): ItemBag|null {
+        return LootTableManager.instance.generateLoot(this, tool)!;
     }
 
     public isLiquidBlocking(liquidType: LiquidType): boolean {

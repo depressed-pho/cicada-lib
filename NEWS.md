@@ -4,6 +4,16 @@
 
 Updated for Minecraft Bedrock 1.21.100 (@minecraft/server 2.2.0-beta)
 
+Non-breaking changes:
+* `Block.prototype.generateLoot` has been added.
+* `BlockPermutation.prototype.generateLoot` has been added.
+* `BlockType.prototype.generateLoot` has been added.
+* `Entity.prototype.generateLoot` has been added.
+* `Entity.prototype.type` has been added.
+* `EntityType` has been added.
+* `ItemBag` constructor now accepts `stacks?: Iterable<ItemStack>` as an
+  argument.
+
 ## 11.0.0 -- 2025-07-03
 
 Breaking changes:

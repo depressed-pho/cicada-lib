@@ -10,8 +10,12 @@ import { EntityEquipment } from "./entity/equipment.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
 import { EntityTags } from "./entity/tags.js";
+import { EntityType } from "./entity/type.js";
+import { ItemBag } from "./item/bag.js";
+import { ItemStack } from "./item/stack.js";
 import { lazy } from "./lazy.js";
 import { Location } from "./location.js";
+import { LootTableManager } from "./loot-table.js";
 import { Wrapper } from "./wrapper.js";
 import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
          Vector2, Vector3 } from "@minecraft/server";
@@ -52,15 +56,43 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
         return new Location(this.raw.location);
     }
 
+    public get type(): EntityType {
+        if (!this.#entityType) {
+            this.#entityType = new EntityType(this.typeId);
+        }
+        return this.#entityType;
+    }
+    #entityType?: EntityType;
+
     public get typeId(): string {
         return this.raw.typeId;
     }
 
-    /** The set of tags for this entity. The set isn't a snapshot. You can
-     * add or remove tags through the standard Set API.
+    /** The set of tags for this entity. The set isn't a snapshot but is a
+     * live reference. You can add or remove tags through the standard Set
+     * API.
      */
     public readonly tags: Set<string>
         = lazy(() => new EntityTags(this.raw));
+
+    /** Generate loot from the entity as if it had been killed. This method
+     * generates loot from this particular entity in the dimension. Use
+     * {@link EntityType.prototype.generateLoot} if you want to simulate
+     * the loot table for the default instance of an entity type.
+     *
+     * @param tool
+     * Optional. The tool to use in the looting operation.
+     *
+     * @returns
+     * A bag of items dropped from the loot drop event. Can be empty if no
+     * loot dropped.
+     *
+     * @throws
+     * Throws if the Entity object does not reference a valid entity.
+     */
+    public generateLoot(tool?: ItemStack): ItemBag {
+        return LootTableManager.instance.generateLoot(this, tool)!;
+    }
 
     public getBlockFromViewDirection(options?: BlockRaycastOptions): BlockRaycastHit | undefined {
         let rawHit = this.raw.getBlockFromViewDirection(options);

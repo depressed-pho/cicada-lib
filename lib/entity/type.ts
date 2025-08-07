@@ -7,30 +7,30 @@ import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
-export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspection {
-    /** Obtain all available block types registered within the world. */
-    public static getAll(): IterableIterator<BlockType> {
-        return map(MC.BlockTypes.getAll(), raw => {
-            return new BlockType(raw);
+export class EntityType extends Wrapper<MC.EntityType> implements I.HasCustomInspection {
+    /** Obtain all available entity types registered within the world. */
+    public static getAll(): IterableIterator<EntityType> {
+        return map(MC.EntityTypes.getAll(), raw => {
+            return new EntityType(raw);
         });
     }
 
     /// @internal
-    public constructor(rawBlockType: MC.BlockType);
+    public constructor(rawEntityType: MC.EntityType);
 
-    /** Construct a block type. */
+    /** Construct an entity type. */
     public constructor(typeId: string);
 
-    public constructor(arg0: MC.BlockType|string) {
-        if (arg0 instanceof MC.BlockType) {
+    public constructor(arg0: MC.EntityType|string) {
+        if (arg0 instanceof MC.EntityType) {
             super(arg0);
         }
         else {
-            const rawBT = MC.BlockTypes.get(arg0);
-            if (rawBT)
-                super(rawBT);
+            const rawET = MC.EntityTypes.get<string>(arg0);
+            if (rawET)
+                super(rawET);
             else
-                throw new Error(`No such block ID exists: ${arg0}`);
+                throw new Error(`No such entity ID exists: ${arg0}`);
         }
     }
 
@@ -38,18 +38,17 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
         return this.raw.id;
     }
 
-    /** Generate loot from the default permutation of this block type as if
-     * it had been mined.
+    /** Generate loot from the default instantiation of this entity type as
+     * if it had been killed.
      *
      * @param tool
      * Optional. The tool to use in the looting operation.
      *
      * @returns
      * A bag of items dropped from the loot drop event. Can be empty if no
-     * loot dropped, or `null` if the provided tool is insufficient to mine
-     * the block.
+     * loot dropped.
      */
-    public generateLoot(tool?: ItemStack): ItemBag|null {
+    public generateLoot(tool?: ItemStack): ItemBag {
         return LootTableManager.instance.generateLoot(this, tool)!;
     }
 

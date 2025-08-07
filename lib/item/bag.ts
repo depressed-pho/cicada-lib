@@ -6,8 +6,14 @@ import { ItemStack } from "./stack.js";
 export class ItemBag implements Set<ItemStack> {
     readonly #stacks: Map<string, ItemStack[]>;
 
-    public constructor() {
+    public constructor(stacks?: Iterable<ItemStack>) {
         this.#stacks = new Map();
+
+        if (stacks) {
+            for (const stack of stacks) {
+                this.add(stack);
+            }
+        }
     }
 
     /** Return the number of item stacks in the bag without regard to their

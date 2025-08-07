@@ -3,9 +3,11 @@ import { BlockPermutation } from "./block/permutation.js";
 import { BlockTags } from "./block/tags.js";
 import { BlockType } from "./block/type.js";
 import { Dimension } from "./dimension.js";
-import { Location } from "./location.js";
-import { Constructor } from "./mixin.js";
+import { ItemBag } from "./item/bag.js";
 import { ItemStack } from "./item/stack.js";
+import { Location } from "./location.js";
+import { LootTableManager } from "./loot-table.js";
+import { Constructor } from "./mixin.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
 import { Direction, LiquidType, Vector3 } from "@minecraft/server";
@@ -124,6 +126,31 @@ export class Block extends Wrapper<MC.Block> {
 
     public canContainLiquid(liquidType: LiquidType): boolean {
         return this.raw.canContainLiquid(liquidType);
+    }
+
+    /** Generate loot from the block as if it had been mined. This method
+     * generates loot from the current permutation and the current set of
+     * block components of this specific block in the dimension.
+     *
+     * Use {@link BlockPermutation.prototype.generateLoot} if you want to
+     * simulate the loot table based on the default components for a
+     * particular block permutation. Or use {@link
+     * BlockType.prototype.generateLoot} if you want to simulate the loot
+     * table for the default permutation of a block type.
+     *
+     * @param tool
+     * Optional. The tool to use in the looting operation.
+     *
+     * @returns
+     * A bag of items dropped from the loot drop event. Can be empty if no
+     * loot dropped, or `null` if the provided tool is insufficient to mine
+     * the block.
+     *
+     * @throws
+     * Throws if the Block object does not reference a valid block.
+     */
+    public generateLoot(tool?: ItemStack): ItemBag|null {
+        return LootTableManager.instance.generateLoot(this, tool)!;
     }
 
     public isLiquidBlocking(liquidType: LiquidType): boolean {
