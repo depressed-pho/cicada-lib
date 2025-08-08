@@ -8,12 +8,14 @@ import { Entity, EntityDieAfterEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
 import { ItemStack, ItemUseAfterEvent, ItemUseBeforeEvent } from "../item.js";
 import { ChatSendBeforeEvent, Player,
-         PlayerLeaveBeforeEvent, PlayerSpawnAfterEvent } from "../player.js"
+         PlayerLeaveBeforeEvent, PlayerSpawnAfterEvent,
+         PlayerHotbarSelectedSlotChangeAfterEvent } from "../player.js"
 import { Wrapper } from "../wrapper.js";
 import * as MC from "@minecraft/server";
 
 export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
     public readonly playerBreakBlock: IEventSignal<PlayerBreakBlockAfterEvent>;
+    public readonly playerHotbarSelectedSlotChange: IEventSignal<PlayerHotbarSelectedSlotChangeAfterEvent>;
     public readonly playerPlaceBlock: IEventSignal<PlayerPlaceBlockAfterEvent>;
     public readonly entityDie:        IEventSignal<EntityDieAfterEvent, EntityEventOptions>;
     public readonly itemUse:          IEventSignal<ItemUseAfterEvent>;
@@ -43,6 +45,19 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
                         : {}),
                 };
             });
+        this.playerHotbarSelectedSlotChange = new GluedEventSignalWithOptions(
+            this.raw.playerHotbarSelectedSlotChange,
+            (rawEv: MC.PlayerHotbarSelectedSlotChangeAfterEvent) => {
+                return {
+                    ...(rawEv.itemStack
+                        ? {itemStack: new ItemStack(rawEv.itemStack)}
+                        : {}),
+                    newSlotSelected: rawEv.newSlotSelected,
+                    player: new Player(rawEv.player),
+                    previousSlotSelected: rawEv.previousSlotSelected
+                };
+            },
+            opts => opts /* identity */);
         this.playerPlaceBlock = new GluedEventSignalWithoutOptions(
             this.raw.playerPlaceBlock,
             (rawEv: MC.PlayerPlaceBlockAfterEvent) => {

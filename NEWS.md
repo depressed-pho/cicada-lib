@@ -13,6 +13,8 @@ Non-breaking changes:
 * `EntityType` has been added.
 * `ItemBag` constructor now accepts `stacks?: Iterable<ItemStack>` as an
   argument.
+* `WorldAfterEvents.prototype.playerHotbarSelectedSlotChange` has been
+  added.
 
 ## 11.0.0 -- 2025-07-03
 

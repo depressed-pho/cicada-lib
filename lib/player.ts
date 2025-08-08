@@ -8,6 +8,7 @@ import { EntityBreathable } from "./entity/breathable.js";
 import { EntityEquipment } from "./entity/equipment.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
+import { ItemStack } from "./item/stack.js";
 import { map } from "./iterable.js";
 import { Location } from "./location.js";
 import { PlayerConsole } from "./player/console.js";
@@ -15,13 +16,16 @@ import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { RawMessage } from "@minecraft/server";
 import { IPreferencesContainer } from "./preferences.js";
-import { GameMode, PlayerPermissionLevel, PlayerSoundOptions } from "@minecraft/server";
+import { GameMode, HotbarEventOptions, PlayerPermissionLevel,
+         PlayerSoundOptions } from "@minecraft/server";
 import * as Prefs from "./preferences.js";
 import * as I from "./inspect.js";
 import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
 
-export { GameMode, PlayerPermissionLevel, PlayerSoundOptions };
+export {
+    GameMode, HotbarEventOptions, PlayerPermissionLevel, PlayerSoundOptions
+};
 export { ScreenDisplay, PlayerLeaveAfterEvent } from "@minecraft/server";
 
 export interface DimensionLocation {
@@ -424,6 +428,13 @@ export class ChatSendBeforeEvent extends Wrapper<MC.ChatSendBeforeEvent> {
 
 export interface PlayerLeaveBeforeEvent {
     readonly player: Player;
+}
+
+export interface PlayerHotbarSelectedSlotChangeAfterEvent {
+    readonly itemStack?: ItemStack;
+    readonly newSlotSelected: number;
+    readonly player: Player;
+    readonly previousSlotSelected: number;
 }
 
 export interface PlayerSpawnAfterEvent {
