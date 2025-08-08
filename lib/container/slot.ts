@@ -66,17 +66,17 @@ export class ContainerSlot extends HasDynamicProperties(Wrapper<MC.ContainerSlot
     // FIXME: getters canDestroy() and canPlaceOn() for a returning dynamic
     // Set-like object.
 
-    /** Return a snapshot of the item in the slot, or `undefined` if the
+    /** Return a snapshot of the item in the slot, or `null` if the
      * slot is empty.
      */
-    public get item(): ItemStack|undefined {
+    public get item(): ItemStack|null {
         const rawStack = this.raw.getItem();
-        return rawStack ? new ItemStack(rawStack) : undefined;
+        return rawStack ? new ItemStack(rawStack) : null;
     }
     /** Set the given ItemStack in the slot, replacing any existing
      * item.
      */
-    public set item(stack: ItemStack|undefined) {
+    public set item(stack: ItemStack|null) {
         this.raw.setItem(stack?.raw);
     }
 
