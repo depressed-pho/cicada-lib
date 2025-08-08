@@ -1,4 +1,5 @@
 import { BlockStateValue } from "../block.js";
+import { HasDynamicProperties } from "../dynamic-props.js";
 import { lazy } from "../lazy.js";
 import { Wrapper } from "../wrapper.js";
 import { ItemCooldown } from "./cooldown.js";
@@ -6,14 +7,14 @@ import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
 import { ItemType } from "./type.js";
-import { ItemLockMode } from "@minecraft/server";
+import { ItemLockMode, RawMessage } from "@minecraft/server";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
 
 export { ItemLockMode };
 
-export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspection {
+export class ItemStack extends HasDynamicProperties(Wrapper<MC.ItemStack>) implements I.HasCustomInspection {
     /// @internal
     public constructor(rawItemStack: MC.ItemStack);
 
@@ -95,6 +96,10 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         this.raw.lockMode = mode;
     }
 
+    public get maxAmount(): number {
+        return this.raw.maxAmount;
+    }
+
     public get nameTag(): string|undefined {
         return this.raw.nameTag;
     }
@@ -116,6 +121,9 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         return this.raw.typeId;
     }
 
+    // FIXME: getters canDestroy() and canPlaceOn() for returning a dynamic
+    // Set-like object.
+
     public get lore(): string[] {
         return this.raw.getLore();
     }
@@ -123,8 +131,11 @@ export class ItemStack extends Wrapper<MC.ItemStack> implements I.HasCustomInspe
         this.raw.setLore(lore);
     }
 
-    public get maxAmount(): number {
-        return this.raw.maxAmount;
+    public get rawLore(): RawMessage[] {
+        return this.raw.getRawLore();
+    }
+    public set rawLore(lore: RawMessage[]) {
+        this.raw.setLore(lore);
     }
 
     public clone(): ItemStack {

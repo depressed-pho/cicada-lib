@@ -1,3 +1,4 @@
+import { ContainerSlot } from "../container/slot.js";
 import { ItemStack } from "../item/stack.js";
 import { EntityComponent } from "./component.js";
 import { EquipmentSlot } from "@minecraft/server";
@@ -91,6 +92,10 @@ export class EntityEquipment extends EntityComponent<MC.EntityEquippableComponen
     public "set"(slot: EquipmentSlot, stack: ItemStack): this {
         this.raw.setEquipment(slot, stack.raw);
         return this;
+    }
+
+    public slot(slot: EquipmentSlot): ContainerSlot {
+        return new ContainerSlot(this.raw.getEquipmentSlot(slot));
     }
 
     public *values(): IterableIterator<ItemStack> {

@@ -11,10 +11,14 @@ Non-breaking changes:
 * `Entity.prototype.generateLoot` has been added.
 * `Entity.prototype.type` has been added.
 * `EntityType` has been added.
+* `EntityEquipment.prototype.slot` has been added.
+* `ItemStack` now mixes `HasDynamicProperties` in.
+* `ItemStack.prototype.rawLore` has been added.
 * `ItemBag` constructor now accepts `stacks?: Iterable<ItemStack>` as an
   argument.
 * `WorldAfterEvents.prototype.playerHotbarSelectedSlotChange` has been
   added.
+* `IHasDynamicProperties` now has a new method `setDynamicProperties`.
 
 ## 11.0.0 -- 2025-07-03
 

@@ -14,6 +14,7 @@ export interface ObjectWithDynamicProperties {
     getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
     getDynamicPropertyIds(): string[];
     getDynamicPropertyTotalByteCount(): number;
+    setDynamicProperties(values: Record<string, boolean|number|string|Vector3>): void;
     setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
 }
 
@@ -23,6 +24,7 @@ export interface IHasDynamicProperties {
     clearDynamicProperties(): void;
     getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
     getDynamicProperty<Ty extends keyof DynamicPropertyTypeMap>(identifier: string, ty: Ty): DynamicPropertyTypeMap[Ty];
+    setDynamicProperties(values: Record<string, boolean|number|string|Vector3>): void;
     setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
 }
 
@@ -37,8 +39,8 @@ export type DynamicPropertyTypeMap = {
     "Vector3" : Vector3,
 };
 
-/** A mixin for objects that have dynamic properties, such as Entity or
- * World.
+/** A mixin for objects that have dynamic properties, such as Entity,
+ * ItemStack, and World.
  */
 export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDynamicProperties>>>(base: T) {
     abstract class HasDynamicProperties extends base {
@@ -91,8 +93,12 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
             }
         }
 
+        public setDynamicProperties(values: Record<string, boolean|number|string|Vector3>): void {
+            this.raw.setDynamicProperties(values);
+        }
+
         public setDynamicProperty(identifier: string,
-                                  value: boolean|number|string|Vector3|undefined): void {
+                                  value?: boolean|number|string|Vector3): void {
             this.raw.setDynamicProperty(identifier, value);
         }
     }

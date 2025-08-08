@@ -1,20 +1,24 @@
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
-import * as MC from "@minecraft/server";
+
+export interface ObjectWithItemTags {
+    getTags(): string[];
+    hasTag(tag: string): boolean;
+}
 
 /** A read-only set of item tags. It is mostly compatible with the Set
  * interface but no mutations can be performed.
  */
 export class ItemTags implements Iterable<string>, I.HasCustomInspection {
-    readonly #stack: MC.ItemStack;
+    readonly #target: ObjectWithItemTags;
 
-    /// Package private.
-    public constructor(rawStack: MC.ItemStack) {
-        this.#stack = rawStack;
+    // @internal
+    public constructor(target: ObjectWithItemTags) {
+        this.#target = target;
     }
 
     public get size(): number {
-        return this.#stack.getTags().length;
+        return this.#target.getTags().length;
     }
 
     public get [Symbol.toStringTag](): string {
@@ -39,7 +43,7 @@ export class ItemTags implements Iterable<string>, I.HasCustomInspection {
     }
 
     public has(tag: string): boolean {
-        return this.#stack.hasTag(tag);
+        return this.#target.hasTag(tag);
     }
 
     public keys(): IterableIterator<string> {
@@ -47,7 +51,7 @@ export class ItemTags implements Iterable<string>, I.HasCustomInspection {
     }
 
     public values(): IterableIterator<string> {
-        return this.#stack.getTags()[Symbol.iterator]();
+        return this.#target.getTags()[Symbol.iterator]();
     }
 
     /// @internal
