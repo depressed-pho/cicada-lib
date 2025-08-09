@@ -1,5 +1,6 @@
 import { ItemStack } from "./item/stack.js";
 import { FixedSparseArrayLike } from "./exotic/array-like.js";
+import { ContainerSlot } from "./container/slot.js";
 import * as I from "./inspect.js";
 import * as PP from "./pprint.js";
 import * as MC from "@minecraft/server";
@@ -53,6 +54,14 @@ export class Container extends FixedSparseArrayLike<ItemStack> implements I.HasC
     public add(item: ItemStack): ItemStack|undefined {
         const ret = this.raw.addItem(item.raw);
         return ret ? new ItemStack(ret) : undefined;
+    }
+
+    /** Return a container slot object, which acts as a reference to a slot
+     * at the given index for this container. Throws an error if the `slot`
+     * index is out of bounds.
+     */
+    public slot(index: number): ContainerSlot {
+        return new ContainerSlot(this.raw.getSlot(index));
     }
 
     /** `sort()` is similar to `Array.prototype.sort()` but not exactly the

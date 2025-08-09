@@ -8,6 +8,7 @@ Non-breaking changes:
 * `Block.prototype.generateLoot` has been added.
 * `BlockPermutation.prototype.generateLoot` has been added.
 * `BlockType.prototype.generateLoot` has been added.
+* `Container.prototype.slot` has been added.
 * `Entity.prototype.generateLoot` has been added.
 * `Entity.prototype.type` has been added.
 * `EntityType` has been added.
