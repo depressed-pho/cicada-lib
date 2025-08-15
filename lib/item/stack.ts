@@ -7,7 +7,7 @@ import { ItemDurability } from "./durability.js";
 import { ItemEnchantments } from "./enchantments.js";
 import { ItemTags } from "./tags.js";
 import { ItemType } from "./type.js";
-import { ItemLockMode, RawMessage } from "@minecraft/server";
+import { ItemLockMode/*, RawMessage*/ } from "@minecraft/server";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
 import * as MC from "@minecraft/server";
@@ -131,12 +131,14 @@ export class ItemStack extends HasDynamicProperties(Wrapper<MC.ItemStack>) imple
         this.raw.setLore(lore);
     }
 
+    /* FIXME: Uncomment these when rawLore is released.
     public get rawLore(): RawMessage[] {
         return this.raw.getRawLore();
     }
     public set rawLore(lore: RawMessage[]) {
         this.raw.setLore(lore);
     }
+    */
 
     public clone(): ItemStack {
         return new ItemStack(this.raw.clone());

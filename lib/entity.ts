@@ -15,7 +15,7 @@ import { ItemBag } from "./item/bag.js";
 import { ItemStack } from "./item/stack.js";
 import { lazy } from "./lazy.js";
 import { Location } from "./location.js";
-import { LootTableManager } from "./loot-table.js";
+//import { LootTableManager } from "./loot-table.js";
 import { Wrapper } from "./wrapper.js";
 import { BlockRaycastOptions, EntityDamageSource, EntityQueryOptions,
          Vector2, Vector3 } from "@minecraft/server";
@@ -90,8 +90,9 @@ export class Entity extends HasDynamicProperties(Wrapper<MC.Entity>) {
      * @throws
      * Throws if the Entity object does not reference a valid entity.
      */
-    public generateLoot(tool?: ItemStack): ItemBag {
-        return LootTableManager.instance.generateLoot(this, tool)!;
+    public generateLoot(_tool?: ItemStack): ItemBag {
+        //return LootTableManager.instance.generateLoot(this, tool)!;
+        throw new Error("FIXME: LootTableManager is currently unavailable in the stable API");
     }
 
     public getBlockFromViewDirection(options?: BlockRaycastOptions): BlockRaycastHit | undefined {

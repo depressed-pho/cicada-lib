@@ -1,5 +1,5 @@
-import { CommandRegistry, CommandTokenisationError, CommandParsingError,
-         prettyPrintCommandLine, tokeniseCommandLine } from "./command/legacy.js";
+//import { CommandRegistry, CommandTokenisationError, CommandParsingError,
+//         prettyPrintCommandLine, tokeniseCommandLine } from "./command/legacy.js";
 import { Dimension } from "./dimension.js";
 import { WorldAfterEvents, WorldBeforeEvents } from "./world/events.js";
 import { map } from "./iterable.js";
@@ -8,7 +8,7 @@ import { HasDynamicProperties } from "./dynamic-props.js";
 import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { IPreferencesContainer } from "./preferences.js";
-import * as PP from "./pprint.js";
+//import * as PP from "./pprint.js";
 import * as Prefs from "./preferences.js";
 import * as MC from "@minecraft/server";
 
@@ -32,12 +32,14 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         this.beforeEvents = new WorldBeforeEvents(this.raw.beforeEvents);
         this.#glueEvents();
 
+        /* FIXME: Uncomment this when chatSend is released.
         this.afterEvents.worldLoad.subscribe(() => {
             // Listen to chatSend before events if there is at least one
             // legacy custom command registered (via @command).
             if (!CommandRegistry.empty)
                 this.#listenToLegacyCustomCommands();
         });
+        */
     }
 
     public getDimension(identifier: string): Dimension {
@@ -123,6 +125,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
         });
     }
 
+    /* FIXME: Uncomment this when chatSend is released.
     #listenToLegacyCustomCommands() {
         const prefix = ";";
 
@@ -203,6 +206,7 @@ export class World extends HasDynamicProperties(Wrapper<MC.World>) implements IP
             }
         });
     }
+    */
 }
 
 export const world = new World(MC.world);

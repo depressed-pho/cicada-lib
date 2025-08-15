@@ -1,7 +1,7 @@
 import { ItemBag } from "../item/bag.js";
 import { ItemStack } from "../item/stack.js";
 import { map } from "../iterable.js";
-import { LootTableManager } from "../loot-table.js";
+//import { LootTableManager } from "../loot-table.js";
 import { Wrapper } from "../wrapper.js";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
@@ -26,7 +26,7 @@ export class EntityType extends Wrapper<MC.EntityType> implements I.HasCustomIns
             super(arg0);
         }
         else {
-            const rawET = MC.EntityTypes.get<string>(arg0);
+            const rawET = MC.EntityTypes.get/*<string>*/(arg0);
             if (rawET)
                 super(rawET);
             else
@@ -48,8 +48,9 @@ export class EntityType extends Wrapper<MC.EntityType> implements I.HasCustomIns
      * A bag of items dropped from the loot drop event. Can be empty if no
      * loot dropped.
      */
-    public generateLoot(tool?: ItemStack): ItemBag {
-        return LootTableManager.instance.generateLoot(this, tool)!;
+    public generateLoot(_tool?: ItemStack): ItemBag {
+        //return LootTableManager.instance.generateLoot(this, tool)!;
+        throw new Error("FIXME: LootTableManager is currently unavailable in the stable API");
     }
 
     /// @internal

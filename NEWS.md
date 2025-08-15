@@ -1,5 +1,31 @@
 # Release notes
 
+## 13.0.0 -- 2025-08-15
+
+Starting from v12.0.0, cicada-lib is released in two flavours: "stable" and
+"beta". The stable branch which resides as `stable` branch in the
+repository is now released with odd major version numbers, while the beta
+branch `master` is released with even ones.
+
+The `stable` branch is for the stable scripting API of Minecraft
+Bedrock. The `master` branch is for the beta API found in stable releases
+as opposed to preview/beta releases.
+
+If you want to use the stable branch, you need to declare a dependency with
+a branch name:
+
+```
+"dependencies": {
+  "cicada-lib": "github:depressed-pho/cicada-lib#stable"
+}
+```
+
+Breaking changes from v11.1.0:
+
+* Removed everything that are unsupported in the Bedrock stable API. In
+  this version cicada-lib targets `@minecraft/server` v2.1.0 and
+  `@minecraft/server-ui` v2.0.0.
+
 ## 11.1.0 -- 2025-08-09
 
 Updated for Minecraft Bedrock 1.21.100 (@minecraft/server 2.2.0-beta)

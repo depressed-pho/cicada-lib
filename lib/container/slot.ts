@@ -3,7 +3,7 @@ import { ItemStack } from "../item/stack.js";
 import { ItemTags } from "../item/tags.js";
 import { ItemType } from "../item/type.js";
 import { Wrapper } from "../wrapper.js";
-import { ItemLockMode, RawMessage } from "@minecraft/server";
+import { ItemLockMode/*, RawMessage*/ } from "@minecraft/server";
 import * as MC from "@minecraft/server";
 
 export { ItemLockMode };
@@ -87,12 +87,14 @@ export class ContainerSlot extends HasDynamicProperties(Wrapper<MC.ContainerSlot
         this.raw.setLore(lore);
     }
 
+    /* FIXME: Uncomment these when getRawLore() is released.
     public get rawLore(): RawMessage[] {
         return this.raw.getRawLore();
     }
     public set rawLore(lore: RawMessage[]) {
         this.raw.setLore(lore);
     }
+    */
 
     public get tags(): ItemTags {
         return new ItemTags(this.raw);

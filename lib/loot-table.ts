@@ -1,3 +1,4 @@
+/* FIXME: Uncomment this when LootTableManager is released.
 import { Block } from "./block.js";
 import { BlockPermutation } from "./block/permutation.js";
 import { BlockType } from "./block/type.js";
@@ -69,3 +70,4 @@ export class LootTableManager extends Wrapper<MC.LootTableManager> {
         }
     }
 }
+*/

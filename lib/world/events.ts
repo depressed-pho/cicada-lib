@@ -7,7 +7,7 @@ import { Dimension } from "../dimension.js";
 import { Entity, EntityDieAfterEvent, EntityEventOptions,
          entityEventOptionsToRaw } from "../entity.js";
 import { ItemStack, ItemUseAfterEvent, ItemUseBeforeEvent } from "../item.js";
-import { ChatSendBeforeEvent, Player,
+import { /*ChatSendBeforeEvent, */Player,
          PlayerLeaveBeforeEvent, PlayerSpawnAfterEvent,
          PlayerHotbarSelectedSlotChangeAfterEvent } from "../player.js"
 import { Wrapper } from "../wrapper.js";
@@ -95,7 +95,7 @@ export class WorldAfterEvents extends Wrapper<MC.WorldAfterEvents> {
 }
 
 export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
-    public readonly chatSend: IEventSignal<ChatSendBeforeEvent>;
+    //public readonly chatSend: IEventSignal<ChatSendBeforeEvent>; // FIXME: Uncomment this when it's released.
     public readonly itemUse: IEventSignal<ItemUseBeforeEvent>;
     public readonly playerBreakBlock: IEventSignal<PlayerBreakBlockBeforeEvent>;
     public readonly playerLeave: IEventSignal<PlayerLeaveBeforeEvent>;
@@ -103,9 +103,11 @@ export class WorldBeforeEvents extends Wrapper<MC.WorldBeforeEvents> {
     /// Package private
     public constructor(rawEvents: MC.WorldBeforeEvents) {
         super(rawEvents);
+        /*
         this.chatSend = new GluedEventSignalWithoutOptions(
             this.raw.chatSend,
             (rawEv: MC.ChatSendBeforeEvent) => new ChatSendBeforeEvent(rawEv));
+        */
         this.itemUse = new GluedEventSignalWithoutOptions(
             this.raw.itemUse,
             (rawEv: MC.ItemUseBeforeEvent) => new ItemUseBeforeEvent(rawEv));

@@ -8,9 +8,11 @@ import * as MC from "@minecraft/server";
 export class EntityBreathable extends EntityComponent<MC.EntityBreathableComponent> implements I.HasCustomInspection {
     public static readonly typeId = "minecraft:breathable";
 
+    /* FIXME: Uncomment this when airSupply is released.
     public set airSupply(value: number) {
         this.raw.airSupply = value;
     }
+    */
 
     public get breatheBlocks(): IterableIterator<BlockPermutation> {
         return map(this.raw.getBreatheBlocks(), raw => {

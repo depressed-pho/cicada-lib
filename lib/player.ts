@@ -9,10 +9,10 @@ import { EntityEquipment } from "./entity/equipment.js";
 import { EntityInventory } from "./entity/inventory.js";
 import { EntityRideable } from "./entity/rideable.js";
 import { ItemStack } from "./item/stack.js";
-import { map } from "./iterable.js";
+//import { map } from "./iterable.js";
 import { Location } from "./location.js";
 import { PlayerConsole } from "./player/console.js";
-import { Wrapper } from "./wrapper.js";
+//import { Wrapper } from "./wrapper.js";
 import { MessageType } from "@protobuf-ts/runtime";
 import { RawMessage } from "@minecraft/server";
 import { IPreferencesContainer } from "./preferences.js";
@@ -405,6 +405,7 @@ export class SessionManager {
     }
 }
 
+/*
 export class ChatSendBeforeEvent extends Wrapper<MC.ChatSendBeforeEvent> {
     public cancel() {
         this.raw.cancel = true;
@@ -425,6 +426,7 @@ export class ChatSendBeforeEvent extends Wrapper<MC.ChatSendBeforeEvent> {
             return undefined;
     }
 }
+*/
 
 export interface PlayerLeaveBeforeEvent {
     readonly player: Player;

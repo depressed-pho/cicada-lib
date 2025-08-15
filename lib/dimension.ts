@@ -41,9 +41,11 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
         });
     }
 
+    /* FIXME: Uncomment this when getWeather() is released.
     public getWeather(): WeatherType {
         return this.raw.getWeather();
     }
+    */
 
     public playSound(soundId: string, location: Vector3, soundOptions?: WorldSoundOptions): void {
         this.raw.playSound(soundId, location, soundOptions);
@@ -54,7 +56,7 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
     }
 
     public spawnEntity(identifier: string, location: Vector3): Entity {
-        return new Entity(this.raw.spawnEntity<string>(identifier, location));
+        return new Entity(this.raw.spawnEntity/*<string>*/(identifier, location));
     }
 
     public spawnItem(itemStack: ItemStack, location: Vector3): Entity {
@@ -64,15 +66,17 @@ export class Dimension extends Wrapper<MC.Dimension> implements I.HasCustomInspe
     /// @internal
     public [I.customInspectSymbol](inspect: (value: any, opts?: I.InspectOptions) => PP.Doc,
                                   stylise: (token: PP.Doc, type: I.TokenType) => PP.Doc): PP.Doc {
-        const self     = this;
+        //const self     = this;
         const obj: any = {
             id:          this.id,
             heightRange: this.heightRange,
+            /* FIXME: Uncomment this when getWeather() is released.
             get weather(): WeatherType {
                 // This method is unavailable in read-only mode, although
                 // it doesn't make sense.
                 return self.getWeather();
             }
+            */
         };
         return PP.spaceCat(
             stylise(PP.text("Dimension"), I.TokenType.Class),

@@ -1,3 +1,4 @@
+/* FIXME: Uncomment this when watchdog-related events are released.
 import { Wrapper } from "./wrapper.js";
 import { WatchdogTerminateReason } from "@minecraft/server";
 import * as MC from "@minecraft/server";
@@ -5,7 +6,7 @@ import * as MC from "@minecraft/server";
 export { WatchdogTerminateReason };
 
 export class WatchdogTerminateBeforeEvent extends Wrapper<MC.WatchdogTerminateBeforeEvent> {
-    /** Package private: user code should not use this. */
+    /// @internal
     public constructor(rawEvent: MC.WatchdogTerminateBeforeEvent) {
         super(rawEvent);
     }
@@ -18,3 +19,4 @@ export class WatchdogTerminateBeforeEvent extends Wrapper<MC.WatchdogTerminateBe
         return this.raw.terminateReason;
     }
 }
+*/

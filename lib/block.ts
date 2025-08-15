@@ -6,7 +6,7 @@ import { Dimension } from "./dimension.js";
 import { ItemBag } from "./item/bag.js";
 import { ItemStack } from "./item/stack.js";
 import { Location } from "./location.js";
-import { LootTableManager } from "./loot-table.js";
+//import { LootTableManager } from "./loot-table.js";
 import { Constructor } from "./mixin.js";
 import { Player } from "./player.js";
 import { Wrapper } from "./wrapper.js";
@@ -48,7 +48,7 @@ export class Block extends Wrapper<MC.Block> {
     }
 
     public get isSolid(): boolean {
-        return this.raw.isSolid;
+        throw new Error("FIXME: Block.property.isSolid is currently not available in the stable API");
     }
 
     public get isValid(): boolean {
@@ -149,8 +149,9 @@ export class Block extends Wrapper<MC.Block> {
      * @throws
      * Throws if the Block object does not reference a valid block.
      */
-    public generateLoot(tool?: ItemStack): ItemBag|null {
-        return LootTableManager.instance.generateLoot(this, tool)!;
+    public generateLoot(_tool?: ItemStack): ItemBag|null {
+        //return LootTableManager.instance.generateLoot(this, tool)!;
+        throw new Error("FIXME: LootTableManager is currently unavailable in the stable API");
     }
 
     public isLiquidBlocking(liquidType: LiquidType): boolean {
@@ -223,7 +224,7 @@ export class Block extends Wrapper<MC.Block> {
             permutation: this.permutation,
             isAir: this.isAir,
             isLiquid: this.isLiquid,
-            isSolid: this.isSolid,
+            //isSolid: this.isSolid, // FIXME: uncomment this when isSolid is released
         };
         if (this.canContainLiquid(LiquidType.Water)) {
             obj.isWaterlogged = this.isWaterlogged;

@@ -14,7 +14,7 @@ export interface ObjectWithDynamicProperties {
     getDynamicProperty(identifier: string): boolean|number|string|Vector3|undefined;
     getDynamicPropertyIds(): string[];
     getDynamicPropertyTotalByteCount(): number;
-    setDynamicProperties(values: Record<string, boolean|number|string|Vector3>): void;
+    //setDynamicProperties(values: Record<string, boolean|number|string|Vector3>): void; // FIXME: Uncomment this when it's released.
     setDynamicProperty(identifier: string, value?: boolean|number|string|Vector3): void;
 }
 
@@ -94,7 +94,17 @@ export function HasDynamicProperties<T extends Constructor<Wrapper<ObjectWithDyn
         }
 
         public setDynamicProperties(values: Record<string, boolean|number|string|Vector3>): void {
-            this.raw.setDynamicProperties(values);
+            if ("setDynamicProperties" in this.raw) {
+                // @ts-ignore: TypeScript cannot guarantee it's callable.
+                this.raw.setDynamicProperties(values);
+            }
+            else {
+                // FIXME: Delete this else branch when
+                // setDynamicProperties() is released.
+                for (const [key, val] of Object.entries(values)) {
+                    this.raw.setDynamicProperty(key, val);
+                }
+            }
         }
 
         public setDynamicProperty(identifier: string,

@@ -1,7 +1,7 @@
 import { ItemBag } from "../item/bag.js";
 import { ItemStack } from "../item/stack.js";
 import { map } from "../iterable.js";
-import { LootTableManager } from "../loot-table.js";
+//import { LootTableManager } from "../loot-table.js";
 import { Wrapper } from "../wrapper.js";
 import * as I from "../inspect.js";
 import * as PP from "../pprint.js";
@@ -49,8 +49,9 @@ export class BlockType extends Wrapper<MC.BlockType> implements I.HasCustomInspe
      * loot dropped, or `null` if the provided tool is insufficient to mine
      * the block.
      */
-    public generateLoot(tool?: ItemStack): ItemBag|null {
-        return LootTableManager.instance.generateLoot(this, tool)!;
+    public generateLoot(_tool?: ItemStack): ItemBag|null {
+        //return LootTableManager.instance.generateLoot(this, tool)!;
+        throw new Error("FIXME: LootTableManager is currently unavailable in the stable API");
     }
 
     /// @internal

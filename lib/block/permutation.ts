@@ -1,6 +1,6 @@
 import { ItemBag } from "../item/bag.js";
 import { ItemStack } from "../item/stack.js";
-import { LootTableManager } from "../loot-table.js";
+//import { LootTableManager } from "../loot-table.js";
 import { BlockStates, BlockStateValue } from "./states.js";
 import { BlockTags } from "./tags.js";
 import { BlockType } from "./type.js";
@@ -78,8 +78,9 @@ export class BlockPermutation extends Wrapper<MC.BlockPermutation> implements I.
      * loot dropped, or `null` if the provided tool is insufficient to mine
      * the block.
      */
-    public generateLoot(tool?: ItemStack): ItemBag|null {
-        return LootTableManager.instance.generateLoot(this, tool)!;
+    public generateLoot(_tool?: ItemStack): ItemBag|null {
+        //return LootTableManager.instance.generateLoot(this, tool)!;
+        throw new Error("FIXME: LootTableManager is currently unavailable in the stable API");
     }
 
     public isLiquidBlocking(liquidType: LiquidType): boolean {
